@@ -1,0 +1,156 @@
+[
+  {
+    "controlId": "CR-AZURE-SEARCH-100",
+    "cases": [
+      {
+        "name": "pass public network access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-private",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-private",
+              "name": "svc-private",
+              "type": "Microsoft.Search/searchServices",
+              "location": "eastus",
+              "resourceGroup": "rg1",
+              "sku": {
+                "name": "standard"
+              },
+              "properties": {
+                "publicNetworkAccess": "disabled",
+                "disableLocalAuth": true,
+                "authOptions": null,
+                "status": "running",
+                "replicaCount": 1,
+                "partitionCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail public network access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-public",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-public",
+              "name": "svc-public",
+              "type": "Microsoft.Search/searchServices",
+              "location": "eastus",
+              "resourceGroup": "rg1",
+              "sku": {
+                "name": "standard"
+              },
+              "properties": {
+                "publicNetworkAccess": "enabled",
+                "disableLocalAuth": false,
+                "authOptions": {
+                  "apiKeyOnly": {}
+                },
+                "status": "running",
+                "replicaCount": 1,
+                "partitionCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "error authorization failed",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Search/searchServices/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SEARCH-101",
+    "cases": [
+      {
+        "name": "pass local auth disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-aad",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-aad",
+              "name": "svc-aad",
+              "type": "Microsoft.Search/searchServices",
+              "location": "eastus",
+              "resourceGroup": "rg1",
+              "sku": {
+                "name": "standard"
+              },
+              "properties": {
+                "publicNetworkAccess": "disabled",
+                "disableLocalAuth": true,
+                "authOptions": null,
+                "status": "running"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail local api-key auth enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-keys",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-keys",
+              "name": "svc-keys",
+              "type": "Microsoft.Search/searchServices",
+              "location": "eastus",
+              "resourceGroup": "rg1",
+              "sku": {
+                "name": "standard"
+              },
+              "properties": {
+                "publicNetworkAccess": "enabled",
+                "disableLocalAuth": false,
+                "authOptions": {
+                  "aadOrApiKey": {
+                    "aadAuthFailureMode": "http403"
+                  }
+                },
+                "status": "running"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable service deleted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.search.service_show",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Search/searchServices/svc-gone",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(ResourceNotFound) The Resource 'Microsoft.Search/searchServices/svc-gone' under resource group 'rg1' was not found."
+          }
+        ]
+      }
+    ]
+  }
+]

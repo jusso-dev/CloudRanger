@@ -1,0 +1,126 @@
+controls:
+  - id: CR-AWS-SSM-010
+    version: 1.0.0
+    provider: aws
+    service: ssm
+    title: SSM managed instance agent is online
+    description: The managed instance's PingStatus is Online, indicating the SSM
+      Agent has recently checked in with Systems Manager.
+    rationale: When a managed instance's SSM Agent stops reporting (ConnectionLost
+      or Inactive), Systems Manager can no longer run patch, inventory, or
+      compliance operations against it, leaving the host unmanaged and its
+      security posture unverifiable.
+    severity: medium
+    categories:
+      - resilience
+      - logging
+    source:
+      engine: prowler
+      id: ssm_managed_compliant_patching
+      license: Apache-2.0
+    collector: aws.ssm.describe_instance_information
+    resourcesPath: InstanceInformationList
+    resourceIdField: InstanceId
+    resourceNameField: ComputerName
+    passWhen:
+      op: equals
+      path: PingStatus
+      value: Online
+    failMessage: SSM managed instance agent is not Online (PingStatus is
+      ConnectionLost or Inactive).
+    passMessage: SSM managed instance agent is Online.
+    remediation:
+      summary: Restore SSM Agent connectivity on the managed instance.
+      steps:
+        - Verify the instance is running and has outbound network access to the
+          Systems Manager endpoints (directly or via VPC endpoints).
+        - Confirm the instance profile grants the AmazonSSMManagedInstanceCore
+          permissions.
+        - Restart the SSM Agent (amazon-ssm-agent) on the host and confirm it
+          reaches Online status.
+      verifyCommand: aws ssm describe-instance-information --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_InstanceInformation.html
+  - id: CR-AWS-SSM-011
+    version: 1.0.0
+    provider: aws
+    service: ssm
+    title: SSM managed instance runs the latest SSM Agent version
+    description: The managed instance's IsLatestVersion flag is true, meaning the
+      installed SSM Agent is the newest version available.
+    rationale: Outdated SSM Agents may lack security fixes and newer capabilities,
+      and can fail to execute documents or report compliance correctly,
+      weakening the reliability of automated patching and posture management.
+    severity: low
+    categories:
+      - resilience
+      - encryption
+    source:
+      engine: prowler
+      id: ssm_managed_compliant_patching
+      license: Apache-2.0
+    collector: aws.ssm.describe_instance_information
+    resourcesPath: InstanceInformationList
+    resourceIdField: InstanceId
+    resourceNameField: ComputerName
+    passWhen:
+      op: equals
+      path: IsLatestVersion
+      value: true
+    failMessage: SSM managed instance is not running the latest SSM Agent version.
+    passMessage: SSM managed instance is running the latest SSM Agent version.
+    remediation:
+      summary: Update the SSM Agent to the latest version.
+      steps:
+        - Use the AWS-UpdateSSMAgent Run Command document to update the agent on
+          affected instances.
+        - Alternatively schedule a State Manager association that keeps
+          amazon-ssm-agent current automatically.
+        - Confirm IsLatestVersion reports true after the update.
+      verifyCommand: aws ssm describe-instance-information --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent-automatic-updates.html
+  - id: CR-AWS-SSM-012
+    version: 1.0.0
+    provider: aws
+    service: ssm
+    title: SSM managed instance is a genuine EC2 instance, not a hybrid-activated host
+    description: The managed instance's ResourceType is EC2Instance rather than
+      ManagedInstance, so it is a first-party EC2 host managed via the instance
+      profile rather than a hybrid activation.
+    rationale: Hybrid activations (ResourceType ManagedInstance, with mi- prefixed
+      IDs) use long-lived activation credentials that, if leaked, let an
+      arbitrary host register into the account's fleet; unexpected hybrid
+      instances can indicate credential misuse or shadow infrastructure.
+    severity: low
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: ssm_managed_compliant_patching
+      license: Apache-2.0
+    collector: aws.ssm.describe_instance_information
+    resourcesPath: InstanceInformationList
+    resourceIdField: InstanceId
+    resourceNameField: ComputerName
+    passWhen:
+      op: equals
+      path: ResourceType
+      value: EC2Instance
+    failMessage: SSM managed instance is a hybrid-activated ManagedInstance rather
+      than an EC2 instance.
+    passMessage: SSM managed instance is an EC2Instance managed via its instance profile.
+    remediation:
+      summary: Review and validate hybrid-activated managed instances.
+      steps:
+        - List hybrid activations and confirm each registered ManagedInstance is
+          expected and authorized.
+        - Deregister any unrecognized managed instances and rotate or delete the
+          associated activation.
+        - Prefer EC2 instance profiles over hybrid activations where possible.
+      verifyCommand: aws ssm describe-instance-information --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-managedinstances.html

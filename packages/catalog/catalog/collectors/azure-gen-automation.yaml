@@ -1,0 +1,21 @@
+collectors:
+  - id: azure.automation.account_list
+    provider: azure
+    service: automation
+    description: All Azure Automation accounts in the subscription.
+    kind: single
+    command: az automation account list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription and the Microsoft.Automation resource
+      provider registered. Returns a JSON array of
+      Microsoft.Automation/automationAccounts resources. The az automation
+      command group flattens the ARM properties bag, surfacing
+      properties.publicNetworkAccess as a top-level boolean field
+      publicNetworkAccess (true = public access allowed, false = disabled). It
+      may be null when never explicitly configured, in which case the account
+      defaults to public access. The account-level identity object is returned
+      as identity with type one of "SystemAssigned", "UserAssigned",
+      "SystemAssigned, UserAssigned", or "None"; identity is null when no
+      managed identity is assigned.

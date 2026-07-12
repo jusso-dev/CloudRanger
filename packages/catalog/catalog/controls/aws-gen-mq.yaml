@@ -1,0 +1,85 @@
+controls:
+  - id: CR-AWS-MQ-001
+    version: 1.0.0
+    provider: aws
+    service: mq
+    title: Amazon MQ broker is not deployed single-instance
+    description: The broker uses a multi-AZ deployment mode (ACTIVE_STANDBY_MULTI_AZ
+      or CLUSTER_MULTI_AZ) rather than a single instance.
+    rationale: A single-instance broker has no redundancy; the loss of its
+      Availability Zone or host takes down all messaging with no automatic
+      failover, causing an outage for every producer and consumer.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: mq_broker_cluster_deployment_mode
+      license: Apache-2.0
+    collector: aws.mq.list_brokers
+    resourcesPath: BrokerSummaries
+    resourceIdField: BrokerId
+    resourceNameField: BrokerName
+    passWhen:
+      op: notEquals
+      path: DeploymentMode
+      value: SINGLE_INSTANCE
+    failMessage: Broker is deployed as a single instance with no multi-AZ redundancy.
+    passMessage: Broker uses a multi-AZ (active/standby or cluster) deployment mode.
+    remediation:
+      summary: Recreate the broker with a multi-AZ deployment mode.
+      steps:
+        - Provision a new broker with DeploymentMode ACTIVE_STANDBY_MULTI_AZ
+          (ActiveMQ) or CLUSTER_MULTI_AZ (RabbitMQ).
+        - Migrate producers and consumers to the new broker endpoints and
+          decommission the single-instance broker.
+      verifyCommand: aws mq list-brokers --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/active-standby-broker-deployment.html
+  - id: CR-AWS-MQ-002
+    version: 1.0.0
+    provider: aws
+    service: mq
+    title: Amazon MQ broker is in a healthy state
+    description: The broker is RUNNING and not in a failed or
+      critical-action-required state.
+    rationale: A broker stuck in CREATION_FAILED or CRITICAL_ACTION_REQUIRED is not
+      serving traffic reliably and may silently drop or block messaging,
+      indicating an unremediated operational or configuration fault.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: mq_broker_state_healthy
+      license: Apache-2.0
+    collector: aws.mq.list_brokers
+    resourcesPath: BrokerSummaries
+    resourceIdField: BrokerId
+    resourceNameField: BrokerName
+    applicableWhen:
+      op: notIn
+      path: BrokerState
+      values:
+        - CREATION_IN_PROGRESS
+        - DELETION_IN_PROGRESS
+        - REBOOT_IN_PROGRESS
+    passWhen:
+      op: equals
+      path: BrokerState
+      value: RUNNING
+    failMessage: Broker is in a failed or critical state and is not serving traffic
+      reliably.
+    passMessage: Broker is RUNNING.
+    remediation:
+      summary: Investigate and remediate the broker fault.
+      steps:
+        - Review the broker in the Amazon MQ console for the reason it entered
+          CREATION_FAILED or CRITICAL_ACTION_REQUIRED.
+        - Address the underlying configuration or capacity issue, or recreate
+          the broker.
+      verifyCommand: aws mq list-brokers --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/amazon-mq/latest/api-reference/brokers-broker-id.html

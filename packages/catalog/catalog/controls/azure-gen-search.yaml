@@ -1,0 +1,96 @@
+controls:
+  - id: CR-AZURE-SEARCH-100
+    version: 1.0.0
+    provider: azure
+    service: search
+    title: Cognitive Search service disables public network access
+    description: >
+      Verifies the search service's properties.publicNetworkAccess is "disabled"
+      so the service is reachable only through private endpoints.
+    rationale: >
+      A search service with public network access enabled exposes its query and
+      admin REST endpoints to the internet. Combined with a leaked query/admin
+      key or weak network controls, this is a direct index data-exfiltration and
+      tampering path.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: search_service_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.search.service_show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: disabled
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Search service no longer exists.
+    failMessage: Cognitive Search service allows public network access.
+    passMessage: Cognitive Search service has public network access disabled.
+    remediation:
+      summary: Set public network access to Disabled and use a private endpoint.
+      steps:
+        - Create a private endpoint for the search service.
+        - Set publicNetworkAccess to Disabled on the service (operator action).
+      verifyCommand: az resource show --ids <search-service-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/search/service-configure-firewall
+      - https://learn.microsoft.com/azure/search/service-create-private-endpoint
+  - id: CR-AZURE-SEARCH-101
+    version: 1.0.0
+    provider: azure
+    service: search
+    title: Cognitive Search service disables local (API-key) authentication
+    description: >
+      Verifies the search service's properties.disableLocalAuth is true so that
+      only Microsoft Entra ID (Azure AD) role-based access is accepted and
+      shared API keys are rejected.
+    rationale: >
+      API keys are long-lived shared secrets that grant full query or admin
+      access and are frequently leaked in code, logs, or client apps. Disabling
+      local auth forces token-based, auditable, revocable Entra ID access.
+    severity: medium
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: search_service_not_use_api_key_based_authentication
+      license: Apache-2.0
+    collector: azure.search.service_show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.disableLocalAuth
+      value: true
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Search service no longer exists.
+    failMessage: Cognitive Search service permits API-key (local) authentication.
+    passMessage: Cognitive Search service accepts only Entra ID authentication
+      (local auth disabled).
+    remediation:
+      summary: Disable local API-key authentication and use Entra ID role-based access.
+      steps:
+        - Assign the appropriate Search Service/Index Data roles to the
+          principals that need access.
+        - Set disableLocalAuth to true on the service (operator action) after
+          validating role assignments.
+      verifyCommand: az resource show --ids <search-service-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/search/search-security-rbac
+      - https://learn.microsoft.com/azure/search/search-security-api-keys

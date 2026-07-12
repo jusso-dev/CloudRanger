@@ -1,0 +1,19 @@
+collectors:
+  - id: azure.iothub.list
+    provider: azure
+    service: iothub
+    description: All Azure IoT Hubs (Microsoft.Devices/IotHubs) in the subscription.
+    kind: single
+    command: az iot hub list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires the azure-iot CLI extension (az extension add --name azure-iot);
+      if the extension is absent the command fails with an "az iot"
+      not-recognised / extension error. Requires Reader on the subscription.
+      Returns a JSON ARRAY at the root; each hub is an ARM resource with a
+      camelCase properties bag. Security-relevant fields:
+      properties.minTlsVersion ("1.0"|"1.2"), properties.publicNetworkAccess
+      ("Enabled"|"Disabled"), properties.disableLocalAuth (bool). sku.name is
+      F1/S1/S2/S3. minTlsVersion is fixed at hub creation and only
+      appears/settable in certain regions.

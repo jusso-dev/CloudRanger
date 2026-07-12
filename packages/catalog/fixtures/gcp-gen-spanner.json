@@ -1,0 +1,106 @@
+[
+  {
+    "controlId": "CR-GCP-SPANNER-100",
+    "cases": [
+      {
+        "name": "instance with labels passes",
+        "expected": "pass",
+        "resourceId": "projects/proj-1/instances/prod-spanner",
+        "records": [
+          {
+            "collectorId": "gcp.spanner.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/prod-spanner",
+                "config": "projects/proj-1/instanceConfigs/nam3",
+                "displayName": "Prod Spanner",
+                "nodeCount": 3,
+                "state": "READY",
+                "createTime": "2025-01-10T12:00:00Z",
+                "labels": {
+                  "env": "prod",
+                  "owner": "data-team"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "instance without labels fails",
+        "expected": "fail",
+        "resourceId": "projects/proj-1/instances/unlabelled",
+        "records": [
+          {
+            "collectorId": "gcp.spanner.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/unlabelled",
+                "config": "projects/proj-1/instanceConfigs/regional-us-central1",
+                "displayName": "Unlabelled",
+                "processingUnits": 1000,
+                "state": "READY",
+                "createTime": "2025-03-02T08:30:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SPANNER-101",
+    "cases": [
+      {
+        "name": "multi-region config passes",
+        "expected": "pass",
+        "resourceId": "projects/proj-1/instances/prod-spanner",
+        "records": [
+          {
+            "collectorId": "gcp.spanner.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/prod-spanner",
+                "config": "projects/proj-1/instanceConfigs/nam3",
+                "displayName": "Prod Spanner",
+                "nodeCount": 3,
+                "state": "READY",
+                "createTime": "2025-01-10T12:00:00Z",
+                "labels": {
+                  "env": "prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "regional config fails",
+        "expected": "fail",
+        "resourceId": "projects/proj-1/instances/regional-only",
+        "records": [
+          {
+            "collectorId": "gcp.spanner.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/regional-only",
+                "config": "projects/proj-1/instanceConfigs/regional-us-central1",
+                "displayName": "Regional Only",
+                "processingUnits": 500,
+                "state": "READY",
+                "createTime": "2025-03-02T08:30:00Z",
+                "labels": {
+                  "env": "dev"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

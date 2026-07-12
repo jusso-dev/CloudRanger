@@ -1,0 +1,36 @@
+collectors:
+  - id: gcp.run.services_list
+    provider: gcp
+    service: run
+    description: Lists all Cloud Run (managed platform) services in the project.
+      Returns a JSON array of Knative-style service objects with
+      metadata.annotations, spec and status.
+    kind: single
+    command: gcloud run services list --format json --project {project}
+    regional: false
+    outputFormat: json
+    notes: Requires run.services.list. On the managed platform recent gcloud lists
+      services across all regions without a --region flag. Each element has
+      apiVersion/kind/metadata/spec/status. The ingress and binary authorization
+      settings live under metadata.annotations with slash+dot keys
+      (run.googleapis.com/ingress, run.googleapis.com/binary-authorization).
+  - id: gcp.run.service_iam_policy
+    provider: gcp
+    service: run
+    description: IAM policy for one Cloud Run service, used to detect public
+      (allUsers/allAuthenticatedUsers) invoker bindings.
+    kind: per_resource
+    command: gcloud run services get-iam-policy {resource} --format json --project
+      {project}
+    regional: false
+    parent:
+      collector: gcp.run.services_list
+      itemsPath: $
+      resourceField: metadata.name
+    outputFormat: json
+    notes: Requires run.services.getIamPolicy. Returns a standard IAM policy object
+      with a bindings array; each binding has role and members[]. A public
+      service has allUsers or allAuthenticatedUsers in members for the
+      run.invoker role. If a region property is not set gcloud may resolve the
+      service by name across regions; when multiple regions host the same name a
+      region property should be configured.

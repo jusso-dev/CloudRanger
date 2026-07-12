@@ -1,0 +1,105 @@
+[
+  {
+    "controlId": "CR-AWS-NEPTUNE-001",
+    "cases": [
+      {
+        "name": "encrypted cluster passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "IAMDatabaseAuthenticationEnabled": true,
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted cluster fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "Status": "available",
+                  "StorageEncrypted": false,
+                  "IAMDatabaseAuthenticationEnabled": false,
+                  "DeletionProtection": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-002",
+    "cases": [
+      {
+        "name": "iam auth enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "IAMDatabaseAuthenticationEnabled": true,
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "iam auth disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-legacy",
+                  "Engine": "neptune",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "IAMDatabaseAuthenticationEnabled": false,
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,126 @@
+controls:
+  - id: CR-AZURE-COGNITIVE-100
+    version: 1.0.0
+    provider: azure
+    service: cognitiveservices
+    title: Cognitive Services account disables public network access
+    description: >
+      Verifies properties.publicNetworkAccess is Disabled so the account is
+      reachable only via private endpoints.
+    rationale: >
+      A Cognitive Services or Azure OpenAI account with public network access
+      enabled is reachable from the internet; combined with a leaked account key
+      this is a direct path to invoke models, exfiltrate prompts and
+      completions, and run up cost. Private-only access reduces the exposed
+      attack surface.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cognitiveservices_account_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.cognitiveservices.accounts_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Cognitive Services account allows public network access.
+    passMessage: Cognitive Services account has public network access disabled.
+    remediation:
+      summary: Set public network access to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the Cognitive Services account.
+        - Set public network access to Disabled on the account (operator action).
+      verifyCommand: az cognitiveservices account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/ai-services/cognitive-services-virtual-networks
+      - https://learn.microsoft.com/azure/ai-services/openai/how-to/use-your-data-securely
+  - id: CR-AZURE-COGNITIVE-101
+    version: 1.0.0
+    provider: azure
+    service: cognitiveservices
+    title: Cognitive Services account disables local (key-based) authentication
+    description: >
+      Verifies properties.disableLocalAuth is true so only Microsoft Entra ID
+      (RBAC / token) authentication is permitted against the account.
+    rationale: >
+      Account keys grant full data-plane access to every model and deployment,
+      cannot be scoped, and are frequently embedded in code or leaked. Disabling
+      local auth forces auditable Entra ID identities with RBAC and removes the
+      shared-secret risk.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognitiveservices_account_local_authentication_disabled
+      license: Apache-2.0
+    collector: azure.cognitiveservices.accounts_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: properties.disableLocalAuth
+      value: true
+    failMessage: |
+      Cognitive Services account allows local (key-based) authentication.
+    passMessage: |
+      Cognitive Services account disables local authentication (Entra ID only).
+    remediation:
+      summary: Set disableLocalAuth to true and use Microsoft Entra ID auth.
+      steps:
+        - Assign the required Cognitive Services RBAC roles to caller identities.
+        - Disable local authentication on the account (operator action).
+      verifyCommand: az cognitiveservices account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/ai-services/authentication
+      - https://learn.microsoft.com/azure/ai-services/disable-local-auth
+  - id: CR-AZURE-COGNITIVE-102
+    version: 1.0.0
+    provider: azure
+    service: cognitiveservices
+    title: Cognitive Services account uses customer-managed key encryption
+    description: >
+      Verifies properties.encryption.keySource is Microsoft.KeyVault so account
+      data is encrypted at rest with a customer-managed key (CMK) in Key Vault.
+    rationale: >
+      By default Cognitive Services data is encrypted with service-managed keys.
+      A customer-managed key in Key Vault gives the organization control over
+      the key lifecycle (rotation and revocation), enabling crypto-shredding and
+      meeting regulatory requirements for key ownership.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: cognitiveservices_account_customer_managed_key_encryption_enabled
+      license: Apache-2.0
+    collector: azure.cognitiveservices.accounts_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: properties.encryption.keySource
+      value: Microsoft.KeyVault
+    failMessage: >
+      Cognitive Services account uses service-managed keys, not a
+      customer-managed key.
+    passMessage: |
+      Cognitive Services account is encrypted with a customer-managed key.
+    remediation:
+      summary: Configure a customer-managed key in Key Vault for the account.
+      steps:
+        - Create a Key Vault with soft-delete and purge protection enabled.
+        - Grant the account managed identity wrap/unwrap key permissions.
+        - Set the account encryption key source to Microsoft.KeyVault (operator
+          action).
+      verifyCommand: az cognitiveservices account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/ai-services/encryption/cognitive-services-encryption-keys-portal

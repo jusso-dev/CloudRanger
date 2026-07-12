@@ -1,0 +1,119 @@
+controls:
+  - id: CR-AZURE-IOTHUB-100
+    version: 1.0.0
+    provider: azure
+    service: iothub
+    title: IoT Hub disables public network access
+    description: Verifies properties.publicNetworkAccess is Disabled so the hub is
+      reachable only via private endpoints.
+    rationale: >
+      An IoT Hub with public network access enabled is reachable from the
+      internet; combined with a leaked device or shared-access key this is a
+      direct path to send or read device telemetry and issue cloud-to-device
+      commands.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: iothub_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.iothub.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: IoT Hub allows public network access.
+    passMessage: IoT Hub has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the IoT Hub.
+        - Disable public network access on the hub (operator action).
+      verifyCommand: az iot hub list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/iot-hub/virtual-network-support
+  - id: CR-AZURE-IOTHUB-101
+    version: 1.0.0
+    provider: azure
+    service: iothub
+    title: IoT Hub disables local (shared access key) authentication
+    description: Verifies properties.disableLocalAuth is true so only Microsoft
+      Entra ID (RBAC) authentication is permitted for the hub's service APIs.
+    rationale: >
+      Shared access policy keys grant broad control-plane and data-plane access,
+      cannot be scoped to identities, and are frequently embedded in code or
+      leaked. Disabling local auth forces auditable Entra ID identities with
+      RBAC.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: iothub_local_authentication_disabled
+      license: Apache-2.0
+    collector: azure.iothub.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.disableLocalAuth
+      value: true
+    failMessage: IoT Hub allows shared access key (local) authentication.
+    passMessage: IoT Hub requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true on the IoT Hub.
+      steps:
+        - Migrate service clients to Microsoft Entra ID token authentication
+          with RBAC roles.
+        - Disable local (shared access key) authentication on the hub (operator
+          action).
+      verifyCommand: az iot hub list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/iot-hub/authenticate-authorize-azure-ad
+  - id: CR-AZURE-IOTHUB-102
+    version: 1.0.0
+    provider: azure
+    service: iothub
+    title: IoT Hub requires TLS 1.2 or higher
+    description: Verifies properties.minTlsVersion is "1.2" so devices and clients
+      cannot negotiate legacy TLS 1.0/1.1.
+    rationale: >
+      TLS 1.0 and 1.1 have known cryptographic weaknesses. Permitting them lets
+      a device (or a man-in-the-middle) negotiate breakable transport encryption
+      for telemetry and commands and fails modern compliance baselines.
+    severity: medium
+    categories:
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: iothub_uses_at_least_tls_1_2
+      license: Apache-2.0
+    collector: azure.iothub.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.minTlsVersion
+      value: "1.2"
+    failMessage: IoT Hub permits TLS below 1.2.
+    passMessage: IoT Hub requires TLS 1.2.
+    remediation:
+      summary: Create the IoT Hub with minimum TLS version 1.2 in a supported region.
+      steps:
+        - Confirm no legacy device depends on TLS 1.0/1.1.
+        - Provision the IoT Hub in a region that supports minTlsVersion 1.2 and
+          set it at creation (the value is fixed at creation, so recreate if
+          required).
+      verifyCommand: az iot hub list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/iot-hub/iot-hub-tls-support

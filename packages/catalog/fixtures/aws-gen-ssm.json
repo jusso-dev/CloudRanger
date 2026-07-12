@@ -1,0 +1,186 @@
+[
+  {
+    "controlId": "CR-AWS-SSM-010",
+    "cases": [
+      {
+        "name": "online agent passes",
+        "expected": "pass",
+        "resourceId": "i-0abcd1234ef567890",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "i-0abcd1234ef567890",
+                  "PingStatus": "Online",
+                  "LastPingDateTime": "2026-07-12T09:14:22.000000+00:00",
+                  "AgentVersion": "3.3.1345.0",
+                  "IsLatestVersion": true,
+                  "PlatformType": "Linux",
+                  "PlatformName": "Amazon Linux",
+                  "PlatformVersion": "2023",
+                  "ResourceType": "EC2Instance",
+                  "ComputerName": "ip-10-0-1-15.ec2.internal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "connection lost agent fails",
+        "expected": "fail",
+        "resourceId": "i-0deadbeef11223344",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "i-0deadbeef11223344",
+                  "PingStatus": "ConnectionLost",
+                  "LastPingDateTime": "2026-07-01T02:11:05.000000+00:00",
+                  "AgentVersion": "3.2.582.0",
+                  "IsLatestVersion": false,
+                  "PlatformType": "Linux",
+                  "PlatformName": "Ubuntu",
+                  "PlatformVersion": "22.04",
+                  "ResourceType": "EC2Instance",
+                  "ComputerName": "ip-10-0-2-40.ec2.internal"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SSM-011",
+    "cases": [
+      {
+        "name": "latest agent version passes",
+        "expected": "pass",
+        "resourceId": "i-0abcd1234ef567890",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "i-0abcd1234ef567890",
+                  "PingStatus": "Online",
+                  "LastPingDateTime": "2026-07-12T09:14:22.000000+00:00",
+                  "AgentVersion": "3.3.1345.0",
+                  "IsLatestVersion": true,
+                  "PlatformType": "Windows",
+                  "PlatformName": "Microsoft Windows Server 2022 Datacenter",
+                  "PlatformVersion": "10.0.20348",
+                  "ResourceType": "EC2Instance",
+                  "ComputerName": "EC2AMAZ-AB12CD3"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "outdated agent version fails",
+        "expected": "fail",
+        "resourceId": "i-0deadbeef11223344",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "i-0deadbeef11223344",
+                  "PingStatus": "Online",
+                  "LastPingDateTime": "2026-07-12T08:00:00.000000+00:00",
+                  "AgentVersion": "3.1.1188.0",
+                  "IsLatestVersion": false,
+                  "PlatformType": "Linux",
+                  "PlatformName": "Amazon Linux",
+                  "PlatformVersion": "2",
+                  "ResourceType": "EC2Instance",
+                  "ComputerName": "ip-10-0-2-40.ec2.internal"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SSM-012",
+    "cases": [
+      {
+        "name": "ec2 instance passes",
+        "expected": "pass",
+        "resourceId": "i-0abcd1234ef567890",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "i-0abcd1234ef567890",
+                  "PingStatus": "Online",
+                  "LastPingDateTime": "2026-07-12T09:14:22.000000+00:00",
+                  "AgentVersion": "3.3.1345.0",
+                  "IsLatestVersion": true,
+                  "PlatformType": "Linux",
+                  "PlatformName": "Amazon Linux",
+                  "PlatformVersion": "2023",
+                  "ResourceType": "EC2Instance",
+                  "ComputerName": "ip-10-0-1-15.ec2.internal"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "hybrid managed instance fails",
+        "expected": "fail",
+        "resourceId": "mi-0f1e2d3c4b5a69780",
+        "records": [
+          {
+            "collectorId": "aws.ssm.describe_instance_information",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "InstanceInformationList": [
+                {
+                  "InstanceId": "mi-0f1e2d3c4b5a69780",
+                  "PingStatus": "Online",
+                  "LastPingDateTime": "2026-07-12T09:20:00.000000+00:00",
+                  "AgentVersion": "3.3.1345.0",
+                  "IsLatestVersion": true,
+                  "PlatformType": "Linux",
+                  "PlatformName": "CentOS Linux",
+                  "PlatformVersion": "7",
+                  "ActivationId": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+                  "ResourceType": "ManagedInstance",
+                  "ComputerName": "onprem-app-01.corp.example.com"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

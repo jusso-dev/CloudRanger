@@ -1,0 +1,126 @@
+controls:
+  - id: CR-AWS-AUTOSCALING-001
+    version: 1.0.0
+    provider: aws
+    service: autoscaling
+    title: Auto Scaling group spans multiple Availability Zones
+    description: The Auto Scaling group is configured with more than one
+      Availability Zone so capacity survives a single-AZ failure.
+    rationale: A single-AZ Auto Scaling group cannot launch replacement instances
+      when that AZ is impaired, causing a full outage of the workload.
+    severity: medium
+    categories:
+      - resilience
+      - network
+    source:
+      engine: prowler
+      id: autoscaling_group_multiple_az
+      license: Apache-2.0
+    collector: aws.autoscaling.describe_auto_scaling_groups
+    resourcesPath: AutoScalingGroups
+    resourceIdField: AutoScalingGroupName
+    resourceNameField: AutoScalingGroupName
+    passWhen:
+      op: lengthGt
+      path: AvailabilityZones
+      value: 1
+    failMessage: Auto Scaling group is confined to a single Availability Zone.
+    passMessage: Auto Scaling group spans multiple Availability Zones.
+    remediation:
+      summary: Add additional Availability Zones (and subnets) to the group.
+      steps:
+        - Update the Auto Scaling group with subnets in at least two
+          Availability Zones via VPCZoneIdentifier.
+        - Ensure MinSize/DesiredCapacity allow instances to distribute across
+          AZs.
+      verifyCommand: aws autoscaling describe-auto-scaling-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/autoscaling/ec2/userguide/auto-scaling-benefits.html
+  - id: CR-AWS-AUTOSCALING-002
+    version: 1.0.0
+    provider: aws
+    service: autoscaling
+    title: Auto Scaling group uses a launch template instead of a launch configuration
+    description: The Auto Scaling group launches instances from a launch template
+      rather than a deprecated launch configuration.
+    rationale: Launch configurations are legacy and immutable; they lack support for
+      current instance features (IMDSv2 enforcement, newer instance types,
+      versioning) leaving groups on outdated, less secure launch parameters.
+    severity: low
+    categories:
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: autoscaling_group_launch_configuration_no_public_ip
+      license: Apache-2.0
+    collector: aws.autoscaling.describe_auto_scaling_groups
+    resourcesPath: AutoScalingGroups
+    resourceIdField: AutoScalingGroupName
+    resourceNameField: AutoScalingGroupName
+    passWhen:
+      op: exists
+      path: LaunchTemplate
+    failMessage: Auto Scaling group uses a legacy launch configuration, not a launch
+      template.
+    passMessage: Auto Scaling group uses a launch template.
+    remediation:
+      summary: Migrate the group from a launch configuration to a launch template.
+      steps:
+        - Create a launch template capturing the group's launch parameters.
+        - Update the Auto Scaling group to reference the launch template.
+      verifyCommand: aws autoscaling describe-auto-scaling-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/autoscaling/ec2/userguide/launch-templates.html
+  - id: CR-AWS-AUTOSCALING-003
+    version: 1.0.0
+    provider: aws
+    service: autoscaling
+    title: Load-balanced Auto Scaling group uses ELB health checks
+    description: An Auto Scaling group attached to a load balancer or target group
+      uses ELB health checks so unhealthy instances are replaced.
+    rationale: With only EC2 health checks, an instance that is running but failing
+      application health checks stays in service, silently serving errors behind
+      the load balancer instead of being replaced.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: autoscaling_group_using_elb_health_check
+      license: Apache-2.0
+    collector: aws.autoscaling.describe_auto_scaling_groups
+    resourcesPath: AutoScalingGroups
+    resourceIdField: AutoScalingGroupName
+    resourceNameField: AutoScalingGroupName
+    applicableWhen:
+      op: or
+      exprs:
+        - op: not
+          expr:
+            op: isEmpty
+            path: TargetGroupARNs
+        - op: not
+          expr:
+            op: isEmpty
+            path: LoadBalancerNames
+    passWhen:
+      op: equals
+      path: HealthCheckType
+      value: ELB
+    failMessage: Load-balanced Auto Scaling group is not using ELB health checks.
+    passMessage: Load-balanced Auto Scaling group uses ELB health checks.
+    remediation:
+      summary: Set the group's health check type to ELB.
+      steps:
+        - Update the Auto Scaling group health check type to ELB.
+        - Set an appropriate HealthCheckGracePeriod for application startup.
+      verifyCommand: aws autoscaling describe-auto-scaling-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/autoscaling/ec2/userguide/health-checks-overview.html

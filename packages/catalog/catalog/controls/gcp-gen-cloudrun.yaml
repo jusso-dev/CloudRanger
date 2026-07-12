@@ -1,0 +1,54 @@
+controls:
+  - id: CR-GCP-CLOUDRUN-112
+    version: 1.0.0
+    provider: gcp
+    service: run
+    title: Cloud Run service is not publicly invokable by allUsers
+    description: The service IAM policy does not grant the run.invoker role (or any
+      role) to allUsers or allAuthenticatedUsers.
+    rationale: Granting run.invoker to allUsers makes the service invocable
+      anonymously by anyone on the internet, a common cause of accidental data
+      exposure and abuse.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: run_service_not_publicly_accessible
+      license: Apache-2.0
+    collector: gcp.run.service_iam_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: members
+            value: allUsers
+          - op: contains
+            path: members
+            value: allAuthenticatedUsers
+    onError:
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: does not have permission
+        status: error
+    failMessage: Cloud Run service IAM policy grants invoke access to
+      allUsers/allAuthenticatedUsers (publicly accessible).
+    passMessage: Cloud Run service is not publicly invokable.
+    remediation:
+      summary: Remove allUsers/allAuthenticatedUsers from the service IAM policy.
+      steps:
+        - Run gcloud run services remove-iam-policy-binding SERVICE
+          --member=allUsers --role=roles/run.invoker.
+        - Grant invoke access only to specific authenticated principals or
+          service accounts.
+      verifyCommand: gcloud run services get-iam-policy SERVICE --format json
+        --project PROJECT_ID
+    compliance: []
+    references:
+      - https://docs.cloud.google.com/run/docs/securing/managing-access
+      - https://docs.cloud.google.com/run/docs/authenticating/public

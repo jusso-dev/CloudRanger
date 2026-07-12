@@ -1,0 +1,97 @@
+controls:
+  - id: CR-GCP-SPANNER-100
+    version: 1.0.0
+    provider: gcp
+    service: spanner
+    title: Cloud Spanner instance has governance labels
+    description: >
+      Each Cloud Spanner instance carries at least one label so it can be
+      attributed to an owner, environment or cost centre for governance.
+    rationale: >
+      Unlabelled Spanner instances are hard to attribute, bill and secure at
+      scale; missing owner/environment tags let orphaned or shadow production
+      databases persist unnoticed, delaying incident response and inflating
+      cost.
+    severity: low
+    categories:
+      - governance
+      - resilience
+    source:
+      engine: prowler
+      id: spanner_instance_labels
+      license: Apache-2.0
+    collector: gcp.spanner.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: not
+      expr:
+        op: isEmpty
+        path: labels
+    failMessage: Cloud Spanner instance has no labels for governance.
+    passMessage: Cloud Spanner instance has at least one governance label.
+    remediation:
+      summary: Apply governance labels to the instance.
+      steps:
+        - Add owner, environment and cost-centre labels to the Spanner instance.
+        - Enforce label policy via organization policy or IaC so new instances
+          are labelled at creation.
+      verifyCommand: gcloud spanner instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/spanner/docs/labels
+      - https://cloud.google.com/resource-manager/docs/creating-managing-labels
+  - id: CR-GCP-SPANNER-101
+    version: 1.0.0
+    provider: gcp
+    service: spanner
+    title: Cloud Spanner instance uses a multi-region configuration
+    description: >
+      The instance config references a multi-region instance configuration (e.g.
+      nam3, nam-eur-asia1) rather than a single regional config, giving
+      cross-region high availability.
+    rationale: >
+      A single-region Spanner configuration keeps all replicas in one region, so
+      a regional outage can make the database unavailable and risks a
+      recovery-point gap; multi-region configs replicate across regions for a
+      99.999% SLA and regional-failure resilience.
+    severity: medium
+    categories:
+      - resilience
+      - database
+    source:
+      engine: prowler
+      id: spanner_instance_multi_region
+      license: Apache-2.0
+    collector: gcp.spanner.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: config
+        - op: not
+          expr:
+            op: matches
+            path: config
+            pattern: /instanceConfigs/regional-
+    failMessage: >
+      Cloud Spanner instance uses a single-region (regional-*) configuration
+      with no cross-region resilience.
+    passMessage: Cloud Spanner instance uses a multi-region configuration.
+    remediation:
+      summary: Use a multi-region instance configuration.
+      steps:
+        - For workloads needing regional-failure resilience, create the instance
+          with a multi-region config (for example nam3 or nam-eur-asia1).
+        - Note the instance configuration cannot be changed in place; plan a
+          migration to a multi-region instance if higher availability is
+          required.
+      verifyCommand: gcloud spanner instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/spanner/docs/instance-configurations
+      - https://cloud.google.com/spanner/docs/instances

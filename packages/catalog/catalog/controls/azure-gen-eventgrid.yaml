@@ -1,0 +1,78 @@
+controls:
+  - id: CR-AZURE-EVENTGRID-100
+    version: 1.0.0
+    provider: azure
+    service: eventgrid
+    title: Event Grid topic disables public network access
+    description: Verifies properties.publicNetworkAccess is Disabled so the topic is
+      reachable only through private endpoints.
+    rationale: >
+      A topic with public network access enabled is reachable from the internet;
+      combined with a leaked access key this is a direct path for an attacker to
+      publish forged events into downstream event-driven workflows.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: eventgrid_topic_networking_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.eventgrid.topics_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Event Grid topic allows public network access.
+    passMessage: Event Grid topic has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the Event Grid topic.
+        - Disable public network access on the topic (operator action).
+      verifyCommand: az eventgrid topic list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/event-grid/configure-private-endpoints
+  - id: CR-AZURE-EVENTGRID-101
+    version: 1.0.0
+    provider: azure
+    service: eventgrid
+    title: Event Grid topic disables local (access key) authentication
+    description: Verifies properties.disableLocalAuth is true so only Microsoft
+      Entra ID (RBAC) authentication is permitted for publishing.
+    rationale: >
+      Access keys and SAS tokens grant broad publish access, cannot be scoped to
+      identities, and are frequently embedded in code or leaked. Disabling local
+      auth forces auditable Entra ID identities with RBAC.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: eventgrid_topic_networking_local_authentication_disabled
+      license: Apache-2.0
+    collector: azure.eventgrid.topics_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.disableLocalAuth
+      value: true
+    failMessage: Event Grid topic allows access key (local) authentication.
+    passMessage: Event Grid topic requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true on the topic.
+      steps:
+        - Migrate publishers to Microsoft Entra ID token authentication with
+          RBAC roles.
+        - Disable local (access key) authentication on the topic (operator
+          action).
+      verifyCommand: az eventgrid topic list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/event-grid/authenticate-with-entra-id

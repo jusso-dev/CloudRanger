@@ -1,0 +1,22 @@
+collectors:
+  - id: azure.datafactory.list
+    provider: azure
+    service: datafactory
+    description: All Azure Data Factory (V2) factories in the subscription.
+    kind: single
+    command: az datafactory list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription and the datafactory CLI extension (az
+      extension add --name datafactory). Returns a JSON ARRAY at the root; each
+      element is a Microsoft.DataFactory/factories ARM object with top-level
+      name, id, type, location, eTag and a properties bag plus an optional
+      identity block. Network isolation is exposed at
+      properties.publicNetworkAccess (Enabled | Disabled); the key may be absent
+      on older factories, in which case public access defaults to Enabled. The
+      managed identity is under identity.type (SystemAssigned |
+      "SystemAssigned,UserAssigned" | UserAssigned | None) with the
+      corresponding identity.principalId / identity.tenantId populated when a
+      system-assigned identity exists. Factories with no identity omit the
+      identity block entirely.

@@ -1,0 +1,80 @@
+[
+  {
+    "controlId": "CR-GCP-CLOUDRUN-112",
+    "cases": [
+      {
+        "name": "pass - no public members",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.run.service_iam_policy",
+            "resourceKey": "svc-private",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABC123=",
+              "bindings": [
+                {
+                  "role": "roles/run.invoker",
+                  "members": [
+                    "serviceAccount:caller@my-project.iam.gserviceaccount.com",
+                    "user:alice@example.com"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass - no bindings at all",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.run.service_iam_policy",
+            "resourceKey": "svc-empty",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABC000="
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - allUsers can invoke",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.run.service_iam_policy",
+            "resourceKey": "svc-public",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABC999=",
+              "bindings": [
+                {
+                  "role": "roles/run.invoker",
+                  "members": ["allUsers"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "error - permission denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.run.service_iam_policy",
+            "resourceKey": "svc-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.run.services.get-iam-policy) PERMISSION_DENIED: The caller does not have permission"
+          }
+        ]
+      }
+    ]
+  }
+]

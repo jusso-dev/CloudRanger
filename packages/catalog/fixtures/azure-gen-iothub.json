@@ -1,0 +1,197 @@
+[
+  {
+    "controlId": "CR-AZURE-IOTHUB-100",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-private",
+                "name": "hub-private",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "eastus",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "minTlsVersion": "1.2",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-open",
+                "name": "hub-open",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "eastus",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "minTlsVersion": "1.0",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-IOTHUB-101",
+    "cases": [
+      {
+        "name": "pass local auth disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-rbac",
+                "name": "hub-rbac",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "westus2",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "minTlsVersion": "1.2",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail local auth enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-keys",
+                "name": "hub-keys",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "westus2",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "minTlsVersion": "1.2",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-IOTHUB-102",
+    "cases": [
+      {
+        "name": "pass tls 1.2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-secure",
+                "name": "hub-secure",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "eastus2",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "minTlsVersion": "1.2",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail tls 1.0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.iothub.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Devices/IotHubs/hub-legacy",
+                "name": "hub-legacy",
+                "type": "Microsoft.Devices/IotHubs",
+                "location": "eastus2",
+                "sku": {
+                  "name": "S1",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "minTlsVersion": "1.0",
+                  "state": "Active",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,36 @@
+collectors:
+  - id: aws.cognito.list_user_pools
+    provider: aws
+    service: cognito
+    description: Lists Amazon Cognito user pools in a region, returning each pool's
+      Id and Name.
+    kind: single
+    command: aws cognito-idp list-user-pools --max-results 60 --region {region}
+      --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a top-level "UserPools" array whose items expose Id, Name, Status
+      and LambdaConfig. Requires cognito-idp:ListUserPools. Empty array when no
+      user pools exist in the region. Only returns up to 60 pools per call;
+      pagination via NextToken is not followed.
+  - id: aws.cognito.describe_user_pool
+    provider: aws
+    service: cognito
+    description: Retrieves the full configuration for one Cognito user pool,
+      including MFA, advanced security add-ons, and password policy.
+    kind: per_resource
+    command: aws cognito-idp describe-user-pool --user-pool-id {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.cognito.list_user_pools
+      itemsPath: UserPools
+      resourceField: Id
+    outputFormat: json
+    notes: Returns a top-level "UserPool" object. MfaConfiguration is one of OFF,
+      ON, OPTIONAL. UserPoolAddOns.AdvancedSecurityMode is OFF, AUDIT or
+      ENFORCED and the UserPoolAddOns key is absent entirely when advanced
+      security was never enabled. Policies.PasswordPolicy.MinimumLength is an
+      integer. Requires cognito-idp:DescribeUserPool. Raises
+      ResourceNotFoundException if the pool was deleted between listing and
+      describing.

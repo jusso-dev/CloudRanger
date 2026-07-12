@@ -1,0 +1,81 @@
+controls:
+  - id: CR-AZURE-SQLMI-100
+    version: 1.0.0
+    provider: azure
+    service: sqlmanagedinstance
+    title: SQL Managed Instance public data endpoint is disabled
+    description: Verifies each Azure SQL Managed Instance has publicDataEndpointEnabled
+      set to false so it is reachable only over the private virtual network endpoint.
+    rationale: >
+      Enabling the public data endpoint exposes the managed instance to
+      connections from outside its virtual network, widening the attack surface
+      to internet-based credential attacks and scanning. Keeping it disabled
+      forces private VNet-only connectivity.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: sqlmanagedinstance_public_endpoint_disabled
+      license: Apache-2.0
+    collector: azure.sql.mi_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicDataEndpointEnabled
+      value: false
+    failMessage: SQL Managed Instance has the public data endpoint enabled.
+    passMessage: SQL Managed Instance public data endpoint is disabled.
+    remediation:
+      summary: Disable the public data endpoint and use the private VNet endpoint.
+      steps:
+        - Ensure applications connect over the managed instance private endpoint
+          on the virtual network.
+        - Disable the public data endpoint on the managed instance (operator
+          action).
+      verifyCommand: az sql mi list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/managed-instance/public-endpoint-configure
+  - id: CR-AZURE-SQLMI-101
+    version: 1.0.0
+    provider: azure
+    service: sqlmanagedinstance
+    title: SQL Managed Instance enforces TLS 1.2 or higher
+    description: Verifies the minimalTlsVersion on each Azure SQL Managed Instance is
+      at least 1.2.
+    rationale: >
+      Allowing legacy TLS versions (1.0/1.1) leaves database sessions open to
+      downgrade and interception attacks. Enforcing TLS 1.2+ protects data in
+      transit between clients and the managed instance.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: sqlmanagedinstance_tls_version_is_encrypted
+      license: Apache-2.0
+    collector: azure.sql.mi_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: in
+      path: minimalTlsVersion
+      values:
+        - "1.2"
+        - "1.3"
+    failMessage: SQL Managed Instance allows TLS below 1.2.
+    passMessage: SQL Managed Instance requires TLS 1.2 or higher.
+    remediation:
+      summary: Set the minimal TLS version to 1.2 on the managed instance.
+      steps:
+        - Update the managed instance minimal TLS version to 1.2 (operator
+          action).
+      verifyCommand: az sql mi list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/managed-instance/minimal-tls-version-configure

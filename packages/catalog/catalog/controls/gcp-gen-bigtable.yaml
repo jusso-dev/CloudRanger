@@ -1,0 +1,77 @@
+controls:
+  - id: CR-GCP-BIGTABLE-100
+    version: 1.0.0
+    provider: gcp
+    service: bigtable
+    title: Bigtable instance is PRODUCTION type
+    description: >
+      Verifies the Cloud Bigtable instance is a PRODUCTION instance rather than
+      a DEVELOPMENT instance.
+    rationale: >
+      DEVELOPMENT instances run on a single node with no replication or SLA, so
+      hosting real workloads on them risks data loss and outages with no
+      resilience guarantees.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: bigtable_instance_production
+      license: Apache-2.0
+    collector: gcp.bigtable.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: equals
+      path: type
+      value: PRODUCTION
+    failMessage: Bigtable instance is a DEVELOPMENT instance without replication or SLA.
+    passMessage: Bigtable instance is a PRODUCTION instance.
+    remediation:
+      summary: Use a PRODUCTION instance for real workloads.
+      steps:
+        - Create a PRODUCTION Bigtable instance (operator action).
+        - Migrate data from the DEVELOPMENT instance to the PRODUCTION instance.
+      verifyCommand: gcloud bigtable instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/bigtable/docs/instances-clusters-nodes
+  - id: CR-GCP-BIGTABLE-101
+    version: 1.0.0
+    provider: gcp
+    service: bigtable
+    title: Bigtable instance has governance labels
+    description: >
+      Verifies the Cloud Bigtable instance has at least one label applied so it
+      can be attributed to an owner, environment or cost centre.
+    rationale: >
+      Unlabelled instances cannot be reliably tracked for ownership, cost or
+      compliance, hindering inventory management and incident response.
+    severity: low
+    categories:
+      - governance
+    source:
+      engine: prowler
+      id: bigtable_instance_labels
+      license: Apache-2.0
+    collector: gcp.bigtable.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: not
+      expr:
+        op: isEmpty
+        path: labels
+    failMessage: Bigtable instance has no governance labels.
+    passMessage: Bigtable instance has governance labels.
+    remediation:
+      summary: Apply governance labels to the instance.
+      steps:
+        - Add labels such as owner, environment and cost-centre to the instance
+          (operator action).
+      verifyCommand: gcloud bigtable instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/bigtable/docs/creating-managing-labels

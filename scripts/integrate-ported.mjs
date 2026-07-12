@@ -105,12 +105,17 @@ function sanitizeYaml(text) {
     .join("\n");
 }
 
-/** Drop compliance entries with empty/missing controls arrays. */
+/**
+ * Drop compliance entries with empty/missing controls arrays, and coerce
+ * control-section ids to strings — YAML parses an unquoted "4.4" as a number,
+ * which fails the schema's string requirement (a safe mechanical fix that
+ * changes no logic).
+ */
 function normalizeControl(control) {
   if (Array.isArray(control.compliance)) {
-    control.compliance = control.compliance.filter(
-      (c) => c && Array.isArray(c.controls) && c.controls.length > 0,
-    );
+    control.compliance = control.compliance
+      .filter((c) => c && Array.isArray(c.controls) && c.controls.length > 0)
+      .map((c) => ({ ...c, controls: c.controls.map((id) => String(id)) }));
   }
   return control;
 }

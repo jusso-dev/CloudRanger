@@ -1,0 +1,142 @@
+[
+  {
+    "controlId": "CR-AWS-MQ-001",
+    "cases": [
+      {
+        "name": "fail single instance broker",
+        "expected": "fail",
+        "resourceId": "b-1111aaaa-2222-bbbb-3333-ccccddddeeee",
+        "records": [
+          {
+            "collectorId": "aws.mq.list_brokers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BrokerSummaries": [
+                {
+                  "BrokerArn": "arn:aws:mq:us-east-1:123456789012:broker:single:b-1111aaaa-2222-bbbb-3333-ccccddddeeee",
+                  "BrokerId": "b-1111aaaa-2222-bbbb-3333-ccccddddeeee",
+                  "BrokerName": "single-broker",
+                  "BrokerState": "RUNNING",
+                  "Created": "2026-02-10T14:03:11.000Z",
+                  "DeploymentMode": "SINGLE_INSTANCE",
+                  "EngineType": "ACTIVEMQ",
+                  "HostInstanceType": "mq.m5.large"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass active-standby multi-az broker",
+        "expected": "pass",
+        "resourceId": "b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+        "records": [
+          {
+            "collectorId": "aws.mq.list_brokers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BrokerSummaries": [
+                {
+                  "BrokerArn": "arn:aws:mq:us-east-1:123456789012:broker:ha:b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+                  "BrokerId": "b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+                  "BrokerName": "ha-broker",
+                  "BrokerState": "RUNNING",
+                  "Created": "2026-02-10T14:03:11.000Z",
+                  "DeploymentMode": "ACTIVE_STANDBY_MULTI_AZ",
+                  "EngineType": "ACTIVEMQ",
+                  "HostInstanceType": "mq.m5.large"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MQ-002",
+    "cases": [
+      {
+        "name": "fail creation failed broker",
+        "expected": "fail",
+        "resourceId": "b-7777kkkk-8888-llll-9999-mmmmnnnnoooo",
+        "records": [
+          {
+            "collectorId": "aws.mq.list_brokers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BrokerSummaries": [
+                {
+                  "BrokerArn": "arn:aws:mq:us-east-1:123456789012:broker:bad:b-7777kkkk-8888-llll-9999-mmmmnnnnoooo",
+                  "BrokerId": "b-7777kkkk-8888-llll-9999-mmmmnnnnoooo",
+                  "BrokerName": "failed-broker",
+                  "BrokerState": "CREATION_FAILED",
+                  "Created": "2026-02-10T14:03:11.000Z",
+                  "DeploymentMode": "ACTIVE_STANDBY_MULTI_AZ",
+                  "EngineType": "RABBITMQ",
+                  "HostInstanceType": "mq.m5.large"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass running broker",
+        "expected": "pass",
+        "resourceId": "b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+        "records": [
+          {
+            "collectorId": "aws.mq.list_brokers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BrokerSummaries": [
+                {
+                  "BrokerArn": "arn:aws:mq:us-east-1:123456789012:broker:ha:b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+                  "BrokerId": "b-4444ffff-5555-gggg-6666-hhhhiiiijjjj",
+                  "BrokerName": "ha-broker",
+                  "BrokerState": "RUNNING",
+                  "Created": "2026-02-10T14:03:11.000Z",
+                  "DeploymentMode": "ACTIVE_STANDBY_MULTI_AZ",
+                  "EngineType": "ACTIVEMQ",
+                  "HostInstanceType": "mq.m5.large"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not_applicable creation in progress",
+        "expected": "not_applicable",
+        "resourceId": "b-0000pppp-1111-qqqq-2222-rrrrssssuuuu",
+        "records": [
+          {
+            "collectorId": "aws.mq.list_brokers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BrokerSummaries": [
+                {
+                  "BrokerArn": "arn:aws:mq:us-east-1:123456789012:broker:new:b-0000pppp-1111-qqqq-2222-rrrrssssuuuu",
+                  "BrokerId": "b-0000pppp-1111-qqqq-2222-rrrrssssuuuu",
+                  "BrokerName": "new-broker",
+                  "BrokerState": "CREATION_IN_PROGRESS",
+                  "Created": "2026-07-13T09:00:00.000Z",
+                  "DeploymentMode": "SINGLE_INSTANCE",
+                  "EngineType": "ACTIVEMQ",
+                  "HostInstanceType": "mq.t3.micro"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

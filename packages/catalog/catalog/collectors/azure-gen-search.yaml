@@ -1,0 +1,40 @@
+collectors:
+  - id: azure.search.services_list
+    provider: azure
+    service: search
+    description: >
+      Inventory of Azure Cognitive Search (Microsoft.Search/searchServices)
+      services in the subscription. Used only as the parent to enumerate service
+      resource IDs; the generic resource list does NOT expand the type-specific
+      'properties' block.
+    kind: single
+    command: az resource list --resource-type Microsoft.Search/searchServices
+      --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root. Each item is a generic ARM resource with
+      id, name, type, location, resourceGroup, sku, tags. IMPORTANT: 'az
+      resource list' returns 'properties' as null (it is not expanded), so
+      search-specific settings must be read with az resource show (see
+      azure.search.service_show). Requires Reader on the subscription.
+  - id: azure.search.service_show
+    provider: azure
+    service: search
+    description: >
+      Full expanded properties of one Azure Cognitive Search service, including
+      publicNetworkAccess, disableLocalAuth, and authOptions.
+    kind: per_resource
+    command: az resource show --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.search.services_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns a single ARM resource object with the type-specific 'properties'
+      populated: properties.publicNetworkAccess ("enabled"/"disabled"),
+      properties.disableLocalAuth (bool), properties.authOptions (object present
+      only when local/API-key auth is enabled; null when disableLocalAuth is
+      true). Requires Microsoft.Search/searchServices/read.

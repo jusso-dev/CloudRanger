@@ -1,0 +1,276 @@
+[
+  {
+    "controlId": "CR-AWS-AUTOSCALING-001",
+    "cases": [
+      {
+        "name": "passes with two AZs",
+        "expected": "pass",
+        "resourceId": "asg-multi-az",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-multi-az",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0123",
+                    "LaunchTemplateName": "web-lt",
+                    "Version": "3"
+                  },
+                  "DesiredCapacity": 2,
+                  "MinSize": 2,
+                  "MaxSize": 4,
+                  "TargetGroupARNs": [],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with single AZ",
+        "expected": "fail",
+        "resourceId": "asg-single-az",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-single-az",
+                  "AvailabilityZones": ["us-east-1a"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0999",
+                    "LaunchTemplateName": "single-lt",
+                    "Version": "1"
+                  },
+                  "DesiredCapacity": 1,
+                  "MinSize": 1,
+                  "MaxSize": 2,
+                  "TargetGroupARNs": [],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-AUTOSCALING-002",
+    "cases": [
+      {
+        "name": "passes with launch template",
+        "expected": "pass",
+        "resourceId": "asg-lt",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-lt",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0abc",
+                    "LaunchTemplateName": "modern-lt",
+                    "Version": "5"
+                  },
+                  "DesiredCapacity": 2,
+                  "MinSize": 2,
+                  "MaxSize": 6,
+                  "TargetGroupARNs": [],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with legacy launch configuration",
+        "expected": "fail",
+        "resourceId": "asg-lc",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-lc",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchConfigurationName": "legacy-launch-config",
+                  "DesiredCapacity": 2,
+                  "MinSize": 2,
+                  "MaxSize": 4,
+                  "TargetGroupARNs": [],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-AUTOSCALING-003",
+    "cases": [
+      {
+        "name": "passes when load-balanced group uses ELB health check",
+        "expected": "pass",
+        "resourceId": "asg-elb-ok",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-elb-ok",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "ELB",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0d1",
+                    "LaunchTemplateName": "web-lt",
+                    "Version": "2"
+                  },
+                  "DesiredCapacity": 3,
+                  "MinSize": 2,
+                  "MaxSize": 6,
+                  "TargetGroupARNs": [
+                    "arn:aws:elasticloadbalancing:us-east-1:111122223333:targetgroup/web-tg/abc123"
+                  ],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when load-balanced group uses only EC2 health check",
+        "expected": "fail",
+        "resourceId": "asg-elb-bad",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-elb-bad",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0d2",
+                    "LaunchTemplateName": "web-lt",
+                    "Version": "2"
+                  },
+                  "DesiredCapacity": 3,
+                  "MinSize": 2,
+                  "MaxSize": 6,
+                  "TargetGroupARNs": [
+                    "arn:aws:elasticloadbalancing:us-east-1:111122223333:targetgroup/web-tg/def456"
+                  ],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          },
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-elb-bad",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0d2",
+                    "LaunchTemplateName": "web-lt",
+                    "Version": "2"
+                  },
+                  "DesiredCapacity": 3,
+                  "MinSize": 2,
+                  "MaxSize": 6,
+                  "TargetGroupARNs": [
+                    "arn:aws:elasticloadbalancing:us-east-1:111122223333:targetgroup/web-tg/def456"
+                  ],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when group has no load balancer",
+        "expected": "not_applicable",
+        "resourceId": "asg-no-lb",
+        "records": [
+          {
+            "collectorId": "aws.autoscaling.describe_auto_scaling_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AutoScalingGroups": [
+                {
+                  "AutoScalingGroupName": "asg-no-lb",
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+                  "HealthCheckType": "EC2",
+                  "HealthCheckGracePeriod": 300,
+                  "LaunchTemplate": {
+                    "LaunchTemplateId": "lt-0d3",
+                    "LaunchTemplateName": "batch-lt",
+                    "Version": "1"
+                  },
+                  "DesiredCapacity": 1,
+                  "MinSize": 0,
+                  "MaxSize": 2,
+                  "TargetGroupARNs": [],
+                  "LoadBalancerNames": [],
+                  "SuspendedProcesses": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

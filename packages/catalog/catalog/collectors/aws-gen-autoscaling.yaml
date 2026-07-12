@@ -1,0 +1,19 @@
+collectors:
+  - id: aws.autoscaling.describe_auto_scaling_groups
+    provider: aws
+    service: autoscaling
+    description: All EC2 Auto Scaling groups in one region with their health check
+      config, launch template/configuration, capacity, availability zones, and
+      load balancer attachments.
+    kind: single
+    command: aws autoscaling describe-auto-scaling-groups --region {region} --output
+      json
+    regional: true
+    outputFormat: json
+    notes: Requires autoscaling:DescribeAutoScalingGroups. Each group under
+      AutoScalingGroups[] exposes AutoScalingGroupName, AvailabilityZones (array
+      of AZ name strings), HealthCheckType ("EC2" or "ELB"), LaunchTemplate
+      (object; absent when a legacy LaunchConfigurationName is used or when a
+      MixedInstancesPolicy supplies the template), LaunchConfigurationName,
+      TargetGroupARNs (array), and LoadBalancerNames (array of classic ELB
+      names).

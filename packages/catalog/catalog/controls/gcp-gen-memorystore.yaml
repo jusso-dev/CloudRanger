@@ -1,0 +1,136 @@
+controls:
+  - id: CR-GCP-MEMORYSTORE-100
+    version: 1.0.0
+    provider: gcp
+    service: memorystore
+    title: Memorystore for Redis enforces in-transit encryption (TLS)
+    description: >
+      Verifies transitEncryptionMode is SERVER_AUTHENTICATION so client
+      connections to the Redis instance are encrypted with TLS.
+    rationale: >
+      Without in-transit encryption, Redis traffic (including AUTH strings and
+      cached data) crosses the network in cleartext, exposing credentials and
+      sensitive values to anyone able to observe the VPC path or a compromised
+      peered network.
+    severity: high
+    categories:
+      - encryption
+      - data-protection
+      - network
+    source:
+      engine: prowler
+      id: memorystore_redis_instance_transit_encryption_enabled
+      license: Apache-2.0
+    collector: gcp.redis.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: equals
+      path: transitEncryptionMode
+      value: SERVER_AUTHENTICATION
+    failMessage: Memorystore Redis instance does not enforce in-transit encryption
+      (transitEncryptionMode is not SERVER_AUTHENTICATION).
+    passMessage: Memorystore Redis instance enforces in-transit encryption (TLS).
+    remediation:
+      summary: Recreate the instance with in-transit encryption enabled.
+      steps:
+        - In-transit encryption can only be set at creation time; create a new
+          instance with transit encryption mode SERVER_AUTHENTICATION.
+        - Update clients to trust the server certificate authority and connect
+          over TLS, then migrate data and decommission the unencrypted instance.
+      verifyCommand: gcloud redis instances list --project <project> --region <region>
+        --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/memorystore/docs/redis/about-in-transit-encryption
+  - id: CR-GCP-MEMORYSTORE-101
+    version: 1.0.0
+    provider: gcp
+    service: memorystore
+    title: Memorystore for Redis requires AUTH
+    description: >
+      Verifies authEnabled is true so clients must present a Redis AUTH string
+      before issuing commands.
+    rationale: >
+      With AUTH disabled, any client that can reach the instance on the network
+      can read and write all cached data without authentication, so a single
+      over-broad firewall rule or compromised in-VPC host yields full data
+      access.
+    severity: high
+    categories:
+      - identity
+      - access-control
+    source:
+      engine: prowler
+      id: memorystore_redis_instance_auth_enabled
+      license: Apache-2.0
+    collector: gcp.redis.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: equals
+      path: authEnabled
+      value: true
+    failMessage: Memorystore Redis instance does not require AUTH (authEnabled is
+      not enabled).
+    passMessage: Memorystore Redis instance requires AUTH.
+    remediation:
+      summary: Enable Redis AUTH on the instance.
+      steps:
+        - Enable AUTH on the instance so authEnabled becomes true (this can be
+          updated on an existing instance).
+        - Retrieve the generated AUTH string and configure clients to send it on
+          connect.
+      verifyCommand: gcloud redis instances list --project <project> --region <region>
+        --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/memorystore/docs/redis/about-redis-auth
+  - id: CR-GCP-MEMORYSTORE-102
+    version: 1.0.0
+    provider: gcp
+    service: memorystore
+    title: Memorystore for Redis encrypts data at rest with a customer-managed key
+      (CMEK)
+    description: >
+      Verifies customerManagedKey is set so the instance's persisted data is
+      encrypted with a customer-managed Cloud KMS key.
+    rationale: >
+      Without CMEK the instance relies solely on Google-managed keys, so the
+      organization cannot enforce its own key rotation, access policy, or
+      revocation, and cannot independently cut off access to persisted data if a
+      key context is compromised.
+    severity: medium
+    categories:
+      - encryption
+      - data-protection
+    source:
+      engine: prowler
+      id: memorystore_redis_instance_encryption_at_rest_with_cmk
+      license: Apache-2.0
+    collector: gcp.redis.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: exists
+      path: customerManagedKey
+    failMessage: Memorystore Redis instance is not encrypted at rest with a
+      customer-managed KMS key (CMEK).
+    passMessage: Memorystore Redis instance is encrypted at rest with a
+      customer-managed KMS key.
+    remediation:
+      summary: Recreate the instance with a CMEK KMS key for at-rest encryption.
+      steps:
+        - Create or select a Cloud KMS key and grant the Memorystore service
+          agent the cloudkms.cryptoKeyEncrypterDecrypter role on it.
+        - Recreate the instance specifying the CMEK key so customerManagedKey is
+          populated (at-rest encryption key cannot be changed on an existing
+          instance).
+      verifyCommand: gcloud redis instances list --project <project> --region <region>
+        --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/memorystore/docs/redis/about-cmek

@@ -1,0 +1,116 @@
+[
+  {
+    "controlId": "CR-AZURE-EVENTGRID-100",
+    "cases": [
+      {
+        "name": "pass - public network access disabled",
+        "expected": "pass",
+        "resourceId": "topic-secure",
+        "records": [
+          {
+            "collectorId": "azure.eventgrid.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventGrid/topics/topic-secure",
+                "name": "topic-secure",
+                "location": "eastus",
+                "type": "Microsoft.EventGrid/topics",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "endpoint": "https://topic-secure.eastus-1.eventgrid.azure.net/api/events",
+                  "inputSchema": "EventGridSchema",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - public network access enabled",
+        "expected": "fail",
+        "resourceId": "topic-open",
+        "records": [
+          {
+            "collectorId": "azure.eventgrid.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventGrid/topics/topic-open",
+                "name": "topic-open",
+                "location": "eastus",
+                "type": "Microsoft.EventGrid/topics",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "endpoint": "https://topic-open.eastus-1.eventgrid.azure.net/api/events",
+                  "inputSchema": "EventGridSchema",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-EVENTGRID-101",
+    "cases": [
+      {
+        "name": "pass - local auth disabled",
+        "expected": "pass",
+        "resourceId": "topic-secure",
+        "records": [
+          {
+            "collectorId": "azure.eventgrid.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventGrid/topics/topic-secure",
+                "name": "topic-secure",
+                "location": "eastus",
+                "type": "Microsoft.EventGrid/topics",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "endpoint": "https://topic-secure.eastus-1.eventgrid.azure.net/api/events",
+                  "inputSchema": "EventGridSchema",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - local auth enabled",
+        "expected": "fail",
+        "resourceId": "topic-keys",
+        "records": [
+          {
+            "collectorId": "azure.eventgrid.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventGrid/topics/topic-keys",
+                "name": "topic-keys",
+                "location": "eastus",
+                "type": "Microsoft.EventGrid/topics",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "endpoint": "https://topic-keys.eastus-1.eventgrid.azure.net/api/events",
+                  "inputSchema": "EventGridSchema",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

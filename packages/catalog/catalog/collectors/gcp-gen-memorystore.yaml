@@ -1,0 +1,27 @@
+collectors:
+  - id: gcp.redis.instances_list
+    provider: gcp
+    service: memorystore
+    description: >
+      Lists Memorystore for Redis instances in one region of the project
+      (redis.projects.locations.instances.list). Each element is a full Instance
+      resource including transitEncryptionMode, authEnabled, and
+      customerManagedKey.
+    kind: single
+    command: gcloud redis instances list --project {project} --region {region}
+      --format json
+    regional: true
+    outputFormat: json
+    notes: >
+      Requires redis.instances.list / redis.instances.get (roles/redis.viewer or
+      higher). Memorystore for Redis is region-scoped: the list call MUST
+      specify a region, so this collector iterates {region} aws-style. gcloud
+      "list" returns a JSON ARRAY at the root; each element is an Instance
+      resource. Key fields: name (full path projects/P/locations/L/instances/I),
+      displayName, tier (BASIC|STANDARD_HA), redisVersion, state, host, port,
+      transitEncryptionMode (SERVER_AUTHENTICATION when in-transit TLS is on,
+      otherwise DISABLED or omitted), authEnabled (boolean; present and true
+      only when Redis AUTH is enabled, omitted/false otherwise), and
+      customerManagedKey (a Cloud KMS key resource name, present only when the
+      instance was created with a CMEK; Google-managed default encryption omits
+      the field). An empty region yields an empty JSON array [].

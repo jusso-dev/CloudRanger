@@ -1,0 +1,78 @@
+controls:
+  - id: CR-AWS-NEPTUNE-001
+    version: 1.0.0
+    provider: aws
+    service: neptune
+    title: Neptune DB cluster has storage encryption enabled
+    description: Every Neptune DB cluster is created with encryption at rest so
+      StorageEncrypted is true.
+    rationale: Unencrypted Neptune storage exposes graph data at rest if the
+      underlying volumes or snapshots are compromised; encryption cannot be
+      enabled after cluster creation.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: neptune_cluster_storage_encrypted
+      license: Apache-2.0
+    collector: aws.neptune.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: StorageEncrypted
+      value: true
+    failMessage: Neptune DB cluster storage is not encrypted at rest.
+    passMessage: Neptune DB cluster storage is encrypted at rest.
+    remediation:
+      summary: Recreate the Neptune cluster with encryption enabled.
+      steps:
+        - Snapshot the existing cluster and restore it into a new cluster with
+          --storage-encrypted and a KMS key.
+        - Repoint applications to the new encrypted cluster and decommission the
+          old one.
+      verifyCommand: aws neptune describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/neptune/latest/userguide/encrypt.html
+  - id: CR-AWS-NEPTUNE-002
+    version: 1.0.0
+    provider: aws
+    service: neptune
+    title: Neptune DB cluster has IAM database authentication enabled
+    description: Every Neptune DB cluster has IAMDatabaseAuthenticationEnabled set to true.
+    rationale: Without IAM database authentication, connections rely on
+      network-level controls alone; IAM auth provides centrally managed,
+      short-lived, auditable credentials instead of static access.
+    severity: medium
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: neptune_cluster_iam_authentication_enabled
+      license: Apache-2.0
+    collector: aws.neptune.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: IAMDatabaseAuthenticationEnabled
+      value: true
+    failMessage: Neptune DB cluster does not have IAM database authentication enabled.
+    passMessage: Neptune DB cluster has IAM database authentication enabled.
+    remediation:
+      summary: Enable IAM database authentication on the Neptune cluster.
+      steps:
+        - Run aws neptune modify-db-cluster with
+          --enable-iam-database-authentication for the cluster.
+        - Grant the neptune-db:connect IAM permission to the principals that
+          need database access.
+      verifyCommand: aws neptune describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/neptune/latest/userguide/iam-auth.html

@@ -1,0 +1,197 @@
+[
+  {
+    "controlId": "CR-AZURE-COGNITIVE-100",
+    "cases": [
+      {
+        "name": "pass public network access disabled",
+        "expected": "pass",
+        "resourceId": "openai-prod",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/openai-prod",
+                "name": "openai-prod",
+                "location": "eastus",
+                "kind": "OpenAI",
+                "sku": {
+                  "name": "S0"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "customSubDomainName": "openai-prod",
+                  "encryption": {
+                    "keySource": "Microsoft.KeyVault"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public network access enabled",
+        "expected": "fail",
+        "resourceId": "openai-dev",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/openai-dev",
+                "name": "openai-dev",
+                "location": "eastus",
+                "kind": "OpenAI",
+                "sku": {
+                  "name": "S0"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "customSubDomainName": "openai-dev",
+                  "encryption": {
+                    "keySource": "Microsoft.CognitiveServices"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COGNITIVE-101",
+    "cases": [
+      {
+        "name": "pass local auth disabled",
+        "expected": "pass",
+        "resourceId": "openai-prod",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/openai-prod",
+                "name": "openai-prod",
+                "location": "eastus",
+                "kind": "OpenAI",
+                "sku": {
+                  "name": "S0"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "encryption": {
+                    "keySource": "Microsoft.KeyVault"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail local auth absent defaults to enabled",
+        "expected": "fail",
+        "resourceId": "vision-legacy",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/vision-legacy",
+                "name": "vision-legacy",
+                "location": "westus",
+                "kind": "ComputerVision",
+                "sku": {
+                  "name": "S1"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "encryption": {
+                    "keySource": "Microsoft.CognitiveServices"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COGNITIVE-102",
+    "cases": [
+      {
+        "name": "pass customer-managed key",
+        "expected": "pass",
+        "resourceId": "openai-prod",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/openai-prod",
+                "name": "openai-prod",
+                "location": "eastus",
+                "kind": "OpenAI",
+                "sku": {
+                  "name": "S0"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "encryption": {
+                    "keySource": "Microsoft.KeyVault",
+                    "keyVaultProperties": {
+                      "keyName": "cs-cmk",
+                      "keyVersion": "abc123",
+                      "keyVaultUri": "https://kv-ai.vault.azure.net/"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail service-managed key",
+        "expected": "fail",
+        "resourceId": "openai-dev",
+        "records": [
+          {
+            "collectorId": "azure.cognitiveservices.accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ai/providers/Microsoft.CognitiveServices/accounts/openai-dev",
+                "name": "openai-dev",
+                "location": "eastus",
+                "kind": "OpenAI",
+                "sku": {
+                  "name": "S0"
+                },
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "encryption": {
+                    "keySource": "Microsoft.CognitiveServices"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

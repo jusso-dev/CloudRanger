@@ -1,0 +1,15 @@
+collectors:
+  - id: azure.sql.mi_list
+    provider: azure
+    service: sqlmanagedinstance
+    description: All Azure SQL Managed Instances in the subscription.
+    kind: single
+    command: az sql mi list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array of SQL Managed Instances. The Azure CLI flattens the
+      ARM 'properties' object onto each item's root as camelCase fields, so
+      publicDataEndpointEnabled (bool) and minimalTlsVersion (string, e.g.
+      "1.2") appear at the top level of each element, alongside name, id, type,
+      location, and sku. Requires Microsoft.Sql/managedInstances/read.

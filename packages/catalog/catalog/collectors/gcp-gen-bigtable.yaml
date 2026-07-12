@@ -1,0 +1,16 @@
+collectors:
+  - id: gcp.bigtable.instances_list
+    provider: gcp
+    service: bigtable
+    description: All Cloud Bigtable instances in the project (name, displayName,
+      state, type, labels).
+    kind: single
+    command: gcloud bigtable instances list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; empty array when no instances exist.
+      Each item has 'name' (full path projects/P/instances/ID), 'displayName',
+      'state' (e.g. READY), 'type' (PRODUCTION or DEVELOPMENT) and an optional
+      'labels' map (absent when no labels are set). Requires
+      bigtable.instances.list.

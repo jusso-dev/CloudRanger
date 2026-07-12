@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.neptune.describe_db_clusters
+    provider: aws
+    service: neptune
+    description: Lists Neptune DB clusters in a region with their configuration
+      attributes (encryption, IAM auth, deletion protection).
+    kind: single
+    command: aws neptune describe-db-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a DBClusters array. Each cluster exposes DBClusterIdentifier,
+      StorageEncrypted, KmsKeyId, IAMDatabaseAuthenticationEnabled, and
+      DeletionProtection. The RDS and Neptune APIs share the DBCluster shape,
+      but neptune describe-db-clusters returns only Neptune (graph) clusters.
+      Requires neptune-db:* / rds:DescribeDBClusters read permission.

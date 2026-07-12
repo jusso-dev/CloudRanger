@@ -1,0 +1,17 @@
+collectors:
+  - id: aws.ssm.describe_instance_information
+    provider: aws
+    service: ssm
+    description: Lists Systems Manager managed instances registered in a region with
+      their ping status, platform type, SSM Agent version, and whether the agent
+      is the latest available version.
+    kind: single
+    command: aws ssm describe-instance-information --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a top-level "InstanceInformationList" array. Each item includes
+      InstanceId, PingStatus (Online | ConnectionLost | Inactive), PlatformType,
+      PlatformName, AgentVersion, IsLatestVersion, ResourceType, and
+      ComputerName. Requires ssm:DescribeInstanceInformation. Empty array when
+      no instances are managed by SSM in the region. Instances that never
+      registered an agent do not appear at all.

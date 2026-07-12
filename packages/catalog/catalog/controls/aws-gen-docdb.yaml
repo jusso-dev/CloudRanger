@@ -1,0 +1,114 @@
+controls:
+  - id: CR-AWS-DOCDB-001
+    version: 1.0.0
+    provider: aws
+    service: docdb
+    title: DocumentDB cluster storage is encrypted at rest
+    description: The DocumentDB cluster has storage encryption enabled so all
+      underlying data, automated backups and snapshots are encrypted at rest.
+    rationale: An unencrypted DocumentDB cluster exposes all stored documents and
+      its backups in plaintext if the underlying storage or a snapshot is
+      accessed, breaching data-at-rest protection requirements.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: documentdb_cluster_storage_encrypted
+      license: Apache-2.0
+    collector: aws.docdb.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: StorageEncrypted
+      value: true
+    failMessage: DocumentDB cluster storage is not encrypted at rest.
+    passMessage: DocumentDB cluster storage is encrypted at rest.
+    remediation:
+      summary: Enable storage encryption for the DocumentDB cluster.
+      steps:
+        - Storage encryption cannot be enabled on an existing cluster; create an
+          encrypted snapshot copy or a new encrypted cluster and migrate the
+          data.
+        - Create the new cluster with a KMS key by passing --storage-encrypted
+          and --kms-key-id, then restore the data into it.
+      verifyCommand: aws docdb describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/documentdb/latest/developerguide/encryption-at-rest.html
+  - id: CR-AWS-DOCDB-002
+    version: 1.0.0
+    provider: aws
+    service: docdb
+    title: DocumentDB cluster has deletion protection enabled
+    description: The DocumentDB cluster has deletion protection enabled so it cannot
+      be deleted by an accidental or malicious API/console call.
+    rationale: Without deletion protection a single delete-db-cluster call can
+      permanently destroy the cluster and its data, causing an outage or data
+      loss.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: documentdb_cluster_deletion_protection
+      license: Apache-2.0
+    collector: aws.docdb.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: DeletionProtection
+      value: true
+    failMessage: DocumentDB cluster does not have deletion protection enabled.
+    passMessage: DocumentDB cluster has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the DocumentDB cluster.
+      steps:
+        - Run modify-db-cluster with --deletion-protection for the cluster.
+      verifyCommand: aws docdb describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/documentdb/latest/developerguide/db-cluster-delete.html
+  - id: CR-AWS-DOCDB-003
+    version: 1.0.0
+    provider: aws
+    service: docdb
+    title: DocumentDB cluster exports audit logs to CloudWatch
+    description: The DocumentDB cluster exports audit logs to Amazon CloudWatch Logs
+      via EnabledCloudwatchLogsExports.
+    rationale: Without audit log export, authentication and management-plane events
+      on the cluster are not retained centrally, leaving no trail for detecting
+      unauthorized access or investigating incidents.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: documentdb_cluster_cloudwatch_log_export
+      license: Apache-2.0
+    collector: aws.docdb.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: contains
+      path: EnabledCloudwatchLogsExports
+      value: audit
+    failMessage: DocumentDB cluster does not export audit logs to CloudWatch.
+    passMessage: DocumentDB cluster exports audit logs to CloudWatch.
+    remediation:
+      summary: Enable audit log export to CloudWatch Logs.
+      steps:
+        - Enable the audit log via the cluster parameter group (set audit_logs
+          to enabled).
+        - Run modify-db-cluster with --cloudwatch-logs-export-configuration to
+          enable the "audit" log type.
+      verifyCommand: aws docdb describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/documentdb/latest/developerguide/event-auditing.html

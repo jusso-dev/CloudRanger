@@ -1,0 +1,56 @@
+controls:
+  - id: CR-GCP-CLOUDASSET-100
+    version: 1.0.0
+    provider: gcp
+    service: cloudasset
+    title: A Cloud Asset Inventory feed is configured for real-time change tracking
+    description: At least one Cloud Asset Inventory feed exists on the project so
+      that asset and IAM policy changes are streamed for monitoring.
+    rationale: Without a Cloud Asset Inventory feed, changes to resources and IAM
+      policies are not delivered in real time to a monitoring pipeline, leaving
+      privilege escalation, resource tampering and drift undetected until a
+      periodic scan runs.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: cloudasset_inventory_enabled_in_project
+      license: Apache-2.0
+    collector: gcp.cloudasset.feeds_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: exists
+        path: name
+    onError:
+      - contains: has not been used
+        status: fail
+        message: The Cloud Asset API is not enabled, so no feeds can exist.
+      - contains: SERVICE_DISABLED
+        status: fail
+        message: The Cloud Asset API is disabled, so no feeds can exist.
+      - contains: PERMISSION_DENIED
+        status: error
+    failMessage: No Cloud Asset Inventory feed is configured for the project.
+    passMessage: A Cloud Asset Inventory feed is configured for real-time change tracking.
+    remediation:
+      summary: Create a Cloud Asset Inventory feed that streams asset and IAM changes
+        to Pub/Sub.
+      steps:
+        - Enable the Cloud Asset API (cloudasset.googleapis.com) on the project.
+        - Create a Pub/Sub topic to receive asset change notifications.
+        - Create an asset feed for the project scoped to the desired asset types
+          and content type (for example IAM_POLICY) targeting that Pub/Sub
+          topic.
+        - Route the Pub/Sub topic into your SIEM or monitoring pipeline.
+      verifyCommand: gcloud asset feeds list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/asset-inventory/docs/monitoring-asset-changes
+      - https://cloud.google.com/asset-inventory/docs/overview

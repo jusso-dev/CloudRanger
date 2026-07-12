@@ -1,0 +1,95 @@
+[
+  {
+    "controlId": "CR-GCP-BIGTABLE-100",
+    "cases": [
+      {
+        "name": "passes production instance",
+        "expected": "pass",
+        "resourceId": "projects/proj-1/instances/prod-inst",
+        "records": [
+          {
+            "collectorId": "gcp.bigtable.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/prod-inst",
+                "displayName": "prod-inst",
+                "state": "READY",
+                "type": "PRODUCTION",
+                "labels": {
+                  "env": "prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails development instance",
+        "expected": "fail",
+        "resourceId": "projects/proj-1/instances/dev-inst",
+        "records": [
+          {
+            "collectorId": "gcp.bigtable.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/dev-inst",
+                "displayName": "dev-inst",
+                "state": "READY",
+                "type": "DEVELOPMENT"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-BIGTABLE-101",
+    "cases": [
+      {
+        "name": "passes with labels",
+        "expected": "pass",
+        "resourceId": "projects/proj-1/instances/labeled-inst",
+        "records": [
+          {
+            "collectorId": "gcp.bigtable.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/labeled-inst",
+                "displayName": "labeled-inst",
+                "state": "READY",
+                "type": "PRODUCTION",
+                "labels": {
+                  "owner": "data-team",
+                  "env": "prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without labels",
+        "expected": "fail",
+        "resourceId": "projects/proj-1/instances/unlabeled-inst",
+        "records": [
+          {
+            "collectorId": "gcp.bigtable.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/instances/unlabeled-inst",
+                "displayName": "unlabeled-inst",
+                "state": "READY",
+                "type": "PRODUCTION"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

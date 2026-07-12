@@ -1,0 +1,183 @@
+[
+  {
+    "controlId": "CR-AZURE-AUTOMATION-100",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "resourceId": "aa-private",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-private",
+                "name": "aa-private",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": false,
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "11111111-1111-1111-1111-111111111111",
+                  "tenantId": "22222222-2222-2222-2222-222222222222"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "resourceId": "aa-public",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-public",
+                "name": "aa-public",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": true,
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "33333333-3333-3333-3333-333333333333",
+                  "tenantId": "22222222-2222-2222-2222-222222222222"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access never configured",
+        "expected": "fail",
+        "resourceId": "aa-default",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-default",
+                "name": "aa-default",
+                "location": "westus2",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": null,
+                "identity": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AUTOMATION-101",
+    "cases": [
+      {
+        "name": "pass system-assigned identity",
+        "expected": "pass",
+        "resourceId": "aa-sa",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-sa",
+                "name": "aa-sa",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": false,
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "44444444-4444-4444-4444-444444444444",
+                  "tenantId": "22222222-2222-2222-2222-222222222222"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass system-assigned and user-assigned identity",
+        "expected": "pass",
+        "resourceId": "aa-both",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-both",
+                "name": "aa-both",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": false,
+                "identity": {
+                  "type": "SystemAssigned, UserAssigned",
+                  "principalId": "55555555-5555-5555-5555-555555555555",
+                  "tenantId": "22222222-2222-2222-2222-222222222222",
+                  "userAssignedIdentities": {
+                    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai1": {}
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no managed identity",
+        "expected": "fail",
+        "resourceId": "aa-none",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-none",
+                "name": "aa-none",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": false,
+                "identity": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail user-assigned only identity",
+        "expected": "fail",
+        "resourceId": "aa-ua",
+        "records": [
+          {
+            "collectorId": "azure.automation.account_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Automation/automationAccounts/aa-ua",
+                "name": "aa-ua",
+                "location": "eastus",
+                "type": "Microsoft.Automation/AutomationAccounts",
+                "publicNetworkAccess": false,
+                "identity": {
+                  "type": "UserAssigned",
+                  "userAssignedIdentities": {
+                    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai1": {}
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

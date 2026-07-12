@@ -1,0 +1,133 @@
+controls:
+  - id: CR-AWS-COGNITO-001
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool enforces MFA for all users
+    description: The user pool's MfaConfiguration is set to ON so multi-factor
+      authentication is required for every user.
+    rationale: Without enforced MFA a leaked or phished password alone grants full
+      account access, a leading cause of account takeover in identity providers.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_mfa_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: equals
+      path: UserPool.MfaConfiguration
+      value: ON
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: User pool does not enforce MFA (MfaConfiguration is not ON).
+    passMessage: User pool enforces MFA for all users.
+    remediation:
+      summary: Set the user pool MFA configuration to required.
+      steps:
+        - In the Cognito console open the user pool, go to Sign-in >
+          Multi-factor authentication, and set MFA to Required.
+        - Or run update-user-pool with --mfa-configuration ON.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa.html
+  - id: CR-AWS-COGNITO-002
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool has advanced security enforced
+    description: The user pool's UserPoolAddOns.AdvancedSecurityMode is set to
+      ENFORCED so threat protection actively blocks risky sign-ins.
+    rationale: In AUDIT or OFF mode Cognito does not block compromised-credential or
+      high-risk sign-in attempts, leaving the pool exposed to credential
+      stuffing and account takeover.
+    severity: medium
+    categories:
+      - identity
+      - logging
+    source:
+      engine: prowler
+      id: cognito_user_pool_advanced_security_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: equals
+      path: UserPool.UserPoolAddOns.AdvancedSecurityMode
+      value: ENFORCED
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: User pool does not enforce advanced security (threat protection not
+      set to ENFORCED).
+    passMessage: User pool enforces advanced security.
+    remediation:
+      summary: Enable advanced security threat protection in full-function (enforced)
+        mode.
+      steps:
+        - In the Cognito console open the user pool, go to Sign-in > Threat
+          protection, and set the mode to Full-function.
+        - Or run update-user-pool with --user-pool-add-ons
+          AdvancedSecurityMode=ENFORCED.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-settings-advanced-security.html
+  - id: CR-AWS-COGNITO-003
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool requires a strong minimum password length
+    description: The user pool password policy requires a minimum length of at least
+      14 characters.
+    rationale: Short minimum password lengths make brute-force and guessing attacks
+      practical against the user pool's directory of credentials.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_password_policy_minimum_length_14
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: gte
+      path: UserPool.Policies.PasswordPolicy.MinimumLength
+      value: 14
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: User pool password policy minimum length is below 14 characters.
+    passMessage: User pool password policy requires at least 14 characters.
+    remediation:
+      summary: Raise the password policy minimum length to 14 or more.
+      steps:
+        - In the Cognito console open the user pool, go to Sign-in > Password
+          policy, and set Minimum length to 14 or higher.
+        - Or run update-user-pool with a Policies.PasswordPolicy.MinimumLength
+          of 14 or greater.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-policies.html

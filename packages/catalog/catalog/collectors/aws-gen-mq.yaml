@@ -1,0 +1,18 @@
+collectors:
+  - id: aws.mq.list_brokers
+    provider: aws
+    service: mq
+    description: Lists Amazon MQ brokers in a region with their deployment mode,
+      engine type, and current state.
+    kind: single
+    command: aws mq list-brokers --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns the BrokerSummaries array. Each summary exposes BrokerArn,
+      BrokerId, BrokerName, BrokerState (enum CREATION_IN_PROGRESS /
+      CREATION_FAILED / DELETION_IN_PROGRESS / RUNNING / REBOOT_IN_PROGRESS /
+      CRITICAL_ACTION_REQUIRED), DeploymentMode (enum SINGLE_INSTANCE /
+      ACTIVE_STANDBY_MULTI_AZ / CLUSTER_MULTI_AZ), EngineType (ACTIVEMQ /
+      RABBITMQ), HostInstanceType, and Created. Deeper per-broker settings
+      (audit logging, encryption, public accessibility) require mq
+      describe-broker per BrokerId. Requires mq:ListBrokers.

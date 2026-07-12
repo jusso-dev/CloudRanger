@@ -1,0 +1,26 @@
+collectors:
+  - id: azure.cognitiveservices.accounts_list
+    provider: azure
+    service: cognitiveservices
+    description: >
+      All Azure Cognitive Services / Azure OpenAI accounts in the subscription,
+      including their ARM properties bag (publicNetworkAccess, disableLocalAuth,
+      encryption key source and key vault properties, custom subdomain).
+    kind: single
+    command: az cognitiveservices account list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription (and the Microsoft.CognitiveServices
+      resource provider registered). Returns a JSON ARRAY at the root of ARM
+      resource objects; use resourcesPath "$". Unlike the az appconfig group,
+      the cognitiveservices account list command does NOT flatten the properties
+      bag: the security-relevant fields live under each account's "properties"
+      object (properties.publicNetworkAccess, properties.disableLocalAuth,
+      properties.encryption.keySource,
+      properties.encryption.keyVaultProperties). properties.publicNetworkAccess
+      may be "Enabled", "Disabled", or null when never set (null is treated as
+      not explicitly Disabled). properties.disableLocalAuth may be absent
+      (defaults to key auth enabled). properties.encryption.keySource defaults
+      to "Microsoft.CognitiveServices" (service-managed) when a customer-managed
+      key is not configured.

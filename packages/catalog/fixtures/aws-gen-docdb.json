@@ -1,0 +1,168 @@
+[
+  {
+    "controlId": "CR-AWS-DOCDB-001",
+    "cases": [
+      {
+        "name": "pass encrypted cluster",
+        "expected": "pass",
+        "resourceId": "docdb-prod",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-prod",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd1234-ab12-cd34-ef56-abcdef123456",
+                  "DeletionProtection": true,
+                  "MultiAZ": true,
+                  "EnabledCloudwatchLogsExports": ["audit", "profiler"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail unencrypted cluster",
+        "expected": "fail",
+        "resourceId": "docdb-dev",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-dev",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": false,
+                  "DeletionProtection": false,
+                  "MultiAZ": false,
+                  "EnabledCloudwatchLogsExports": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DOCDB-002",
+    "cases": [
+      {
+        "name": "pass deletion protection on",
+        "expected": "pass",
+        "resourceId": "docdb-prod",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-prod",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "DeletionProtection": true,
+                  "MultiAZ": true,
+                  "EnabledCloudwatchLogsExports": ["audit"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail deletion protection off",
+        "expected": "fail",
+        "resourceId": "docdb-dev",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-dev",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "DeletionProtection": false,
+                  "MultiAZ": false,
+                  "EnabledCloudwatchLogsExports": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DOCDB-003",
+    "cases": [
+      {
+        "name": "pass audit log exported",
+        "expected": "pass",
+        "resourceId": "docdb-prod",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-prod",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "DeletionProtection": true,
+                  "MultiAZ": true,
+                  "EnabledCloudwatchLogsExports": ["audit", "profiler"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no audit export",
+        "expected": "fail",
+        "resourceId": "docdb-dev",
+        "records": [
+          {
+            "collectorId": "aws.docdb.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "docdb-dev",
+                  "Engine": "docdb",
+                  "Status": "available",
+                  "StorageEncrypted": true,
+                  "DeletionProtection": true,
+                  "MultiAZ": false,
+                  "EnabledCloudwatchLogsExports": ["profiler"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

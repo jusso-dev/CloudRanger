@@ -1,0 +1,165 @@
+[
+  {
+    "controlId": "CR-GCP-MEMORYSTORE-100",
+    "cases": [
+      {
+        "name": "pass - transit encryption SERVER_AUTHENTICATION",
+        "expected": "pass",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-tls",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-tls",
+                "displayName": "cache-tls",
+                "tier": "STANDARD_HA",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.3",
+                "port": 6378,
+                "transitEncryptionMode": "SERVER_AUTHENTICATION",
+                "authEnabled": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - transit encryption disabled",
+        "expected": "fail",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-plain",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-plain",
+                "displayName": "cache-plain",
+                "tier": "BASIC",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.4",
+                "port": 6379,
+                "transitEncryptionMode": "DISABLED"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-MEMORYSTORE-101",
+    "cases": [
+      {
+        "name": "pass - authEnabled true",
+        "expected": "pass",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-auth",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-auth",
+                "displayName": "cache-auth",
+                "tier": "STANDARD_HA",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.5",
+                "port": 6378,
+                "transitEncryptionMode": "SERVER_AUTHENTICATION",
+                "authEnabled": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - authEnabled absent",
+        "expected": "fail",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-noauth",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-noauth",
+                "displayName": "cache-noauth",
+                "tier": "BASIC",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.6",
+                "port": 6379,
+                "transitEncryptionMode": "DISABLED"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-MEMORYSTORE-102",
+    "cases": [
+      {
+        "name": "pass - customerManagedKey set",
+        "expected": "pass",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-cmek",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-cmek",
+                "displayName": "cache-cmek",
+                "tier": "STANDARD_HA",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.7",
+                "port": 6378,
+                "transitEncryptionMode": "SERVER_AUTHENTICATION",
+                "authEnabled": true,
+                "customerManagedKey": "projects/my-project/locations/us-central1/keyRings/redis/cryptoKeys/redis-key"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no customerManagedKey (Google default)",
+        "expected": "fail",
+        "resourceId": "projects/my-project/locations/us-central1/instances/cache-default",
+        "records": [
+          {
+            "collectorId": "gcp.redis.instances_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/my-project/locations/us-central1/instances/cache-default",
+                "displayName": "cache-default",
+                "tier": "BASIC",
+                "redisVersion": "REDIS_7_0",
+                "state": "READY",
+                "host": "10.0.0.8",
+                "port": 6379,
+                "transitEncryptionMode": "DISABLED"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

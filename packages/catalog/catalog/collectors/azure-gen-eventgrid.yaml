@@ -1,0 +1,16 @@
+collectors:
+  - id: azure.eventgrid.topics_list
+    provider: azure
+    service: eventgrid
+    description: All Azure Event Grid topics (Microsoft.EventGrid/topics) in the
+      subscription.
+    kind: single
+    command: az eventgrid topic list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. Returns a JSON array at the root;
+      each topic keeps an ARM-style properties bag. Security-relevant fields
+      live under properties: publicNetworkAccess ("Enabled"|"Disabled"),
+      disableLocalAuth (bool), provisioningState, endpoint, inputSchema. Empty
+      subscription returns [].

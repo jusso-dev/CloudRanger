@@ -1,0 +1,120 @@
+[
+  {
+    "controlId": "CR-AZURE-SQLMI-100",
+    "cases": [
+      {
+        "name": "public data endpoint disabled passes",
+        "expected": "pass",
+        "resourceId": "mi-prod",
+        "records": [
+          {
+            "collectorId": "azure.sql.mi_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mi-prod",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/managedInstances/mi-prod",
+                "type": "Microsoft.Sql/managedInstances",
+                "location": "australiaeast",
+                "sku": {
+                  "name": "GP_Gen5",
+                  "tier": "GeneralPurpose",
+                  "capacity": 4
+                },
+                "publicDataEndpointEnabled": false,
+                "minimalTlsVersion": "1.2",
+                "state": "Ready"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public data endpoint enabled fails",
+        "expected": "fail",
+        "resourceId": "mi-open",
+        "records": [
+          {
+            "collectorId": "azure.sql.mi_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mi-open",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/managedInstances/mi-open",
+                "type": "Microsoft.Sql/managedInstances",
+                "location": "australiaeast",
+                "sku": {
+                  "name": "GP_Gen5",
+                  "tier": "GeneralPurpose",
+                  "capacity": 4
+                },
+                "publicDataEndpointEnabled": true,
+                "minimalTlsVersion": "1.2",
+                "state": "Ready"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQLMI-101",
+    "cases": [
+      {
+        "name": "tls 1.2 passes",
+        "expected": "pass",
+        "resourceId": "mi-prod",
+        "records": [
+          {
+            "collectorId": "azure.sql.mi_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mi-prod",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/managedInstances/mi-prod",
+                "type": "Microsoft.Sql/managedInstances",
+                "location": "australiaeast",
+                "sku": {
+                  "name": "GP_Gen5",
+                  "tier": "GeneralPurpose",
+                  "capacity": 4
+                },
+                "publicDataEndpointEnabled": false,
+                "minimalTlsVersion": "1.2",
+                "state": "Ready"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tls 1.1 fails",
+        "expected": "fail",
+        "resourceId": "mi-legacy",
+        "records": [
+          {
+            "collectorId": "azure.sql.mi_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mi-legacy",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/managedInstances/mi-legacy",
+                "type": "Microsoft.Sql/managedInstances",
+                "location": "australiaeast",
+                "sku": {
+                  "name": "GP_Gen5",
+                  "tier": "GeneralPurpose",
+                  "capacity": 4
+                },
+                "publicDataEndpointEnabled": false,
+                "minimalTlsVersion": "1.1",
+                "state": "Ready"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

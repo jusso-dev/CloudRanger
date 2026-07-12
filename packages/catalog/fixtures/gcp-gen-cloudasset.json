@@ -1,0 +1,64 @@
+[
+  {
+    "controlId": "CR-GCP-CLOUDASSET-100",
+    "cases": [
+      {
+        "name": "pass - a feed is configured",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.cloudasset.feeds_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/123456789012/feeds/iam-change-feed",
+                "assetTypes": ["cloudresourcemanager.googleapis.com/Project"],
+                "contentType": "IAM_POLICY",
+                "feedOutputConfig": {
+                  "pubsubDestination": {
+                    "topic": "projects/my-project/topics/asset-changes"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no feeds configured (empty array)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.cloudasset.feeds_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      },
+      {
+        "name": "fail - Cloud Asset API disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.cloudasset.feeds_list",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.asset.feeds.list) FAILED_PRECONDITION: Cloud Asset API has not been used in project my-project before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudasset.googleapis.com/overview?project=my-project"
+          }
+        ]
+      },
+      {
+        "name": "error - permission denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.cloudasset.feeds_list",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.asset.feeds.list) PERMISSION_DENIED: The caller does not have permission cloudasset.feeds.list"
+          }
+        ]
+      }
+    ]
+  }
+]

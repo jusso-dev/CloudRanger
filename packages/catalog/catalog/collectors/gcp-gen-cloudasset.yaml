@@ -1,0 +1,24 @@
+collectors:
+  - id: gcp.cloudasset.feeds_list
+    provider: gcp
+    service: cloudasset
+    description: All Cloud Asset Inventory feeds configured on the project for
+      real-time asset change tracking.
+    kind: single
+    command: gcloud asset feeds list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires the Cloud Asset API (cloudasset.googleapis.com) to be enabled and
+      the cloudasset.feeds.list permission. With --format json gcloud returns a
+      JSON ARRAY at the root; each element mirrors the Cloud Asset Inventory
+      Feed resource. Fields include: name
+      (projects/<project-number>/feeds/<feed_id>), assetTypes (array of asset
+      type strings), assetNames (array of full asset resource names),
+      contentType (enum: RESOURCE, IAM_POLICY, OS_INVENTORY, ACCESS_POLICY,
+      RELATIONSHIP, CONTENT_TYPE_UNSPECIFIED),
+      feedOutputConfig.pubsubDestination.topic (the Pub/Sub topic receiving
+      change notifications) and an optional condition (CEL expression). An empty
+      array [] means no feeds are configured for the project. If the Cloud Asset
+      API is disabled the CLI errors with a SERVICE_DISABLED / has not been used
+      message.

@@ -1,0 +1,16 @@
+collectors:
+  - id: gcp.spanner.instances_list
+    provider: gcp
+    service: spanner
+    description: All Cloud Spanner instances in the project.
+    kind: single
+    command: gcloud spanner instances list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root. Each item has name
+      (projects/<p>/instances/<id>), config
+      (projects/<p>/instanceConfigs/<cfg>), displayName, nodeCount or
+      processingUnits, state, createTime and an optional labels map. Requires
+      spanner.instances.list. Deletion protection and CMEK (per-database) are
+      NOT returned by the list call, so checks depending on them are excluded.

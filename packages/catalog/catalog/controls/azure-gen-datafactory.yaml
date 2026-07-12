@@ -1,0 +1,86 @@
+controls:
+  - id: CR-AZURE-DATAFACTORY-100
+    version: 1.0.0
+    provider: azure
+    service: datafactory
+    title: Data Factory disables public network access
+    description: The factory's properties.publicNetworkAccess is set to Disabled so
+      the control plane is reachable only over private endpoints.
+    rationale: A factory with public network access enabled exposes its management
+      endpoint to the internet, widening the attack surface for credential
+      abuse, data-plane pivoting and exfiltration of linked-service secrets.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: datafactory_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.datafactory.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Data Factory allows public network access (publicNetworkAccess is
+      not Disabled).
+    passMessage: Data Factory restricts access to private endpoints
+      (publicNetworkAccess is Disabled).
+    remediation:
+      summary: Disable public network access on the factory and use private endpoints.
+      steps:
+        - Run az datafactory update to set --public-network-access Disabled for
+          the factory.
+        - Create a private endpoint for the factory so authorized clients can
+          still reach it.
+        - Verify no integration runtime or client depends on the public endpoint
+          before disabling.
+      verifyCommand: az datafactory list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/data-factory/data-factory-private-link
+      - https://learn.microsoft.com/en-us/cli/azure/datafactory
+  - id: CR-AZURE-DATAFACTORY-101
+    version: 1.0.0
+    provider: azure
+    service: datafactory
+    title: Data Factory uses a system-assigned managed identity
+    description: The factory has a system-assigned managed identity (identity.type
+      includes SystemAssigned) rather than relying on stored credentials.
+    rationale: Without a managed identity, linked services must authenticate with
+      long-lived secrets or keys stored in the factory, which are harder to
+      rotate and more likely to leak than an Azure-managed identity.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: datafactory_uses_managed_identity
+      license: Apache-2.0
+    collector: azure.datafactory.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: contains
+      path: identity.type
+      value: SystemAssigned
+    failMessage: Data Factory has no system-assigned managed identity (identity.type
+      is missing or does not include SystemAssigned).
+    passMessage: Data Factory uses a system-assigned managed identity for secure,
+      secret-less authentication.
+    remediation:
+      summary: Enable a system-assigned managed identity on the factory.
+      steps:
+        - Run az datafactory update to assign a system-assigned managed identity
+          to the factory.
+        - Re-configure linked services to authenticate using the managed
+          identity instead of stored keys.
+      verifyCommand: az datafactory list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/data-factory/data-factory-service-identity
+      - https://learn.microsoft.com/en-us/cli/azure/datafactory

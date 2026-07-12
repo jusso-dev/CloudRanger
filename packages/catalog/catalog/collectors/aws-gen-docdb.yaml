@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.docdb.describe_db_clusters
+    provider: aws
+    service: docdb
+    description: Lists Amazon DocumentDB (with MongoDB compatibility) clusters in a
+      region with their configuration attributes.
+    kind: single
+    command: aws docdb describe-db-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a DBClusters array. Each cluster exposes StorageEncrypted,
+      DeletionProtection, EnabledCloudwatchLogsExports (values such as "audit"
+      and "profiler"), MultiAZ and KmsKeyId. The same API also returns
+      non-DocumentDB (Neptune/RDS) engine clusters if present; EngineName
+      distinguishes them.

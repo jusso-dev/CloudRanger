@@ -1,0 +1,81 @@
+controls:
+  - id: CR-AZURE-AUTOMATION-100
+    version: 1.0.0
+    provider: azure
+    service: automation
+    title: Automation account disables public network access
+    description: >
+      Verifies that public network access is disabled on the Automation account
+      so its endpoints are only reachable over private networking.
+    rationale: >
+      A publicly reachable Automation account exposes runbook execution,
+      hybrid-worker registration, and stored automation assets to the internet,
+      widening the attack surface for credential brute forcing and abuse of
+      automation that often runs with elevated permissions.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: automation_account_public_access_disabled
+      license: Apache-2.0
+    collector: azure.automation.account_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: false
+    failMessage: Automation account allows public network access.
+    passMessage: Automation account public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Provision a private endpoint for the Automation account.
+        - Set public network access to Disabled (operator action).
+      verifyCommand: az automation account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/automation/how-to/private-link-security
+  - id: CR-AZURE-AUTOMATION-101
+    version: 1.0.0
+    provider: azure
+    service: automation
+    title: Automation account uses a system-assigned managed identity
+    description: >
+      Verifies that the Automation account has a system-assigned managed
+      identity so runbooks authenticate to Azure without stored credentials.
+    rationale: >
+      Without a managed identity, runbooks rely on Run As accounts, service
+      principal secrets, or stored credentials that can be leaked or expire; a
+      system-assigned managed identity removes long-lived secrets and lets
+      access be scoped and audited through Entra ID.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: automation_account_managed_identity_enabled
+      license: Apache-2.0
+    collector: azure.automation.account_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: contains
+      path: identity.type
+      value: SystemAssigned
+    failMessage: Automation account has no system-assigned managed identity.
+    passMessage: Automation account uses a system-assigned managed identity.
+    remediation:
+      summary: Enable a system-assigned managed identity on the account.
+      steps:
+        - Enable the system-assigned managed identity on the Automation account.
+        - Grant it least-privilege role assignments and remove stored
+          credentials.
+      verifyCommand: az automation account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/automation/enable-managed-identity-for-automation
