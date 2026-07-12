@@ -1,0 +1,27 @@
+collectors:
+  - id: aws.ec2.describe_images_self
+    provider: aws
+    service: ec2
+    description: AMIs owned by this account in one region, including public-launch status.
+    kind: single
+    command: aws ec2 describe-images --owners self --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires ec2:DescribeImages. The Public boolean reflects launch
+      permission for the "all" group.
+  - id: aws.ec2.describe_snapshot_attribute_cvp
+    provider: aws
+    service: ec2
+    description: createVolumePermission attribute for one EBS snapshot (who can
+      create volumes from it).
+    kind: per_resource
+    command: aws ec2 describe-snapshot-attribute --snapshot-id {resource}
+      --attribute createVolumePermission --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.ec2.describe_snapshots_self
+      itemsPath: Snapshots
+      resourceField: SnapshotId
+    outputFormat: json
+    notes: Requires ec2:DescribeSnapshotAttribute. A CreateVolumePermissions entry
+      with Group "all" means the snapshot is public.

@@ -26,4 +26,12 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
     rules: { "no-console": "off" },
   },
+  {
+    // Workflow scripts run in the Workflow runtime with injected globals.
+    files: ["scripts/wf-*.mjs"],
+    languageOptions: {
+      globals: { ...globals.node, args: "readonly", agent: "readonly", pipeline: "readonly", parallel: "readonly", phase: "readonly", log: "readonly", workflow: "readonly", budget: "readonly" },
+    },
+    rules: { "no-console": "off", "no-unused-vars": "off" },
+  },
 );

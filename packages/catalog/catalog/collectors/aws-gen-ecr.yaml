@@ -1,0 +1,46 @@
+collectors:
+  - id: aws.ecr.describe_repositories
+    provider: aws
+    service: ecr
+    description: Lists ECR repositories in a region with their tag mutability,
+      scan-on-push, and encryption configuration.
+    kind: single
+    command: aws ecr describe-repositories --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a top-level "repositories" array. Requires
+      ecr:DescribeRepositories. Empty array when no repositories exist in the
+      region.
+  - id: aws.ecr.get_repository_policy
+    provider: aws
+    service: ecr
+    description: Retrieves the resource-based (repository) policy document for one
+      ECR repository.
+    kind: per_resource
+    command: aws ecr get-repository-policy --repository-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.ecr.describe_repositories
+      itemsPath: repositories
+      resourceField: repositoryName
+    outputFormat: json
+    notes: Returns "policyText" as a JSON-encoded string. Raises
+      RepositoryPolicyNotFoundException when no policy is attached. Requires
+      ecr:GetRepositoryPolicy.
+  - id: aws.ecr.get_lifecycle_policy
+    provider: aws
+    service: ecr
+    description: Retrieves the lifecycle policy document for one ECR repository.
+    kind: per_resource
+    command: aws ecr get-lifecycle-policy --repository-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.ecr.describe_repositories
+      itemsPath: repositories
+      resourceField: repositoryName
+    outputFormat: json
+    notes: Returns "lifecyclePolicyText" as a JSON-encoded string. Raises
+      LifecyclePolicyNotFoundException when no lifecycle policy is configured.
+      Requires ecr:GetLifecyclePolicy.

@@ -1,0 +1,357 @@
+controls:
+  - id: CR-AWS-LAMBDA-001
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function resource policy is not public
+    description: The function's resource-based policy does not grant invoke
+      permission to a wildcard principal ("*") without a restricting condition.
+    rationale: A resource policy that allows Principal "*" lets any AWS account or
+      anonymous caller invoke the function, enabling abuse, data exfiltration,
+      or cost amplification.
+    severity: critical
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: awslambda_function_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.lambda.get_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: matches
+            path: Policy
+            pattern: '"Principal"\s*:\s*(\{\s*"AWS"\s*:\s*)?"\*"'
+          - op: notContains
+            path: Policy
+            value: Condition
+    onError:
+      - contains: ResourceNotFoundException
+        status: pass
+        message: No resource-based policy attached; function is not publicly accessible.
+      - contains: AccessDenied
+        status: error
+    failMessage: Lambda resource policy grants invoke to a wildcard principal
+      without a restricting condition.
+    passMessage: Lambda resource policy does not expose the function to anonymous or
+      any-account invocation.
+    remediation:
+      summary: Remove wildcard-principal statements or scope them with a condition.
+      steps:
+        - Review the policy with aws lambda get-policy --function-name <name>.
+        - Remove statements that allow Principal "*" or add a Condition
+          restricting SourceAccount/SourceArn.
+      verifyCommand: aws lambda get-policy --function-name <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html
+  - id: CR-AWS-LAMBDA-002
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function URL does not use public (NONE) auth
+    description: If a function URL is configured, its AuthType is AWS_IAM rather than NONE.
+    rationale: A function URL with AuthType NONE is publicly invocable over HTTPS
+      with no authentication, exposing the function to the internet.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: awslambda_function_url_public
+      license: Apache-2.0
+    collector: aws.lambda.get_function_url_config
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: AuthType
+      value: AWS_IAM
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: No function URL configured.
+      - contains: AccessDenied
+        status: error
+    failMessage: Lambda function URL uses AuthType NONE and is publicly invocable
+      without authentication.
+    passMessage: Lambda function URL requires AWS_IAM authentication.
+    remediation:
+      summary: Set the function URL AuthType to AWS_IAM.
+      steps:
+        - Update the function URL config to AuthType AWS_IAM, or remove the
+          function URL if not needed.
+      verifyCommand: aws lambda get-function-url-config --function-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html
+  - id: CR-AWS-LAMBDA-003
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function is attached to a VPC
+    description: The function has a VpcConfig with at least one subnet, so it runs
+      inside a customer VPC.
+    rationale: Functions inside a VPC can reach private resources over private
+      networking and have egress governed by security groups and route tables
+      instead of the shared Lambda service network.
+    severity: low
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: awslambda_function_inside_vpc
+      license: Apache-2.0
+    collector: aws.lambda.list_functions
+    resourcesPath: Functions
+    resourceIdField: FunctionName
+    resourceNameField: FunctionName
+    passWhen:
+      op: lengthGt
+      path: VpcConfig.SubnetIds
+      value: 0
+    failMessage: Lambda function is not attached to a VPC (no subnets configured).
+    passMessage: Lambda function runs inside a VPC.
+    remediation:
+      summary: Attach the function to VPC subnets and security groups.
+      steps:
+        - Configure VpcConfig with private subnets and a least-privilege
+          security group.
+      verifyCommand: aws lambda list-functions --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
+  - id: CR-AWS-LAMBDA-004
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function uses a supported runtime
+    description: For zip-package functions, the Runtime is not one of the known
+      deprecated/end-of-support runtimes.
+    rationale: Deprecated runtimes stop receiving security patches and eventually
+      cannot be updated or invoked, leaving unpatched vulnerabilities in
+      production code.
+    severity: medium
+    categories:
+      - resilience
+      - patch-management
+    source:
+      engine: prowler
+      id: awslambda_function_using_supported_runtimes
+      license: Apache-2.0
+    collector: aws.lambda.list_functions
+    resourcesPath: Functions
+    resourceIdField: FunctionName
+    resourceNameField: FunctionName
+    applicableWhen:
+      op: notEquals
+      path: PackageType
+      value: Image
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Runtime
+        - op: notIn
+          path: Runtime
+          values:
+            - python2.7
+            - python3.6
+            - python3.7
+            - python3.8
+            - nodejs
+            - nodejs4.3
+            - nodejs6.10
+            - nodejs8.10
+            - nodejs10.x
+            - nodejs12.x
+            - nodejs14.x
+            - nodejs16.x
+            - ruby2.5
+            - ruby2.7
+            - dotnetcore1.0
+            - dotnetcore2.0
+            - dotnetcore2.1
+            - dotnetcore3.1
+            - dotnet5.0
+            - dotnet7
+            - go1.x
+            - java8
+            - provided
+    failMessage: Lambda function uses a deprecated or end-of-support runtime.
+    passMessage: Lambda function uses a currently supported runtime.
+    remediation:
+      summary: Upgrade the function to a supported runtime.
+      steps:
+        - Migrate code to a supported runtime and update the function's Runtime
+          setting.
+      verifyCommand: aws lambda list-functions --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
+  - id: CR-AWS-LAMBDA-005
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function has active X-Ray tracing enabled
+    description: The function's TracingConfig.Mode is Active.
+    rationale: Without active tracing there is no distributed-trace visibility into
+      function behavior, hampering security investigation and
+      performance/latency diagnosis.
+    severity: low
+    categories:
+      - logging
+      - observability
+    source:
+      engine: prowler
+      id: awslambda_function_xray_tracing_enabled
+      license: Apache-2.0
+    collector: aws.lambda.list_functions
+    resourcesPath: Functions
+    resourceIdField: FunctionName
+    resourceNameField: FunctionName
+    passWhen:
+      op: equals
+      path: TracingConfig.Mode
+      value: Active
+    failMessage: Lambda function does not have active X-Ray tracing enabled.
+    passMessage: Lambda function has active X-Ray tracing enabled.
+    remediation:
+      summary: Enable active X-Ray tracing.
+      steps:
+        - Set TracingConfig Mode to Active and grant the function's role
+          AWSXRayDaemonWriteAccess.
+      verifyCommand: aws lambda list-functions --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html
+  - id: CR-AWS-LAMBDA-006
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function has a dead letter queue configured
+    description: The function has a DeadLetterConfig.TargetArn pointing to an SQS
+      queue or SNS topic.
+    rationale: Without a dead letter target, events that fail all asynchronous
+      invocation retries are silently discarded, causing undetected data loss.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: awslambda_function_no_secrets_in_variables
+      license: Apache-2.0
+    collector: aws.lambda.list_functions
+    resourcesPath: Functions
+    resourceIdField: FunctionName
+    resourceNameField: FunctionName
+    passWhen:
+      op: exists
+      path: DeadLetterConfig.TargetArn
+    failMessage: Lambda function has no dead letter queue configured; failed async
+      events are discarded.
+    passMessage: Lambda function has a dead letter target configured.
+    remediation:
+      summary: Configure a dead letter queue or topic.
+      steps:
+        - Set DeadLetterConfig TargetArn to an SQS queue or SNS topic and grant
+          the role permission to publish to it.
+      verifyCommand: aws lambda list-functions --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html
+  - id: CR-AWS-LAMBDA-007
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function has reserved concurrency configured
+    description: The function has a ReservedConcurrentExecutions value set.
+    rationale: A function without reserved concurrency can consume the whole account
+      concurrency pool during a spike or attack, starving other functions (a
+      denial-of-service and blast-radius concern).
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: awslambda_function_reserved_concurrency_configured
+      license: Apache-2.0
+    collector: aws.lambda.get_function_concurrency
+    resourceIdField: $resourceKey
+    passWhen:
+      op: exists
+      path: ReservedConcurrentExecutions
+    onError:
+      - contains: ResourceNotFoundException
+        status: fail
+        message: Function not found or no concurrency configured.
+      - contains: AccessDenied
+        status: error
+    failMessage: Lambda function has no reserved concurrency configured.
+    passMessage: Lambda function has reserved concurrency configured.
+    remediation:
+      summary: Set reserved concurrency for the function.
+      steps:
+        - Configure ReservedConcurrentExecutions to bound the function's
+          concurrency.
+      verifyCommand: aws lambda get-function-concurrency --function-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html
+  - id: CR-AWS-LAMBDA-008
+    version: 1.0.0
+    provider: aws
+    service: lambda
+    title: Lambda function environment variables are encrypted with a
+      customer-managed CMK
+    description: When the function defines environment variables, a customer-managed
+      KMS key (KMSKeyArn) is configured to encrypt them rather than the default
+      AWS-managed key.
+    rationale: Using a customer-managed CMK gives control over key rotation, access
+      policy, and audit of who can decrypt configuration that may hold sensitive
+      settings.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: awslambda_function_cmk_encryption_enabled
+      license: Apache-2.0
+    collector: aws.lambda.list_functions
+    resourcesPath: Functions
+    resourceIdField: FunctionName
+    resourceNameField: FunctionName
+    applicableWhen:
+      op: exists
+      path: Environment.Variables
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: KMSKeyArn
+        - op: startsWith
+          path: KMSKeyArn
+          value: "arn:"
+    failMessage: Lambda function environment variables are encrypted with the
+      default AWS-managed key, not a customer-managed CMK.
+    passMessage: Lambda function environment variables are encrypted with a
+      customer-managed CMK.
+    remediation:
+      summary: Configure a customer-managed KMS key for environment variable encryption.
+      steps:
+        - Create or select a customer-managed KMS key.
+        - Set the function's KMSKeyArn to that key so environment variables are
+          encrypted with it.
+      verifyCommand: aws lambda list-functions --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-encryption

@@ -1,0 +1,259 @@
+controls:
+  - id: CR-AWS-S3-011
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket ACL does not grant access to everyone
+    description: No ACL grant targets the AllUsers group (anonymous public access).
+    rationale: A bucket ACL granting the AllUsers group allows anonymous internet
+      users to read or write objects and ACLs, exposing or corrupting data.
+    severity: critical
+    categories:
+      - storage
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: s3_bucket_acl_prohibited
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_acl
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: Grants
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Grantee.Type
+            value: Group
+          - op: endsWith
+            path: Grantee.URI
+            value: global/AllUsers
+    failMessage: Bucket ACL grants access to the AllUsers group (public).
+    passMessage: Bucket ACL does not grant public access.
+    remediation:
+      summary: Remove AllUsers grants from the bucket ACL.
+      steps:
+        - Remove any grant to http://acs.amazonaws.com/groups/global/AllUsers.
+        - Prefer disabling ACLs entirely with Bucket Owner Enforced object
+          ownership.
+      verifyCommand: aws s3api get-bucket-acl --bucket <bucket> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - 2.1.1
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html
+  - id: CR-AWS-S3-012
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket ACL does not grant access to authenticated AWS users
+    description: No ACL grant targets the AuthenticatedUsers group (any
+      authenticated AWS account).
+    rationale: The AuthenticatedUsers group grants access to every authenticated AWS
+      account, not just your own, effectively making objects broadly accessible.
+    severity: high
+    categories:
+      - storage
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: s3_bucket_acl_prohibited
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_acl
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: Grants
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Grantee.Type
+            value: Group
+          - op: endsWith
+            path: Grantee.URI
+            value: global/AuthenticatedUsers
+    failMessage: Bucket ACL grants access to the AuthenticatedUsers group (any AWS account).
+    passMessage: Bucket ACL does not grant the AuthenticatedUsers group.
+    remediation:
+      summary: Remove AuthenticatedUsers grants from the bucket ACL.
+      steps:
+        - Remove any grant to
+          http://acs.amazonaws.com/groups/global/AuthenticatedUsers.
+        - Prefer disabling ACLs entirely with Bucket Owner Enforced object
+          ownership.
+      verifyCommand: aws s3api get-bucket-acl --bucket <bucket> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html
+  - id: CR-AWS-S3-014
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket has server access logging enabled
+    description: The bucket has a logging target configured (LoggingEnabled present).
+    rationale: Without server access logging there is no record of who accessed
+      objects, hampering incident investigation and audit.
+    severity: medium
+    categories:
+      - storage
+      - logging
+    source:
+      engine: prowler
+      id: s3_bucket_server_access_logging_enabled
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_logging
+    resourceIdField: $resourceKey
+    passWhen:
+      op: exists
+      path: LoggingEnabled.TargetBucket
+    failMessage: Server access logging is not enabled on the bucket.
+    passMessage: Server access logging is enabled.
+    remediation:
+      summary: Enable server access logging to a dedicated log bucket.
+      steps:
+        - Configure a target bucket and prefix for access logs.
+        - Ensure the log bucket is not the same bucket to avoid recursion.
+      verifyCommand: aws s3api get-bucket-logging --bucket <bucket> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.6"
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html
+  - id: CR-AWS-S3-015
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket has event notifications configured
+    description: The bucket has at least one topic, queue, or Lambda notification
+      configuration.
+    rationale: Event notifications enable automated detection and response to object
+      changes; their absence means changes may go unnoticed.
+    severity: low
+    categories:
+      - storage
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: s3_bucket_event_notifications_enabled
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_notification_configuration
+    resourceIdField: $resourceKey
+    passWhen:
+      op: or
+      exprs:
+        - op: lengthGt
+          path: TopicConfigurations
+          value: 0
+        - op: lengthGt
+          path: QueueConfigurations
+          value: 0
+        - op: lengthGt
+          path: LambdaFunctionConfigurations
+          value: 0
+    failMessage: No event notifications are configured on the bucket.
+    passMessage: Bucket has event notifications configured.
+    remediation:
+      summary: Configure event notifications for relevant object events.
+      steps:
+        - Add a notification targeting an SNS topic, SQS queue, or Lambda
+          function for the events you care about.
+      verifyCommand: aws s3api get-bucket-notification-configuration --bucket <bucket>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/NotificationHowTo.html
+  - id: CR-AWS-S3-016
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket has Object Lock enabled
+    description: The bucket has an Object Lock configuration with ObjectLockEnabled
+      set to Enabled.
+    rationale: Object Lock (WORM) protects objects from deletion or overwrite,
+      defending against ransomware and accidental loss for compliance-critical
+      data.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: s3_bucket_object_lock
+      license: Apache-2.0
+    collector: aws.s3.get_object_lock_configuration
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: ObjectLockConfiguration.ObjectLockEnabled
+      value: Enabled
+    onError:
+      - contains: ObjectLockConfigurationNotFoundError
+        status: fail
+        message: Object Lock is not enabled on the bucket.
+      - contains: AccessDenied
+        status: error
+    failMessage: Object Lock is not enabled on the bucket.
+    passMessage: Object Lock is enabled on the bucket.
+    remediation:
+      summary: Enable Object Lock on a new bucket and set a retention mode.
+      steps:
+        - Object Lock must be enabled at bucket creation; recreate the bucket
+          with Object Lock enabled if required.
+        - Configure a default retention mode and period appropriate to your data.
+      verifyCommand: aws s3api get-object-lock-configuration --bucket <bucket> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html
+  - id: CR-AWS-S3-017
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket has an enabled lifecycle rule
+    description: The bucket has at least one lifecycle rule in the Enabled status.
+    rationale: Lifecycle rules control cost and retention by transitioning or
+      expiring stale objects; their absence risks unbounded storage growth and
+      stale-data retention.
+    severity: low
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: s3_bucket_lifecycle_enabled
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_lifecycle_configuration
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: Rules
+      condition:
+        op: equals
+        path: Status
+        value: Enabled
+    onError:
+      - contains: NoSuchLifecycleConfiguration
+        status: fail
+        message: No lifecycle configuration exists on the bucket.
+      - contains: AccessDenied
+        status: error
+    failMessage: Bucket has no enabled lifecycle rule.
+    passMessage: Bucket has at least one enabled lifecycle rule.
+    remediation:
+      summary: Add a lifecycle rule to transition or expire objects.
+      steps:
+        - Define a lifecycle rule with Status Enabled and appropriate
+          transition/expiration actions.
+      verifyCommand: aws s3api get-bucket-lifecycle-configuration --bucket <bucket>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html

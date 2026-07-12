@@ -1,0 +1,594 @@
+controls:
+  - id: CR-AWS-IAM-011
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: AdministratorAccess is not attached directly to IAM users
+    description: No IAM user has the AWS managed AdministratorAccess policy attached
+      directly.
+    rationale: Attaching AdministratorAccess to individual users spreads full-admin
+      credentials and makes revocation and rotation hard. Admin rights should
+      flow through assumable roles or tightly controlled groups.
+    severity: high
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_administrator_access_with_mfa
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: UserDetailList
+    resourceIdField: Arn
+    resourceNameField: UserName
+    passWhen:
+      op: noneItem
+      path: AttachedManagedPolicies
+      condition:
+        op: equals
+        path: PolicyArn
+        value: arn:aws:iam::aws:policy/AdministratorAccess
+    failMessage: User has AdministratorAccess attached directly.
+    passMessage: User does not have AdministratorAccess attached directly.
+    remediation:
+      summary: Detach AdministratorAccess from users; grant admin via assumable roles.
+      steps:
+        - Detach arn:aws:iam::aws:policy/AdministratorAccess from the user.
+        - Grant elevated access through a role the user must assume with MFA.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
+  - id: CR-AWS-IAM-012
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: IAM users have no inline policies
+    description: No IAM user has an embedded (inline) policy; permissions are
+      delivered only through managed policies.
+    rationale: Inline policies are invisible to central policy governance, cannot be
+      reused or audited at scale, and frequently drift into over-privilege.
+    severity: medium
+    categories:
+      - identity
+      - governance
+    source:
+      engine: prowler
+      id: iam_inline_policy_no_administrative_privileges
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: UserDetailList
+    resourceIdField: Arn
+    resourceNameField: UserName
+    passWhen:
+      op: isEmpty
+      path: UserPolicyList
+    failMessage: User has one or more inline policies.
+    passMessage: User has no inline policies.
+    remediation:
+      summary: Replace inline user policies with managed policies.
+      steps:
+        - Recreate the permissions as a customer-managed policy.
+        - Attach the managed policy and delete the inline policy from the user.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html
+  - id: CR-AWS-IAM-013
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: IAM users have no directly attached managed policies
+    description: No IAM user has a managed policy attached directly; permissions are
+      granted through group membership.
+    rationale: Assigning policies per user makes access sprawl unmanageable and
+      error prone. CIS recommends attaching policies to groups and placing users
+      in groups so access is consistent and auditable.
+    severity: low
+    categories:
+      - identity
+      - governance
+    source:
+      engine: prowler
+      id: iam_policy_attached_only_to_group_or_roles
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: UserDetailList
+    resourceIdField: Arn
+    resourceNameField: UserName
+    passWhen:
+      op: isEmpty
+      path: AttachedManagedPolicies
+    failMessage: User has managed policies attached directly instead of via a group.
+    passMessage: User has no directly attached managed policies.
+    remediation:
+      summary: Attach policies to groups, not individual users.
+      steps:
+        - Create or choose a group with the required managed policies.
+        - Add the user to the group and detach the direct policies.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.15"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_groups.html
+  - id: CR-AWS-IAM-014
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: Password policy prevents reuse of at least 24 passwords
+    description: The account password policy sets PasswordReusePrevention to 24 or more.
+    rationale: Without password history enforcement, users cycle back to old,
+      potentially exposed passwords, undermining rotation controls.
+    severity: low
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: iam_password_policy_reuse_24
+      license: Apache-2.0
+    collector: aws.iam.get_account_password_policy
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: gte
+      path: PasswordPolicy.PasswordReusePrevention
+      value: 24
+    onError:
+      - contains: NoSuchEntity
+        status: fail
+        message: No account password policy is configured.
+    failMessage: Password reuse prevention is missing or fewer than 24.
+    passMessage: Password reuse prevention is at least 24.
+    remediation:
+      summary: Set password reuse prevention to 24.
+      steps:
+        - Update the account password policy so remembered passwords is 24.
+      verifyCommand: aws iam get-account-password-policy --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.9"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html
+  - id: CR-AWS-IAM-015
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: Password policy expires passwords within 90 days
+    description: The account password policy enables expiration with MaxPasswordAge
+      of 90 days or fewer.
+    rationale: Passwords that never expire remain valid indefinitely if leaked,
+      widening the window for credential-based compromise.
+    severity: low
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: iam_password_policy_expires_passwords_within_90_days_or_less
+      license: Apache-2.0
+    collector: aws.iam.get_account_password_policy
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: PasswordPolicy.ExpirePasswords
+          value: true
+        - op: gt
+          path: PasswordPolicy.MaxPasswordAge
+          value: 0
+        - op: lte
+          path: PasswordPolicy.MaxPasswordAge
+          value: 90
+    onError:
+      - contains: NoSuchEntity
+        status: fail
+        message: No account password policy is configured.
+    failMessage: Password expiration is disabled or greater than 90 days.
+    passMessage: Passwords expire within 90 days.
+    remediation:
+      summary: Enable password expiration at 90 days or fewer.
+      steps:
+        - Set MaxPasswordAge to 90 (or less) in the account password policy.
+      verifyCommand: aws iam get-account-password-policy --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.11"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html
+  - id: CR-AWS-IAM-016
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: Password policy requires a minimum length of 14
+    description: The account password policy sets MinimumPasswordLength to 14 or more.
+    rationale: Short passwords are trivially brute-forced. A 14-character minimum
+      materially raises the cost of credential guessing.
+    severity: medium
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: iam_password_policy_minimum_length_14
+      license: Apache-2.0
+    collector: aws.iam.get_account_password_policy
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: gte
+      path: PasswordPolicy.MinimumPasswordLength
+      value: 14
+    onError:
+      - contains: NoSuchEntity
+        status: fail
+        message: No account password policy is configured.
+    failMessage: Minimum password length is missing or fewer than 14.
+    passMessage: Minimum password length is at least 14.
+    remediation:
+      summary: Set minimum password length to 14.
+      steps:
+        - Update the account password policy MinimumPasswordLength to 14.
+      verifyCommand: aws iam get-account-password-policy --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.8"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html
+  - id: CR-AWS-IAM-017
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: Password policy enforces full character complexity
+    description: The account password policy requires uppercase, lowercase, numeric,
+      and symbol characters.
+    rationale: Complexity requirements enlarge the keyspace and reduce the success
+      rate of dictionary and brute-force attacks against console passwords.
+    severity: low
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: iam_password_policy_uppercase_lowercase_numbers_symbols
+      license: Apache-2.0
+    collector: aws.iam.get_account_password_policy
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: PasswordPolicy.RequireUppercaseCharacters
+          value: true
+        - op: equals
+          path: PasswordPolicy.RequireLowercaseCharacters
+          value: true
+        - op: equals
+          path: PasswordPolicy.RequireNumbers
+          value: true
+        - op: equals
+          path: PasswordPolicy.RequireSymbols
+          value: true
+    onError:
+      - contains: NoSuchEntity
+        status: fail
+        message: No account password policy is configured.
+    failMessage: Password policy does not require all four character classes.
+    passMessage: Password policy requires uppercase, lowercase, numbers, and symbols.
+    remediation:
+      summary: Require all four character classes in the password policy.
+      steps:
+        - Enable RequireUppercaseCharacters, RequireLowercaseCharacters,
+          RequireNumbers, and RequireSymbols.
+      verifyCommand: aws iam get-account-password-policy --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "2.0"
+        controls:
+          - "1.9"
+          - "1.10"
+          - "1.11"
+          - "1.12"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html
+  - id: CR-AWS-IAM-018
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: MFA is enabled for the root account
+    description: The account summary reports AccountMFAEnabled = 1, indicating the
+      root user has an MFA device.
+    rationale: The root user can bypass all IAM restrictions. Without MFA, a leaked
+      root password gives an attacker unconditional control of the account.
+    severity: critical
+    categories:
+      - identity
+      - authentication
+    source:
+      engine: prowler
+      id: iam_root_mfa_enabled
+      license: Apache-2.0
+    collector: aws.iam.get_account_summary
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: SummaryMap.AccountMFAEnabled
+      value: 1
+    failMessage: Root account does not have MFA enabled.
+    passMessage: Root account has MFA enabled.
+    remediation:
+      summary: Enable MFA on the root user.
+      steps:
+        - Sign in as root and register a hardware or virtual MFA device.
+      verifyCommand: aws iam get-account-summary --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.5"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
+  - id: CR-AWS-IAM-019
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: Root account has no active access keys
+    description: The account summary reports AccountAccessKeysPresent = 0, meaning
+      the root user has no access keys.
+    rationale: Root access keys grant programmatic, unrestricted control of the
+      account and cannot be constrained by IAM policy. They should never exist.
+    severity: critical
+    categories:
+      - identity
+      - credentials
+    source:
+      engine: prowler
+      id: iam_no_root_access_key
+      license: Apache-2.0
+    collector: aws.iam.get_account_summary
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: SummaryMap.AccountAccessKeysPresent
+      value: 0
+    failMessage: Root account has one or more access keys.
+    passMessage: Root account has no access keys.
+    remediation:
+      summary: Delete all root access keys.
+      steps:
+        - Sign in as root and delete every access key under Security credentials.
+        - Use IAM roles/users for programmatic access instead.
+      verifyCommand: aws iam get-account-summary --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.4"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#id_root-user_manage_add-key
+  - id: CR-AWS-IAM-020
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: IAM Access Analyzer is enabled and active
+    description: At least one IAM Access Analyzer with status ACTIVE exists in the region.
+    rationale: Access Analyzer surfaces resources shared with external principals.
+      Without an active analyzer, unintended cross-account or public access to
+      IAM roles, S3 buckets, KMS keys, and more goes undetected.
+    severity: medium
+    categories:
+      - identity
+      - logging
+      - public-exposure
+    source:
+      engine: prowler
+      id: accessanalyzer_enabled
+      license: Apache-2.0
+    collector: aws.accessanalyzer.list_analyzers
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: analyzers
+      condition:
+        op: equals
+        path: status
+        value: ACTIVE
+    failMessage: No active IAM Access Analyzer in this region.
+    passMessage: An active IAM Access Analyzer is present.
+    remediation:
+      summary: Create an active account-level Access Analyzer per region.
+      steps:
+        - In IAM Access Analyzer, create an analyzer with zone of trust =
+          account.
+      verifyCommand: aws accessanalyzer list-analyzers --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.20"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html
+  - id: CR-AWS-IAM-021
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: A support role is provisioned for incident management
+    description: At least one IAM role has the AWS managed AWSSupportAccess policy
+      attached, enabling managed handling of AWS Support cases.
+    rationale: CIS recommends a dedicated role with AWSSupportAccess so support
+      cases can be managed without granting broader privileges. Absence hampers
+      incident response.
+    severity: low
+    categories:
+      - identity
+      - resilience
+    source:
+      engine: prowler
+      id: iam_support_role_created
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: RoleDetailList
+      condition:
+        op: anyItem
+        path: AttachedManagedPolicies
+        condition:
+          op: equals
+          path: PolicyArn
+          value: arn:aws:iam::aws:policy/AWSSupportAccess
+    failMessage: No IAM role has the AWSSupportAccess policy attached.
+    passMessage: A role with AWSSupportAccess is present.
+    remediation:
+      summary: Create a role and attach AWSSupportAccess.
+      steps:
+        - Create an IAM role for support operations.
+        - Attach arn:aws:iam::aws:policy/AWSSupportAccess to it.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "1.17"
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html
+  - id: CR-AWS-IAM-022
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: No expired IAM server certificates are stored
+    description: Every IAM server certificate has an Expiration date in the future.
+    rationale: Expired certificates left in IAM can be accidentally attached to load
+      balancers or endpoints, causing outages or serving distrusted TLS.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: iam_server_certificate_expiration
+      license: Apache-2.0
+    collector: aws.iam.list_server_certificates
+    resourcesPath: ServerCertificateMetadataList
+    resourceIdField: Arn
+    resourceNameField: ServerCertificateName
+    passWhen:
+      op: daysSinceLt
+      path: Expiration
+      value: 0
+    failMessage: Server certificate is expired.
+    passMessage: Server certificate is not expired.
+    remediation:
+      summary: Replace or remove expired server certificates.
+      steps:
+        - Rotate the certificate to a valid one, or delete it if unused.
+      verifyCommand: aws iam list-server-certificates --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+  - id: CR-AWS-IAM-023
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: IAM groups have no inline policies
+    description: No IAM group has an embedded (inline) policy; group permissions
+      come only from managed policies.
+    rationale: Inline group policies evade central governance and reuse, and
+      commonly hide over-broad grants that apply to every member of the group.
+    severity: low
+    categories:
+      - identity
+      - governance
+    source:
+      engine: prowler
+      id: iam_inline_policy_no_administrative_privileges
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: GroupDetailList
+    resourceIdField: Arn
+    resourceNameField: GroupName
+    passWhen:
+      op: isEmpty
+      path: GroupPolicyList
+    failMessage: Group has one or more inline policies.
+    passMessage: Group has no inline policies.
+    remediation:
+      summary: Convert inline group policies to managed policies.
+      steps:
+        - Recreate the permissions as a customer-managed policy.
+        - Attach it to the group and delete the inline policy.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html
+  - id: CR-AWS-IAM-024
+    version: 1.0.0
+    provider: aws
+    service: iam
+    title: No IAM role trusts any AWS principal (wildcard) to assume it
+    description: No role's trust policy contains an Allow statement with
+      Principal.AWS set to "*", which would let any AWS account or anonymous
+      caller assume it.
+    rationale: A role trust policy open to Principal '*' permits cross-account or
+      unauthenticated assumption, a direct path to privilege escalation and
+      account takeover.
+    severity: critical
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: iam_role_cross_account_readonlyaccess_policy
+      license: Apache-2.0
+    collector: aws.iam.get_account_authorization_details
+    resourcesPath: RoleDetailList
+    resourceIdField: Arn
+    resourceNameField: RoleName
+    passWhen:
+      op: noneItem
+      path: AssumeRolePolicyDocument.Statement
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Effect
+            value: Allow
+          - op: or
+            exprs:
+              - op: equals
+                path: Principal.AWS
+                value: "*"
+              - op: anyItem
+                path: Principal.AWS
+                condition:
+                  op: equals
+                  path: $
+                  value: "*"
+    failMessage: Role trust policy allows any AWS principal ('*') to assume the role.
+    passMessage: Role trust policy does not allow a wildcard AWS principal.
+    remediation:
+      summary: Restrict the trust policy to specific principals.
+      steps:
+        - Replace Principal.AWS '*' with explicit account or role ARNs.
+        - Add sts:ExternalId or aws:SourceArn conditions for cross-account trust.
+      verifyCommand: aws iam get-account-authorization-details --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html

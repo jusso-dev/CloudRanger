@@ -1,0 +1,389 @@
+controls:
+  - id: CR-AWS-EKS-001
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster API server endpoint is not publicly accessible
+    description: The cluster's Kubernetes API server endpoint has public access
+      disabled (resourcesVpcConfig.endpointPublicAccess is false).
+    rationale: A publicly reachable Kubernetes API server dramatically increases
+      attack surface and exposes the control plane to internet-based credential
+      attacks and CVE exploitation.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: eks_endpoints_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: equals
+      path: cluster.resourcesVpcConfig.endpointPublicAccess
+      value: false
+    failMessage: EKS cluster API server endpoint is publicly accessible.
+    passMessage: EKS cluster API server endpoint public access is disabled.
+    remediation:
+      summary: Disable public endpoint access and use private access.
+      steps:
+        - Update the cluster endpoint access to enable private access and
+          disable public access.
+        - Ensure nodes and Fargate pods can reach the private endpoint within
+          the VPC.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.4.1
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
+  - id: CR-AWS-EKS-002
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster private endpoint access is enabled
+    description: The cluster's private API server endpoint is enabled
+      (resourcesVpcConfig.endpointPrivateAccess is true).
+    rationale: Enabling the private endpoint keeps intra-cluster Kubernetes API
+      traffic on the VPC private network instead of traversing the internet,
+      reducing exposure and latency.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: eks_cluster_private_nodes_enabled
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: equals
+      path: cluster.resourcesVpcConfig.endpointPrivateAccess
+      value: true
+    failMessage: EKS cluster private API server endpoint is disabled.
+    passMessage: EKS cluster private API server endpoint is enabled.
+    remediation:
+      summary: Enable private endpoint access on the cluster.
+      steps:
+        - Update the cluster VPC endpoint access configuration to enable private
+          access.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.4.1
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
+  - id: CR-AWS-EKS-003
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster public endpoint access is restricted by CIDR
+    description: When the public endpoint is enabled, publicAccessCidrs does not
+      include an open internet CIDR (0.0.0.0/0 or ::/0).
+    rationale: The default publicAccessCidrs value is 0.0.0.0/0, which allows the
+      entire internet to reach the API server; restricting to known ranges
+      limits who can attempt authentication.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: eks_control_plane_endpoint_access_restricted
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    applicableWhen:
+      op: equals
+      path: cluster.resourcesVpcConfig.endpointPublicAccess
+      value: true
+    passWhen:
+      op: noneItem
+      path: cluster.resourcesVpcConfig.publicAccessCidrs
+      condition:
+        op: isPublicCidr
+        path: $
+    failMessage: EKS cluster public endpoint allows access from any internet address
+      (0.0.0.0/0).
+    passMessage: EKS cluster public endpoint access is restricted to specific CIDR blocks.
+    remediation:
+      summary: Restrict publicAccessCidrs to known administrative ranges.
+      steps:
+        - Update the cluster endpoint public access CIDRs to a list of specific
+          trusted source ranges.
+        - Remove 0.0.0.0/0 and ::/0 from the allowed CIDRs.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.4.2
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
+  - id: CR-AWS-EKS-004
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster control plane audit logging is enabled
+    description: The cluster control plane logging configuration has an entry
+      enabling the "audit" log type.
+    rationale: Without audit logs, unauthorized API calls and configuration changes
+      to the Kubernetes control plane cannot be detected or investigated.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: eks_control_plane_logging_all_types_enabled
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: anyItem
+      path: cluster.logging.clusterLogging
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: enabled
+            value: true
+          - op: contains
+            path: types
+            value: audit
+    failMessage: EKS cluster control plane audit logging is not enabled.
+    passMessage: EKS cluster control plane audit logging is enabled.
+    remediation:
+      summary: Enable audit control plane logging to CloudWatch Logs.
+      steps:
+        - Update the cluster logging configuration to enable the audit log type.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.5.1
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
+  - id: CR-AWS-EKS-005
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster has all control plane log types enabled
+    description: The cluster control plane logging configuration enables api, audit,
+      authenticator, controllerManager, and scheduler log types.
+    rationale: Comprehensive control plane logging is required for full auditability
+      and incident response across authentication, authorization, and controller
+      activity.
+    severity: low
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: eks_control_plane_logging_all_types_enabled
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: and
+      exprs:
+        - op: anyItem
+          path: cluster.logging.clusterLogging
+          condition:
+            op: and
+            exprs:
+              - op: equals
+                path: enabled
+                value: true
+              - op: contains
+                path: types
+                value: api
+        - op: anyItem
+          path: cluster.logging.clusterLogging
+          condition:
+            op: and
+            exprs:
+              - op: equals
+                path: enabled
+                value: true
+              - op: contains
+                path: types
+                value: audit
+        - op: anyItem
+          path: cluster.logging.clusterLogging
+          condition:
+            op: and
+            exprs:
+              - op: equals
+                path: enabled
+                value: true
+              - op: contains
+                path: types
+                value: authenticator
+        - op: anyItem
+          path: cluster.logging.clusterLogging
+          condition:
+            op: and
+            exprs:
+              - op: equals
+                path: enabled
+                value: true
+              - op: contains
+                path: types
+                value: controllerManager
+        - op: anyItem
+          path: cluster.logging.clusterLogging
+          condition:
+            op: and
+            exprs:
+              - op: equals
+                path: enabled
+                value: true
+              - op: contains
+                path: types
+                value: scheduler
+    failMessage: EKS cluster does not have all control plane log types enabled.
+    passMessage: EKS cluster has all control plane log types enabled.
+    remediation:
+      summary: Enable all five control plane log types.
+      steps:
+        - Update the cluster logging configuration to enable api, audit,
+          authenticator, controllerManager, and scheduler.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.5.1
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
+  - id: CR-AWS-EKS-006
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster secrets are encrypted with a KMS key
+    description: The cluster has an encryptionConfig entry covering the "secrets"
+      resource with a KMS provider key ARN set.
+    rationale: Without envelope encryption via KMS, Kubernetes secrets are stored in
+      etcd using only default disk encryption, missing an additional key-managed
+      layer and separation of duties.
+    severity: high
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: eks_cluster_kms_cmk_encryption_in_secrets_enabled
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: anyItem
+      path: cluster.encryptionConfig
+      condition:
+        op: and
+        exprs:
+          - op: contains
+            path: resources
+            value: secrets
+          - op: exists
+            path: provider.keyArn
+    failMessage: EKS cluster does not encrypt Kubernetes secrets with a KMS key.
+    passMessage: EKS cluster encrypts Kubernetes secrets with a KMS key.
+    remediation:
+      summary: Enable KMS envelope encryption for secrets.
+      steps:
+        - Associate a symmetric KMS key with the cluster to enable secrets
+          encryption.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance:
+      - framework: cis-aws-eks
+        version: "1.5"
+        controls:
+          - 5.3.1
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/enable-kms.html
+  - id: CR-AWS-EKS-007
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster runs a supported Kubernetes version
+    description: The cluster Kubernetes version is 1.29 or later, avoiding
+      end-of-support releases.
+    rationale: Unsupported Kubernetes versions no longer receive security patches
+      from AWS, leaving the control plane exposed to known vulnerabilities.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: eks_cluster_uses_a_supported_version
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: gte
+      path: cluster.version
+      value: 1.29
+    failMessage: EKS cluster runs an unsupported or end-of-support Kubernetes version.
+    passMessage: EKS cluster runs a supported Kubernetes version.
+    remediation:
+      summary: Upgrade the cluster to a supported Kubernetes version.
+      steps:
+        - Plan and perform an in-place control plane version upgrade to a
+          currently supported minor version.
+        - Upgrade node groups and add-ons to match.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+  - id: CR-AWS-EKS-008
+    version: 1.0.0
+    provider: aws
+    service: eks
+    title: EKS cluster does not use the deprecated aws-auth ConfigMap-only
+      authentication
+    description: The cluster access authentication mode uses API entries (API or
+      API_AND_CONFIG_MAP), not the legacy CONFIG_MAP-only mode.
+    rationale: The CONFIG_MAP-only auth mode relies on the mutable aws-auth
+      ConfigMap with no IAM-native access entries, making access harder to audit
+      and prone to lockout or privilege drift.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: eks_cluster_uses_iam_authenticator
+      license: Apache-2.0
+    collector: aws.eks.describe_cluster
+    resourceIdField: $resourceKey
+    resourceNameField: cluster.name
+    passWhen:
+      op: in
+      path: cluster.accessConfig.authenticationMode
+      values:
+        - API
+        - API_AND_CONFIG_MAP
+    failMessage: EKS cluster uses the deprecated CONFIG_MAP-only authentication mode.
+    passMessage: EKS cluster uses API-based access entries for authentication.
+    remediation:
+      summary: Switch the cluster authentication mode to include API access entries.
+      steps:
+        - Update the cluster access config authentication mode to
+          API_AND_CONFIG_MAP or API.
+        - Migrate aws-auth ConfigMap mappings to access entries.
+      verifyCommand: aws eks describe-cluster --name <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/eks/latest/userguide/grant-k8s-access.html

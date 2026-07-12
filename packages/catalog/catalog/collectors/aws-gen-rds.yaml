@@ -1,0 +1,42 @@
+collectors:
+  - id: aws.rds.describe_db_clusters
+    provider: aws
+    service: rds
+    description: Lists RDS/Aurora DB clusters in a region with their configuration
+      attributes.
+    kind: single
+    command: aws rds describe-db-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns DBClusters array. Aurora and Multi-AZ cluster deployments appear
+      here; single-instance non-Aurora databases appear only in
+      describe-db-instances.
+  - id: aws.rds.describe_db_snapshots
+    provider: aws
+    service: rds
+    description: Lists RDS DB snapshots (manual and automated) in a region.
+    kind: single
+    command: aws rds describe-db-snapshots --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns DBSnapshots array. SnapshotType is "manual" or "automated". Only
+      manual snapshots can be shared publicly and support
+      describe-db-snapshot-attributes.
+  - id: aws.rds.describe_db_snapshot_attributes
+    provider: aws
+    service: rds
+    description: Restore attribute (shared accounts / public flag) for one manual DB
+      snapshot.
+    kind: per_resource
+    command: aws rds describe-db-snapshot-attributes --db-snapshot-identifier
+      {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.rds.describe_db_snapshots
+      itemsPath: DBSnapshots
+      resourceField: DBSnapshotIdentifier
+    outputFormat: json
+    notes: Only manual snapshots have restore attributes; automated snapshots return
+      an InvalidDBSnapshotState/SharedSnapshotNotFound style error.
+      AttributeName "restore" with AttributeValues containing "all" means the
+      snapshot is public.

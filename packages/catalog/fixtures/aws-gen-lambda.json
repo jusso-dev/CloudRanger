@@ -1,0 +1,518 @@
+[
+  {
+    "controlId": "CR-AWS-LAMBDA-001",
+    "cases": [
+      {
+        "name": "public wildcard principal without condition fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_policy",
+            "region": "us-east-1",
+            "resourceKey": "public-fn",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\"Version\":\"2012-10-17\",\"Id\":\"default\",\"Statement\":[{\"Sid\":\"public\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:111122223333:function:public-fn\"}]}",
+              "RevisionId": "abc-123"
+            }
+          }
+        ]
+      },
+      {
+        "name": "wildcard principal scoped by condition passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_policy",
+            "region": "us-east-1",
+            "resourceKey": "scoped-fn",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\"Version\":\"2012-10-17\",\"Id\":\"default\",\"Statement\":[{\"Sid\":\"s3\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"s3.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:111122223333:function:scoped-fn\",\"Condition\":{\"StringEquals\":{\"AWS:SourceAccount\":\"111122223333\"}}}]}",
+              "RevisionId": "def-456"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy attached passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_policy",
+            "region": "us-east-1",
+            "resourceKey": "private-fn",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the GetPolicy operation: The resource you requested does not exist."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-002",
+    "cases": [
+      {
+        "name": "auth NONE is public fail",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_function_url_config",
+            "region": "us-east-1",
+            "resourceKey": "url-open",
+            "exitCode": 0,
+            "output": {
+              "FunctionUrl": "https://abcd1234.lambda-url.us-east-1.on.aws/",
+              "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:url-open",
+              "AuthType": "NONE",
+              "Cors": {},
+              "CreationTime": "2024-01-10T00:00:00.000000Z",
+              "LastModifiedTime": "2024-01-10T00:00:00.000000Z",
+              "InvokeMode": "BUFFERED"
+            }
+          }
+        ]
+      },
+      {
+        "name": "auth AWS_IAM passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_function_url_config",
+            "region": "us-east-1",
+            "resourceKey": "url-iam",
+            "exitCode": 0,
+            "output": {
+              "FunctionUrl": "https://efgh5678.lambda-url.us-east-1.on.aws/",
+              "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:url-iam",
+              "AuthType": "AWS_IAM",
+              "Cors": {},
+              "CreationTime": "2024-01-10T00:00:00.000000Z",
+              "LastModifiedTime": "2024-01-10T00:00:00.000000Z",
+              "InvokeMode": "BUFFERED"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no function url not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_function_url_config",
+            "region": "us-east-1",
+            "resourceKey": "no-url",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the GetFunctionUrlConfig operation: The resource you requested does not exist."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-003",
+    "cases": [
+      {
+        "name": "function in vpc passes",
+        "expected": "pass",
+        "resourceId": "vpc-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "vpc-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:vpc-fn",
+                  "Runtime": "python3.12",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "PackageType": "Zip",
+                  "VpcConfig": {
+                    "SubnetIds": ["subnet-a", "subnet-b"],
+                    "SecurityGroupIds": ["sg-1"],
+                    "VpcId": "vpc-123"
+                  },
+                  "TracingConfig": {
+                    "Mode": "PassThrough"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "function not in vpc fails",
+        "expected": "fail",
+        "resourceId": "novpc-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "novpc-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:novpc-fn",
+                  "Runtime": "python3.12",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "PackageType": "Zip",
+                  "VpcConfig": {
+                    "SubnetIds": [],
+                    "SecurityGroupIds": [],
+                    "VpcId": ""
+                  },
+                  "TracingConfig": {
+                    "Mode": "PassThrough"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-004",
+    "cases": [
+      {
+        "name": "supported runtime passes",
+        "expected": "pass",
+        "resourceId": "modern-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "modern-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:modern-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "deprecated runtime fails",
+        "expected": "fail",
+        "resourceId": "legacy-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "legacy-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:legacy-fn",
+                  "Runtime": "python3.7",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "TracingConfig": {
+                    "Mode": "PassThrough"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "container image not applicable",
+        "expected": "not_applicable",
+        "resourceId": "image-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "image-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:image-fn",
+                  "PackageType": "Image",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "TracingConfig": {
+                    "Mode": "PassThrough"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-005",
+    "cases": [
+      {
+        "name": "active tracing passes",
+        "expected": "pass",
+        "resourceId": "traced-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "traced-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:traced-fn",
+                  "Runtime": "nodejs20.x",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "index.handler",
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passthrough tracing fails",
+        "expected": "fail",
+        "resourceId": "untraced-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "untraced-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:untraced-fn",
+                  "Runtime": "nodejs20.x",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "index.handler",
+                  "TracingConfig": {
+                    "Mode": "PassThrough"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-006",
+    "cases": [
+      {
+        "name": "dlq configured passes",
+        "expected": "pass",
+        "resourceId": "dlq-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "dlq-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:dlq-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "DeadLetterConfig": {
+                    "TargetArn": "arn:aws:sqs:us-east-1:111122223333:dlq"
+                  },
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no dlq fails",
+        "expected": "fail",
+        "resourceId": "nodlq-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "nodlq-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:nodlq-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-007",
+    "cases": [
+      {
+        "name": "reserved concurrency set passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_function_concurrency",
+            "region": "us-east-1",
+            "resourceKey": "conc-fn",
+            "exitCode": 0,
+            "output": {
+              "ReservedConcurrentExecutions": 50
+            }
+          }
+        ]
+      },
+      {
+        "name": "no reserved concurrency fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.lambda.get_function_concurrency",
+            "region": "us-east-1",
+            "resourceKey": "noconc-fn",
+            "exitCode": 0,
+            "output": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LAMBDA-008",
+    "cases": [
+      {
+        "name": "cmk configured with env vars passes",
+        "expected": "pass",
+        "resourceId": "cmk-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "cmk-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:cmk-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "Environment": {
+                    "Variables": {
+                      "STAGE": "prod"
+                    }
+                  },
+                  "KMSKeyArn": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "env vars without cmk fails",
+        "expected": "fail",
+        "resourceId": "defaultkey-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "defaultkey-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:defaultkey-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "Environment": {
+                    "Variables": {
+                      "STAGE": "prod"
+                    }
+                  },
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no env vars not applicable",
+        "expected": "not_applicable",
+        "resourceId": "noenv-fn",
+        "records": [
+          {
+            "collectorId": "aws.lambda.list_functions",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Functions": [
+                {
+                  "FunctionName": "noenv-fn",
+                  "FunctionArn": "arn:aws:lambda:us-east-1:111122223333:function:noenv-fn",
+                  "Runtime": "python3.12",
+                  "PackageType": "Zip",
+                  "Role": "arn:aws:iam::111122223333:role/r",
+                  "Handler": "app.handler",
+                  "TracingConfig": {
+                    "Mode": "Active"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

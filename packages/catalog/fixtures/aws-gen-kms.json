@@ -1,0 +1,397 @@
+[
+  {
+    "controlId": "CR-AWS-KMS-010",
+    "cases": [
+      {
+        "name": "fails wildcard principal",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_policy",
+            "region": "us-east-1",
+            "resourceKey": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"open\",\n      \"Effect\": \"Allow\",\n      \"Principal\": \"*\",\n      \"Action\": \"kms:Decrypt\",\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+              "PolicyName": "default"
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes scoped principal",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_policy",
+            "region": "us-east-1",
+            "resourceKey": "aaaa1111-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"root\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\"AWS\": \"arn:aws:iam::111122223333:root\"},\n      \"Action\": \"kms:*\",\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+              "PolicyName": "default"
+            }
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_policy",
+            "region": "us-east-1",
+            "resourceKey": "bbbb2222-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetKeyPolicy operation: User is not authorized to perform kms:GetKeyPolicy"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-011",
+    "cases": [
+      {
+        "name": "fails pending deletion",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "1111aaaa-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "1111aaaa-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/1111aaaa-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2021-04-05T14:04:00-07:00",
+                "Enabled": false,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "PendingDeletion",
+                "DeletionDate": "2026-08-05T00:00:00-07:00",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes enabled key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "2222bbbb-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "2222bbbb-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/2222bbbb-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2022-01-10T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Enabled",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable aws-managed",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "3333cccc-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "3333cccc-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/3333cccc-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2020-06-01T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "PendingDeletion",
+                "Origin": "AWS_KMS",
+                "KeyManager": "AWS",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-012",
+    "cases": [
+      {
+        "name": "fails disabled key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "4444dddd-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "4444dddd-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/4444dddd-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2021-01-01T09:00:00-07:00",
+                "Enabled": false,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Disabled",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes enabled key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "5555eeee-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "5555eeee-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/5555eeee-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2022-01-01T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Enabled",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable pending deletion",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "6666ffff-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "6666ffff-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/6666ffff-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2021-01-01T09:00:00-07:00",
+                "Enabled": false,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "PendingDeletion",
+                "DeletionDate": "2026-08-05T00:00:00-07:00",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-013",
+    "cases": [
+      {
+        "name": "fails rotation disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "us-east-1",
+            "resourceKey": "7777aaaa-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyRotationEnabled": false,
+              "KeyId": "7777aaaa-12ab-34cd-56ef-1234567890ab"
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes rotation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "us-east-1",
+            "resourceKey": "8888bbbb-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyRotationEnabled": true,
+              "KeyId": "8888bbbb-12ab-34cd-56ef-1234567890ab",
+              "RotationPeriodInDays": 365,
+              "NextRotationDate": "2027-01-10T09:00:00-07:00"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable asymmetric key",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "us-east-1",
+            "resourceKey": "9999cccc-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (UnsupportedOperationException) when calling the GetKeyRotationStatus operation: 9999cccc-12ab-34cd-56ef-1234567890ab origin is EXTERNAL which is not valid for this operation."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-014",
+    "cases": [
+      {
+        "name": "fails wildcard action",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_policy",
+            "region": "us-east-1",
+            "resourceKey": "aaaadddd-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"broad\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\"AWS\": \"arn:aws:iam::444455556666:root\"},\n      \"Action\": \"kms:*\",\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+              "PolicyName": "default"
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes scoped actions",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_policy",
+            "region": "us-east-1",
+            "resourceKey": "bbbbeeee-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "Policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"use\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\"AWS\": \"arn:aws:iam::111122223333:role/app\"},\n      \"Action\": [\"kms:Encrypt\", \"kms:Decrypt\", \"kms:GenerateDataKey\"],\n      \"Resource\": \"*\"\n    }\n  ]\n}",
+              "PolicyName": "default"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-015",
+    "cases": [
+      {
+        "name": "fails expiring imported material",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "cccc1111-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "cccc1111-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/cccc1111-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2023-02-01T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Enabled",
+                "ValidTo": "2026-09-01T00:00:00-07:00",
+                "Origin": "EXTERNAL",
+                "ExpirationModel": "KEY_MATERIAL_EXPIRES",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes non-expiring imported material",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "dddd2222-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "dddd2222-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/dddd2222-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2023-02-01T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Enabled",
+                "Origin": "EXTERNAL",
+                "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable aws-origin key",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kms.describe_key",
+            "region": "us-east-1",
+            "resourceKey": "eeee3333-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": {
+              "KeyMetadata": {
+                "AWSAccountId": "111122223333",
+                "KeyId": "eeee3333-12ab-34cd-56ef-1234567890ab",
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/eeee3333-12ab-34cd-56ef-1234567890ab",
+                "CreationDate": "2022-01-01T09:00:00-07:00",
+                "Enabled": true,
+                "KeyUsage": "ENCRYPT_DECRYPT",
+                "KeyState": "Enabled",
+                "Origin": "AWS_KMS",
+                "KeyManager": "CUSTOMER",
+                "KeySpec": "SYMMETRIC_DEFAULT"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

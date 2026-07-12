@@ -1,0 +1,682 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-040",
+    "cases": [
+      {
+        "name": "requires imdsv2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-01",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpPutResponseHopLimit": 1,
+                        "HttpEndpoint": "enabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "allows imdsv1",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-02",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "optional",
+                        "HttpPutResponseHopLimit": 1,
+                        "HttpEndpoint": "enabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "terminated not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-03",
+                      "State": {
+                        "Name": "terminated"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "optional",
+                        "HttpPutResponseHopLimit": 1
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-041",
+    "cases": [
+      {
+        "name": "hop limit 1",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-11",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpPutResponseHopLimit": 1
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "hop limit 3",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-12",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpPutResponseHopLimit": 3
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-042",
+    "cases": [
+      {
+        "name": "no public ip",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-21",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PrivateIpAddress": "10.0.0.5"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "has public ip",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-22",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "34.253.223.13",
+                      "PrivateIpAddress": "10.0.0.6"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-043",
+    "cases": [
+      {
+        "name": "detailed enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-31",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "Monitoring": {
+                        "State": "enabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "basic monitoring",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-32",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "Monitoring": {
+                        "State": "disabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-044",
+    "cases": [
+      {
+        "name": "profile attached",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-41",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "IamInstanceProfile": {
+                        "Arn": "arn:aws:iam::123456789012:instance-profile/webapp",
+                        "Id": "AIPAEXAMPLE"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no profile",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-42",
+                      "State": {
+                        "Name": "running"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-045",
+    "cases": [
+      {
+        "name": "encrypted volume",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_volumes",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Volumes": [
+                {
+                  "VolumeId": "vol-01",
+                  "State": "in-use",
+                  "Encrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/abc"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted volume",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_volumes",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Volumes": [
+                {
+                  "VolumeId": "vol-02",
+                  "State": "available",
+                  "Encrypted": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-046",
+    "cases": [
+      {
+        "name": "default encryption on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.get_ebs_encryption_by_default",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "EbsEncryptionByDefault": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "default encryption off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.get_ebs_encryption_by_default",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "EbsEncryptionByDefault": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-047",
+    "cases": [
+      {
+        "name": "encrypted snapshot",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshots_self",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Snapshots": [
+                {
+                  "SnapshotId": "snap-01",
+                  "VolumeId": "vol-01",
+                  "State": "completed",
+                  "Encrypted": true,
+                  "OwnerId": "123456789012"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted snapshot",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshots_self",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Snapshots": [
+                {
+                  "SnapshotId": "snap-02",
+                  "VolumeId": "vol-02",
+                  "State": "completed",
+                  "Encrypted": false,
+                  "OwnerId": "123456789012"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-048",
+    "cases": [
+      {
+        "name": "private snapshot",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshot_attribute_cvp",
+            "region": "us-east-1",
+            "resourceKey": "snap-01",
+            "exitCode": 0,
+            "output": {
+              "SnapshotId": "snap-01",
+              "CreateVolumePermissions": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "public snapshot",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshot_attribute_cvp",
+            "region": "us-east-1",
+            "resourceKey": "snap-02",
+            "exitCode": 0,
+            "output": {
+              "SnapshotId": "snap-02",
+              "CreateVolumePermissions": [
+                {
+                  "Group": "all"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "snapshot gone",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshot_attribute_cvp",
+            "region": "us-east-1",
+            "resourceKey": "snap-03",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (InvalidSnapshot.NotFound) when calling the DescribeSnapshotAttribute operation: The snapshot 'snap-03' does not exist."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-049",
+    "cases": [
+      {
+        "name": "private ami",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_images_self",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Images": [
+                {
+                  "ImageId": "ami-01",
+                  "Name": "golden-app",
+                  "State": "available",
+                  "Public": false,
+                  "OwnerId": "123456789012"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "public ami",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_images_self",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Images": [
+                {
+                  "ImageId": "ami-02",
+                  "Name": "leaky-app",
+                  "State": "available",
+                  "Public": true,
+                  "OwnerId": "123456789012"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-050",
+    "cases": [
+      {
+        "name": "in vpc",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-51",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "VpcId": "vpc-1234567890abcdef0"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "ec2 classic",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-52",
+                      "State": {
+                        "Name": "running"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-051",
+    "cases": [
+      {
+        "name": "ebs optimized",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-61",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "EbsOptimized": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not ebs optimized",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-62",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "EbsOptimized": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

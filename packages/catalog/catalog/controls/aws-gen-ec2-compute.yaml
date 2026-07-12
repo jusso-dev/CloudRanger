@@ -1,0 +1,481 @@
+controls:
+  - id: CR-AWS-EC2-040
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance requires IMDSv2
+    description: The instance metadata service requires session tokens (HttpTokens
+      set to required).
+    rationale: IMDSv1 lets SSRF and misconfigured proxies fetch instance role
+      credentials without a token; requiring IMDSv2 blocks that common
+      credential-theft path.
+    severity: high
+    categories:
+      - identity
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_instance_imdsv2_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: equals
+      path: MetadataOptions.HttpTokens
+      value: required
+    failMessage: Instance allows IMDSv1 (HttpTokens is not "required").
+    passMessage: Instance requires IMDSv2 session tokens.
+    remediation:
+      summary: Require IMDSv2 on the instance.
+      steps:
+        - Run aws ec2 modify-instance-metadata-options --instance-id <id>
+          --http-tokens required --http-endpoint enabled.
+        - Bake IMDSv2 enforcement into launch templates and AMIs.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.6"
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html
+  - id: CR-AWS-EC2-041
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance metadata hop limit is 1
+    description: The IMDS HttpPutResponseHopLimit is set to 1 so metadata cannot be
+      reached from containers behind the instance.
+    rationale: A hop limit above 1 lets containers or forwarding proxies on the host
+      reach the metadata endpoint and steal the instance role credentials.
+    severity: medium
+    categories:
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: ec2_instance_imdsv2_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: lte
+      path: MetadataOptions.HttpPutResponseHopLimit
+      value: 1
+    failMessage: Instance metadata hop limit is greater than 1, exposing metadata to
+      containers.
+    passMessage: Instance metadata hop limit is 1.
+    remediation:
+      summary: Set the IMDS hop limit to 1.
+      steps:
+        - Run aws ec2 modify-instance-metadata-options --instance-id <id>
+          --http-put-response-hop-limit 1.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-options.html
+  - id: CR-AWS-EC2-042
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance has no public IPv4 address
+    description: The instance is not assigned a public IPv4 address.
+    rationale: A public IP exposes the instance directly to the internet, widening
+      the attack surface for scanning and exploitation.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_instance_public_ip
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: notExists
+      path: PublicIpAddress
+    failMessage: Instance has a public IPv4 address and is internet-reachable.
+    passMessage: Instance has no public IPv4 address.
+    remediation:
+      summary: Remove the public IP and front the instance with private networking.
+      steps:
+        - Place the instance in a private subnet and route egress via NAT.
+        - Disable auto-assign public IP on the subnet or launch template.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html
+  - id: CR-AWS-EC2-043
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance has detailed monitoring enabled
+    description: CloudWatch detailed (1-minute) monitoring is enabled for the instance.
+    rationale: Basic 5-minute monitoring can miss short-lived spikes and delays
+      incident detection; detailed monitoring improves observability and
+      alerting fidelity.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: ec2_instance_detailed_monitoring_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: equals
+      path: Monitoring.State
+      value: enabled
+    failMessage: Instance does not have detailed monitoring enabled.
+    passMessage: Instance has detailed monitoring enabled.
+    remediation:
+      summary: Enable detailed monitoring.
+      steps:
+        - Run aws ec2 monitor-instances --instance-ids <id>.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-cloudwatch-new.html
+  - id: CR-AWS-EC2-044
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance uses an IAM instance profile
+    description: The instance has an IAM instance profile attached rather than
+      relying on static credentials.
+    rationale: Instances without an instance profile tend to use long-lived embedded
+      access keys, which are harder to rotate and a frequent source of
+      credential leakage.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: ec2_instance_profile_attached
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: exists
+      path: IamInstanceProfile.Arn
+    failMessage: Instance has no IAM instance profile attached.
+    passMessage: Instance uses an IAM instance profile.
+    remediation:
+      summary: Attach an IAM instance profile.
+      steps:
+        - Run aws ec2 associate-iam-instance-profile --instance-id <id>
+          --iam-instance-profile Name=<profile>.
+        - Remove any static access keys baked into the instance.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+  - id: CR-AWS-EC2-045
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS volume is encrypted
+    description: The EBS volume has encryption at rest enabled.
+    rationale: Unencrypted volumes expose data at rest if a snapshot, backup, or the
+      underlying storage is accessed by an unauthorized party.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: ec2_ebs_volume_encryption
+      license: Apache-2.0
+    collector: aws.ec2.describe_volumes
+    resourcesPath: Volumes
+    resourceIdField: VolumeId
+    resourceNameField: VolumeId
+    passWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    failMessage: EBS volume is not encrypted.
+    passMessage: EBS volume is encrypted.
+    remediation:
+      summary: Encrypt the volume via an encrypted snapshot copy.
+      steps:
+        - Snapshot the volume, copy the snapshot with encryption enabled, and
+          create a new volume from it.
+        - Enable EBS encryption by default so new volumes are always encrypted.
+      verifyCommand: aws ec2 describe-volumes --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - 2.2.1
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html
+  - id: CR-AWS-EC2-046
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS encryption by default is enabled
+    description: The account has EBS encryption-by-default turned on in the region.
+    rationale: Without encryption by default, newly created volumes are unencrypted
+      unless every workflow remembers to opt in, leaving data at rest exposed.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: ec2_ebs_default_encryption
+      license: Apache-2.0
+    collector: aws.ec2.get_ebs_encryption_by_default
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: EbsEncryptionByDefault
+      value: true
+    failMessage: EBS encryption by default is disabled in this region.
+    passMessage: EBS encryption by default is enabled.
+    remediation:
+      summary: Enable EBS encryption by default.
+      steps:
+        - Run aws ec2 enable-ebs-encryption-by-default --region <region>.
+      verifyCommand: aws ec2 get-ebs-encryption-by-default --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - 2.2.1
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html#encryption-by-default
+  - id: CR-AWS-EC2-047
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS snapshot is encrypted
+    description: The account-owned EBS snapshot is encrypted at rest.
+    rationale: An unencrypted snapshot preserves plaintext volume data and can be
+      copied or shared, exposing the data outside intended controls.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: ec2_ebs_snapshots_encrypted
+      license: Apache-2.0
+    collector: aws.ec2.describe_snapshots_self
+    resourcesPath: Snapshots
+    resourceIdField: SnapshotId
+    resourceNameField: SnapshotId
+    passWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    failMessage: EBS snapshot is not encrypted.
+    passMessage: EBS snapshot is encrypted.
+    remediation:
+      summary: Replace with an encrypted snapshot copy.
+      steps:
+        - Copy the snapshot with aws ec2 copy-snapshot --encrypted and delete
+          the unencrypted original.
+      verifyCommand: aws ec2 describe-snapshots --owner-ids self --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html
+  - id: CR-AWS-EC2-048
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS snapshot is not publicly restorable
+    description: The snapshot's createVolumePermission does not grant the "all"
+      group, so it is not public.
+    rationale: A public snapshot lets any AWS account create a volume from it and
+      read the data, a classic large-scale data exposure.
+    severity: critical
+    categories:
+      - public-exposure
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: ec2_ebs_public_snapshot
+      license: Apache-2.0
+    collector: aws.ec2.describe_snapshot_attribute_cvp
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: CreateVolumePermissions
+      condition:
+        op: equals
+        path: Group
+        value: all
+    onError:
+      - contains: InvalidSnapshot.NotFound
+        status: not_applicable
+        message: Snapshot no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: EBS snapshot is public (createVolumePermission grants group "all").
+    passMessage: EBS snapshot is not publicly restorable.
+    remediation:
+      summary: Remove public create-volume permission.
+      steps:
+        - Run aws ec2 modify-snapshot-attribute --snapshot-id <id> --attribute
+          createVolumePermission --operation-type remove --group-names all.
+      verifyCommand: aws ec2 describe-snapshot-attribute --snapshot-id <id>
+        --attribute createVolumePermission --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modifying-snapshot-permissions.html
+  - id: CR-AWS-EC2-049
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: AMI is not public
+    description: The account-owned AMI is not shared with all AWS accounts.
+    rationale: A public AMI can leak baked-in secrets, credentials, or proprietary
+      software and expose your image contents to anyone.
+    severity: high
+    categories:
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_ami_public
+      license: Apache-2.0
+    collector: aws.ec2.describe_images_self
+    resourcesPath: Images
+    resourceIdField: ImageId
+    resourceNameField: Name
+    passWhen:
+      op: notEquals
+      path: Public
+      value: true
+    failMessage: AMI is public and readable by any AWS account.
+    passMessage: AMI is private.
+    remediation:
+      summary: Make the AMI private.
+      steps:
+        - Run aws ec2 modify-image-attribute --image-id <id> --launch-permission
+          "Remove=[{Group=all}]".
+      verifyCommand: aws ec2 describe-images --owners self --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-intro.html
+  - id: CR-AWS-EC2-050
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance runs in a VPC
+    description: The instance is launched inside a VPC (has a VpcId) rather than
+      EC2-Classic.
+    rationale: EC2-Classic instances lack VPC network isolation and
+      security-group/NACL controls, greatly weakening network segmentation.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: ec2_instance_managed_by_ssm
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: exists
+      path: VpcId
+    failMessage: Instance is not in a VPC (EC2-Classic).
+    passMessage: Instance runs in a VPC.
+    remediation:
+      summary: Migrate the instance into a VPC.
+      steps:
+        - Recreate the workload in a VPC subnet with appropriate security groups.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
+  - id: CR-AWS-EC2-051
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance is EBS-optimized
+    description: The instance has EBS-optimized throughput enabled.
+    rationale: Without EBS optimization, storage and network traffic contend on the
+      same path, degrading I/O predictability for data-critical and resilient
+      workloads.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: ec2_instance_ebs_optimization
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: equals
+      path: EbsOptimized
+      value: true
+    failMessage: Instance is not EBS-optimized.
+    passMessage: Instance is EBS-optimized.
+    remediation:
+      summary: Enable EBS optimization.
+      steps:
+        - Stop the instance and run aws ec2 modify-instance-attribute
+          --instance-id <id> --ebs-optimized.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-optimized.html

@@ -1,0 +1,294 @@
+[
+  {
+    "controlId": "CR-AWS-S3-011",
+    "cases": [
+      {
+        "name": "private acl",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "DisplayName": "acct",
+                "ID": "abc123"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "CanonicalUser",
+                    "DisplayName": "acct",
+                    "ID": "abc123"
+                  },
+                  "Permission": "FULL_CONTROL"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "allusers grant",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "b2",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "DisplayName": "acct",
+                "ID": "abc123"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "Group",
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+                  },
+                  "Permission": "READ"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-012",
+    "cases": [
+      {
+        "name": "no authenticatedusers grant",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "ID": "abc123"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "CanonicalUser",
+                    "ID": "abc123"
+                  },
+                  "Permission": "FULL_CONTROL"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "authenticatedusers grant",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "b2",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "ID": "abc123"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "Group",
+                    "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+                  },
+                  "Permission": "READ"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-014",
+    "cases": [
+      {
+        "name": "logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_logging",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "LoggingEnabled": {
+                "TargetBucket": "log-bucket",
+                "TargetPrefix": "b1/"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_logging",
+            "resourceKey": "b2",
+            "exitCode": 0,
+            "output": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-015",
+    "cases": [
+      {
+        "name": "queue notification present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_notification_configuration",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "QueueConfigurations": [
+                {
+                  "Id": "n1",
+                  "QueueArn": "arn:aws:sqs:us-east-1:111122223333:q1",
+                  "Events": ["s3:ObjectCreated:*"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no notifications",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_notification_configuration",
+            "resourceKey": "b2",
+            "exitCode": 0,
+            "output": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-016",
+    "cases": [
+      {
+        "name": "object lock enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_object_lock_configuration",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "ObjectLockConfiguration": {
+                "ObjectLockEnabled": "Enabled",
+                "Rule": {
+                  "DefaultRetention": {
+                    "Mode": "GOVERNANCE",
+                    "Days": 30
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "object lock not configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_object_lock_configuration",
+            "resourceKey": "b2",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ObjectLockConfigurationNotFoundError) when calling the GetObjectLockConfiguration operation: Object Lock configuration does not exist for this bucket"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-017",
+    "cases": [
+      {
+        "name": "enabled lifecycle rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_lifecycle_configuration",
+            "resourceKey": "b1",
+            "exitCode": 0,
+            "output": {
+              "Rules": [
+                {
+                  "ID": "expire-old",
+                  "Filter": {
+                    "Prefix": ""
+                  },
+                  "Status": "Enabled",
+                  "Expiration": {
+                    "Days": 365
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "only disabled rule",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_lifecycle_configuration",
+            "resourceKey": "b2",
+            "exitCode": 0,
+            "output": {
+              "Rules": [
+                {
+                  "ID": "off",
+                  "Filter": {
+                    "Prefix": ""
+                  },
+                  "Status": "Disabled",
+                  "Expiration": {
+                    "Days": 30
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no lifecycle config",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_lifecycle_configuration",
+            "resourceKey": "b3",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchLifecycleConfiguration) when calling the GetBucketLifecycleConfiguration operation: The lifecycle configuration does not exist"
+          }
+        ]
+      }
+    ]
+  }
+]

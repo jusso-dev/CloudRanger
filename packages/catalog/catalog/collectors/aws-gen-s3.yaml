@@ -1,0 +1,77 @@
+collectors:
+  - id: aws.s3.get_bucket_acl
+    provider: aws
+    service: s3
+    description: The access control list (owner and grants) for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-acl --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: 'Returns {"Owner": {...}, "Grants": [{"Grantee": {"Type": "Group", "URI":
+      "..."}, "Permission": "READ"}]}. Public grants use the AllUsers or
+      AuthenticatedUsers group URIs.'
+  - id: aws.s3.get_bucket_logging
+    provider: aws
+    service: s3
+    description: Server access logging configuration for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-logging --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: 'Returns {"LoggingEnabled": {"TargetBucket": "...", "TargetPrefix":
+      "..."}} when enabled, or an empty object {} when disabled.'
+  - id: aws.s3.get_bucket_notification_configuration
+    provider: aws
+    service: s3
+    description: Event notification configuration for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-notification-configuration --bucket {resource}
+      --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: Returns TopicConfigurations, QueueConfigurations and/or
+      LambdaFunctionConfigurations arrays when set; returns an empty object {}
+      when no notifications are configured.
+  - id: aws.s3.get_object_lock_configuration
+    provider: aws
+    service: s3
+    description: Object Lock (WORM) configuration for one bucket.
+    kind: per_resource
+    command: aws s3api get-object-lock-configuration --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: 'Returns {"ObjectLockConfiguration": {"ObjectLockEnabled": "Enabled",
+      ...}} when enabled. Errors with ObjectLockConfigurationNotFoundError when
+      Object Lock is not enabled — submit the error.'
+  - id: aws.s3.get_bucket_lifecycle_configuration
+    provider: aws
+    service: s3
+    description: Lifecycle rules for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-lifecycle-configuration --bucket {resource}
+      --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: 'Returns {"Rules": [{"ID": "...", "Status": "Enabled", ...}]}. Errors
+      with NoSuchLifecycleConfiguration when no lifecycle policy exists — submit
+      the error.'

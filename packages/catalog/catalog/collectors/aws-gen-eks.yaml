@@ -1,0 +1,26 @@
+collectors:
+  - id: aws.eks.list_clusters
+    provider: aws
+    service: eks
+    description: Lists the names of all EKS clusters in the region.
+    kind: single
+    command: aws eks list-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires eks:ListClusters. Output has a "clusters" array of cluster name
+      strings.
+  - id: aws.eks.describe_cluster
+    provider: aws
+    service: eks
+    description: Full description of one EKS cluster (endpoint access, logging,
+      encryption, version, auth mode).
+    kind: per_resource
+    command: aws eks describe-cluster --name {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.eks.list_clusters
+      itemsPath: clusters
+      resourceField: $
+    outputFormat: json
+    notes: Requires eks:DescribeCluster. Output nested under top-level "cluster"
+      object.

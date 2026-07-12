@@ -1,0 +1,332 @@
+controls:
+  - id: CR-AWS-KMS-010
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: KMS key policy does not grant access to all AWS principals
+    description: The key policy document does not contain a statement whose
+      Principal is the wildcard "*" or {"AWS":"*"}, which would open the key to
+      every AWS account.
+    rationale: A KMS key policy that names the "*" principal exposes decrypt/encrypt
+      and administrative operations to any AWS account (subject only to
+      conditions), a critical path to data exposure and key compromise.
+    severity: critical
+    categories:
+      - identity
+      - encryption
+      - public-exposure
+    source:
+      engine: prowler
+      id: kms_key_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.kms.get_key_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Policy
+        - op: not
+          expr:
+            op: matches
+            path: Policy
+            pattern: '"Principal"\s*:\s*"\*"'
+        - op: not
+          expr:
+            op: matches
+            path: Policy
+            pattern: '"AWS"\s*:\s*"\*"'
+    onError:
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found or no default policy.
+      - contains: AccessDenied
+        status: error
+    failMessage: KMS key policy grants access to the "*" (all AWS accounts) principal.
+    passMessage: KMS key policy does not name a wildcard principal.
+    remediation:
+      summary: Remove wildcard principals from the key policy.
+      steps:
+        - Retrieve the policy with aws kms get-key-policy and identify
+          statements whose Principal is "*" or {"AWS":"*"}.
+        - Replace the wildcard with specific account/role ARNs, or scope with
+          tight aws:PrincipalOrgID / kms:CallerAccount conditions and re-apply
+          with put-key-policy.
+      verifyCommand: aws kms get-key-policy --key-id <key-id> --policy-name default
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+  - id: CR-AWS-KMS-011
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: Customer-managed KMS key is not scheduled for deletion
+    description: The KMS key's KeyState is not PendingDeletion or PendingReplicaDeletion.
+    rationale: A key scheduled for deletion will become permanently unusable,
+      rendering all data encrypted under it irrecoverable once the waiting
+      period elapses; an unexpected pending-deletion state signals accidental or
+      malicious loss of data-recovery capability.
+    severity: high
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_cmk_not_deleted_unintentionally
+      license: Apache-2.0
+    collector: aws.kms.describe_key
+    resourceIdField: $resourceKey
+    resourceNameField: KeyMetadata.Arn
+    applicableWhen:
+      op: equals
+      path: KeyMetadata.KeyManager
+      value: CUSTOMER
+    passWhen:
+      op: and
+      exprs:
+        - op: notEquals
+          path: KeyMetadata.KeyState
+          value: PendingDeletion
+        - op: notEquals
+          path: KeyMetadata.KeyState
+          value: PendingReplicaDeletion
+    onError:
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found.
+      - contains: AccessDenied
+        status: error
+    failMessage: Customer-managed KMS key is scheduled for deletion.
+    passMessage: Customer-managed KMS key is not pending deletion.
+    remediation:
+      summary: Cancel key deletion if unintended.
+      steps:
+        - Confirm no workload still encrypts data under this key.
+        - If deletion was unintended, run aws kms cancel-key-deletion and then
+          aws kms enable-key to restore it.
+      verifyCommand: aws kms describe-key --key-id <key-id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys.html
+  - id: CR-AWS-KMS-012
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: Customer-managed KMS key is enabled
+    description: The KMS key is enabled (KeyState Enabled and Enabled=true), not
+      left in a Disabled state.
+    rationale: A disabled key cannot encrypt or decrypt, silently breaking dependent
+      workloads; long-lived disabled customer-managed keys are also candidates
+      for accidental deletion and indicate drift in key lifecycle management.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_cmk_are_used
+      license: Apache-2.0
+    collector: aws.kms.describe_key
+    resourceIdField: $resourceKey
+    resourceNameField: KeyMetadata.Arn
+    applicableWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: KeyMetadata.KeyManager
+          value: CUSTOMER
+        - op: notEquals
+          path: KeyMetadata.KeyState
+          value: PendingDeletion
+        - op: notEquals
+          path: KeyMetadata.KeyState
+          value: PendingReplicaDeletion
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: KeyMetadata.Enabled
+          value: true
+        - op: equals
+          path: KeyMetadata.KeyState
+          value: Enabled
+    onError:
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found.
+      - contains: AccessDenied
+        status: error
+    failMessage: Customer-managed KMS key is disabled.
+    passMessage: Customer-managed KMS key is enabled.
+    remediation:
+      summary: Re-enable or decommission the key.
+      steps:
+        - Determine whether the key is still required.
+        - If required, run aws kms enable-key; if genuinely unused, schedule
+          deletion through the normal review process instead of leaving it
+          disabled indefinitely.
+      verifyCommand: aws kms describe-key --key-id <key-id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/enabling-keys.html
+  - id: CR-AWS-KMS-013
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: Customer-managed KMS key has automatic rotation enabled
+    description: Automatic annual key material rotation is enabled
+      (KeyRotationEnabled=true) for the customer-managed symmetric key.
+    rationale: Rotating key material limits the amount of data protected by any
+      single cryptographic key, reducing blast radius if key material is ever
+      compromised; CIS requires rotation on customer-managed symmetric keys.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_cmk_rotation_enabled
+      license: Apache-2.0
+    collector: aws.kms.get_key_rotation_status
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: KeyRotationEnabled
+      value: true
+    onError:
+      - contains: UnsupportedOperationException
+        status: not_applicable
+        message: Rotation not supported for this key type (asymmetric/HMAC/external).
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found.
+      - contains: AccessDenied
+        status: error
+    failMessage: Customer-managed KMS key does not have automatic rotation enabled.
+    passMessage: Customer-managed KMS key has automatic rotation enabled.
+    remediation:
+      summary: Enable automatic key rotation.
+      steps:
+        - Run aws kms enable-key-rotation --key-id <key-id> on each
+          customer-managed symmetric encryption key.
+      verifyCommand: aws kms get-key-rotation-status --key-id <key-id> --region
+        <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.8"
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
+  - id: CR-AWS-KMS-014
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: KMS key policy does not grant kms:* to a broad principal
+    description: The key policy does not combine a wildcard Action ("kms:*" or "*")
+      with a wildcard AWS principal, which would grant full key control to all
+      accounts.
+    rationale: A statement granting all KMS actions to the "*" principal lets any
+      account administer the key, including scheduling deletion, altering the
+      policy, and decrypting data - an account-takeover-grade exposure of the
+      key.
+    severity: critical
+    categories:
+      - identity
+      - encryption
+      - public-exposure
+    source:
+      engine: prowler
+      id: kms_key_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.kms.get_key_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Policy
+        - op: not
+          expr:
+            op: matches
+            path: Policy
+            pattern: '"Action"\s*:\s*"kms:\*"'
+        - op: not
+          expr:
+            op: matches
+            path: Policy
+            pattern: '"Action"\s*:\s*"\*"'
+    onError:
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found or no default policy.
+      - contains: AccessDenied
+        status: error
+    failMessage: KMS key policy grants a wildcard Action (kms:* or *).
+    passMessage: KMS key policy does not grant wildcard KMS actions.
+    remediation:
+      summary: Scope key policy actions to the minimum required.
+      steps:
+        - Replace "kms:*" / "*" Action entries with the specific operations each
+          principal needs.
+        - Reserve broad key administration only for tightly scoped,
+          account-local administrator roles.
+      verifyCommand: aws kms get-key-policy --key-id <key-id> --policy-name default
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-default.html
+  - id: CR-AWS-KMS-015
+    version: 1.0.0
+    provider: aws
+    service: kms
+    title: KMS key with imported material does not have expiring key material
+    description: For keys whose Origin is EXTERNAL, the ExpirationModel is not
+      KEY_MATERIAL_EXPIRES (imported material set to never expire).
+    rationale: Imported key material set to expire will be deleted by KMS at
+      ValidTo, at which point the key becomes unusable and all data encrypted
+      under it is unrecoverable until material is re-imported; unmanaged expiry
+      is a resilience and availability risk.
+    severity: high
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_cmk_not_deleted_unintentionally
+      license: Apache-2.0
+    collector: aws.kms.describe_key
+    resourceIdField: $resourceKey
+    resourceNameField: KeyMetadata.Arn
+    applicableWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: KeyMetadata.KeyManager
+          value: CUSTOMER
+        - op: equals
+          path: KeyMetadata.Origin
+          value: EXTERNAL
+    passWhen:
+      op: notEquals
+      path: KeyMetadata.ExpirationModel
+      value: KEY_MATERIAL_EXPIRES
+    onError:
+      - contains: NotFoundException
+        status: not_applicable
+        message: Key not found.
+      - contains: AccessDenied
+        status: error
+    failMessage: KMS key uses imported material that is configured to expire.
+    passMessage: KMS key with imported material does not expire.
+    remediation:
+      summary: Re-import material without an expiration or manage renewal.
+      steps:
+        - Where continuous availability is required, re-import key material with
+          ExpirationModel KEY_MATERIAL_DOES_NOT_EXPIRE.
+        - Otherwise, track ValidTo and schedule re-import ahead of expiry.
+      verifyCommand: aws kms describe-key --key-id <key-id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html

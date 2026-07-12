@@ -1,0 +1,411 @@
+controls:
+  - id: CR-AWS-RDS-010
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS manual DB snapshots are not public
+    description: No manual DB snapshot has its restore attribute shared with "all"
+      Amazon Web Services accounts.
+    rationale: A public RDS snapshot lets any AWS account restore a full copy of the
+      database, exposing all stored data.
+    severity: critical
+    categories:
+      - public-exposure
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: rds_snapshots_public_access
+      license: Apache-2.0
+    collector: aws.rds.describe_db_snapshot_attributes
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: DBSnapshotAttributesResult.DBSnapshotAttributes
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: AttributeName
+            value: restore
+          - op: anyItem
+            path: AttributeValues
+            condition:
+              op: equals
+              path: $
+              value: all
+    onError:
+      - contains: DBSnapshotNotFound
+        status: not_applicable
+        message: Snapshot no longer exists.
+      - contains: InvalidDBSnapshotState
+        status: not_applicable
+        message: Attributes not available (likely automated snapshot).
+      - contains: AccessDenied
+        status: error
+    failMessage: Manual DB snapshot is shared publicly (restore attribute contains "all").
+    passMessage: Manual DB snapshot is not shared with all accounts.
+    remediation:
+      summary: Make the snapshot private.
+      steps:
+        - Run modify-db-snapshot-attribute to remove "all" from the restore
+          attribute values.
+        - Restrict sharing to specific trusted account IDs only if sharing is
+          required.
+      verifyCommand: aws rds describe-db-snapshot-attributes --db-snapshot-identifier
+        <id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html
+  - id: CR-AWS-RDS-011
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has IAM database authentication enabled
+    description: The DB instance uses IAM database authentication instead of relying
+      solely on static database passwords.
+    rationale: IAM database authentication removes long-lived static DB credentials,
+      enabling centralized, short-lived, auditable access.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: rds_instance_iam_authentication_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: IAMDatabaseAuthenticationEnabled
+      value: true
+    failMessage: DB instance does not have IAM database authentication enabled.
+    passMessage: DB instance has IAM database authentication enabled.
+    remediation:
+      summary: Enable IAM database authentication.
+      steps:
+        - Run modify-db-instance with --enable-iam-database-authentication and
+          apply.
+        - Grant rds-db:connect IAM permissions to the relevant principals.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html
+  - id: CR-AWS-RDS-012
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance exports logs to CloudWatch Logs
+    description: The DB instance has at least one log type enabled for export to
+      CloudWatch Logs.
+    rationale: Without CloudWatch Logs exports, database engine and audit logs are
+      not centrally retained for security investigation.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: rds_instance_integration_cloudwatch_logs
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: EnabledCloudwatchLogsExports
+        - op: not
+          expr:
+            op: isEmpty
+            path: EnabledCloudwatchLogsExports
+    failMessage: DB instance does not export any logs to CloudWatch Logs.
+    passMessage: DB instance exports logs to CloudWatch Logs.
+    remediation:
+      summary: Enable CloudWatch Logs exports.
+      steps:
+        - Run modify-db-instance with --cloudwatch-logs-export-configuration
+          enabling the log types supported by the engine (e.g. audit, error,
+          general, slowquery, postgresql).
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_LogAccess.html
+  - id: CR-AWS-RDS-013
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has auto minor version upgrade enabled
+    description: The DB instance automatically applies minor engine version upgrades
+      during maintenance windows.
+    rationale: Disabling automatic minor upgrades leaves databases running on engine
+      versions with known, already-patched vulnerabilities.
+    severity: low
+    categories:
+      - resilience
+      - patching
+    source:
+      engine: prowler
+      id: rds_instance_minor_version_upgrade_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: AutoMinorVersionUpgrade
+      value: true
+    failMessage: DB instance does not have auto minor version upgrade enabled.
+    passMessage: DB instance has auto minor version upgrade enabled.
+    remediation:
+      summary: Enable automatic minor version upgrades.
+      steps:
+        - Run modify-db-instance with --auto-minor-version-upgrade.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Maintenance.html
+  - id: CR-AWS-RDS-014
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance copies tags to snapshots
+    description: The DB instance is configured to copy its tags to any snapshots it creates.
+    rationale: Without copy-tags-to-snapshot, snapshots lose ownership,
+      cost-allocation, and access-control tags, weakening governance and
+      tag-based policies.
+    severity: low
+    categories:
+      - governance
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_copy_tags_to_snapshots
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: CopyTagsToSnapshot
+      value: true
+    failMessage: DB instance does not copy tags to snapshots.
+    passMessage: DB instance copies tags to snapshots.
+    remediation:
+      summary: Enable copy tags to snapshot.
+      steps:
+        - Run modify-db-instance with --copy-tags-to-snapshot.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.html
+  - id: CR-AWS-RDS-015
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has enhanced monitoring enabled
+    description: Enhanced Monitoring is active (MonitoringInterval is greater than 0
+      seconds).
+    rationale: Enhanced Monitoring provides OS-level metrics needed to detect
+      resource-exhaustion and anomalous behavior that instance-level CloudWatch
+      metrics miss.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_enhanced_monitoring_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: gt
+      path: MonitoringInterval
+      value: 0
+    failMessage: DB instance does not have Enhanced Monitoring enabled
+      (MonitoringInterval is 0).
+    passMessage: DB instance has Enhanced Monitoring enabled.
+    remediation:
+      summary: Enable Enhanced Monitoring.
+      steps:
+        - Create or reuse an IAM role with the AmazonRDSEnhancedMonitoringRole
+          policy.
+        - Run modify-db-instance with --monitoring-interval (e.g. 60) and
+          --monitoring-role-arn.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Monitoring.OS.html
+  - id: CR-AWS-RDS-016
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster has deletion protection enabled
+    description: The Aurora/RDS DB cluster has deletion protection turned on.
+    rationale: Without deletion protection a cluster can be permanently destroyed by
+      accident or by a compromised principal, causing irreversible data loss.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: rds_cluster_deletion_protection
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: DeletionProtection
+      value: true
+    failMessage: DB cluster does not have deletion protection enabled.
+    passMessage: DB cluster has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the cluster.
+      steps:
+        - Run modify-db-cluster with --deletion-protection.
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_DeleteCluster.html
+  - id: CR-AWS-RDS-017
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance does not use the default engine port
+    description: The DB instance listens on a non-default port for its engine (not
+      3306, 5432, 1433, or 1521).
+    rationale: Default database ports are the first targets of automated scanning
+      and brute forcing; a non-default port adds a layer of obscurity.
+    severity: low
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: rds_instance_no_public_access
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Endpoint.Port
+        - op: notIn
+          path: Endpoint.Port
+          values:
+            - 3306
+            - 5432
+            - 1433
+            - 1521
+            - 5439
+    failMessage: DB instance listens on a well-known default database port.
+    passMessage: DB instance listens on a non-default port.
+    remediation:
+      summary: Move the database to a non-default port.
+      steps:
+        - Run modify-db-instance with --db-port-number set to a non-default
+          value.
+        - Update client connection strings and security group rules accordingly.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ConnectToInstance.html
+  - id: CR-AWS-RDS-018
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance uses a current CA certificate
+    description: The DB instance server certificate uses a modern CA bundle
+      (rds-ca-rsa2048-g1 or later), not the deprecated rds-ca-2019.
+    rationale: The rds-ca-2019 certificate authority is deprecated/expired;
+      instances still using it risk TLS validation failures and weaker
+      certificate assurance.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: rds_instance_certificate_expiration
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: CACertificateIdentifier
+        - op: notEquals
+          path: CACertificateIdentifier
+          value: rds-ca-2019
+    failMessage: DB instance uses the deprecated rds-ca-2019 CA certificate.
+    passMessage: DB instance uses a current CA certificate.
+    remediation:
+      summary: Rotate to a current CA certificate.
+      steps:
+        - Run modify-db-instance with --ca-certificate-identifier
+          rds-ca-rsa2048-g1 and apply during a maintenance window.
+        - Ensure clients trust the new CA bundle before rotating.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL-certificate-rotation.html
+  - id: CR-AWS-RDS-019
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance Performance Insights is encrypted with a CMK
+    description: When Performance Insights is enabled, its data is encrypted with a
+      KMS key (PerformanceInsightsKMSKeyId is set).
+    rationale: Performance Insights stores query text and performance data; without
+      a configured KMS key its encryption assurance and key governance are
+      unclear.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: rds_instance_deprecated_engine_version
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    applicableWhen:
+      op: equals
+      path: PerformanceInsightsEnabled
+      value: true
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: PerformanceInsightsKMSKeyId
+        - op: not
+          expr:
+            op: isEmpty
+            path: PerformanceInsightsKMSKeyId
+    failMessage: Performance Insights is enabled but has no KMS key configured for
+      encryption.
+    passMessage: Performance Insights is encrypted with a KMS key.
+    remediation:
+      summary: Enable Performance Insights encryption with a KMS key.
+      steps:
+        - Recreate or modify Performance Insights configuration specifying
+          --performance-insights-kms-key-id.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.Enabling.html

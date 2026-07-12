@@ -1,0 +1,357 @@
+[
+  {
+    "controlId": "CR-AWS-ECR-001",
+    "cases": [
+      {
+        "name": "scan on push enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/app",
+                  "registryId": "111122223333",
+                  "repositoryName": "app",
+                  "repositoryUri": "111122223333.dkr.ecr.us-east-1.amazonaws.com/app",
+                  "createdAt": "2024-01-10T12:00:00+00:00",
+                  "imageTagMutability": "IMMUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": true
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "AES256"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "scan on push disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/legacy",
+                  "registryId": "111122223333",
+                  "repositoryName": "legacy",
+                  "repositoryUri": "111122223333.dkr.ecr.us-east-1.amazonaws.com/legacy",
+                  "createdAt": "2023-05-01T09:00:00+00:00",
+                  "imageTagMutability": "MUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": false
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "AES256"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECR-002",
+    "cases": [
+      {
+        "name": "immutable tags pass",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/app",
+                  "registryId": "111122223333",
+                  "repositoryName": "app",
+                  "imageTagMutability": "IMMUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": true
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "AES256"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "mutable tags fail",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/legacy",
+                  "registryId": "111122223333",
+                  "repositoryName": "legacy",
+                  "imageTagMutability": "MUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": false
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "AES256"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECR-003",
+    "cases": [
+      {
+        "name": "kms encrypted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/secure",
+                  "registryId": "111122223333",
+                  "repositoryName": "secure",
+                  "imageTagMutability": "IMMUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": true
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "KMS",
+                    "kmsKey": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "default aes256 fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.describe_repositories",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "repositories": [
+                {
+                  "repositoryArn": "arn:aws:ecr:us-east-1:111122223333:repository/app",
+                  "registryId": "111122223333",
+                  "repositoryName": "app",
+                  "imageTagMutability": "MUTABLE",
+                  "imageScanningConfiguration": {
+                    "scanOnPush": true
+                  },
+                  "encryptionConfiguration": {
+                    "encryptionType": "AES256"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECR-004",
+    "cases": [
+      {
+        "name": "lifecycle policy present passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_lifecycle_policy",
+            "region": "us-east-1",
+            "resourceKey": "app",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "app",
+              "lifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"expire untagged\",\"selection\":{\"tagStatus\":\"untagged\",\"countType\":\"sinceImagePushed\",\"countUnit\":\"days\",\"countNumber\":14},\"action\":{\"type\":\"expire\"}}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no lifecycle policy fails via onError",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_lifecycle_policy",
+            "region": "us-east-1",
+            "resourceKey": "legacy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (LifecyclePolicyNotFoundException) when calling the GetLifecyclePolicy operation: Lifecycle policy does not exist for the repository with name 'legacy' in the registry with id '111122223333'"
+          }
+        ]
+      },
+      {
+        "name": "access denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_lifecycle_policy",
+            "region": "us-east-1",
+            "resourceKey": "restricted",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetLifecyclePolicy operation: User is not authorized to perform ecr:GetLifecyclePolicy"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECR-005",
+    "cases": [
+      {
+        "name": "scoped policy passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "app",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "app",
+              "policyText": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowPull\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":[\"ecr:GetDownloadUrlForLayer\",\"ecr:BatchGetImage\"]}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "wildcard principal fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "public",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "public",
+              "policyText": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowAll\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":[\"ecr:GetDownloadUrlForLayer\",\"ecr:BatchGetImage\"]}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy attached is pass via onError",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "nopolicy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (RepositoryPolicyNotFoundException) when calling the GetRepositoryPolicy operation: Repository policy does not exist for the repository with name 'nopolicy' in the registry with id '111122223333'"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECR-006",
+    "cases": [
+      {
+        "name": "cross account with org condition passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "shared",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "shared",
+              "policyText": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"OrgPull\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"ecr:BatchGetImage\"],\"Condition\":{\"StringEquals\":{\"aws:PrincipalOrgID\":\"o-abc123\"}}}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "wildcard principal without condition fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "open",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "open",
+              "policyText": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"Wide\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"ecr:BatchGetImage\"]}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "scoped account principal passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "app",
+            "exitCode": 0,
+            "output": {
+              "registryId": "111122223333",
+              "repositoryName": "app",
+              "policyText": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"Trusted\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::444455556666:root\"},\"Action\":[\"ecr:BatchGetImage\"]}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy attached is pass via onError",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecr.get_repository_policy",
+            "region": "us-east-1",
+            "resourceKey": "nopolicy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (RepositoryPolicyNotFoundException) when calling the GetRepositoryPolicy operation: Repository policy does not exist for the repository with name 'nopolicy' in the registry with id '111122223333'"
+          }
+        ]
+      }
+    ]
+  }
+]

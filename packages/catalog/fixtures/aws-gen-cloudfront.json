@@ -1,0 +1,661 @@
+[
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-001",
+    "cases": [
+      {
+        "name": "fails allow-all default behavior",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E1AAA",
+                    "ARN": "arn:aws:cloudfront::111122223333:distribution/E1AAA",
+                    "DomainName": "d1.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "allow-all"
+                    },
+                    "CacheBehaviors": {
+                      "Quantity": 0
+                    },
+                    "Origins": {
+                      "Quantity": 1,
+                      "Items": []
+                    },
+                    "ViewerCertificate": {
+                      "MinimumProtocolVersion": "TLSv1.2_2021"
+                    },
+                    "Restrictions": {
+                      "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                      }
+                    },
+                    "WebACLId": ""
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes redirect-to-https",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E1BBB",
+                    "ARN": "arn:aws:cloudfront::111122223333:distribution/E1BBB",
+                    "DomainName": "d2.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "CacheBehaviors": {
+                      "Quantity": 0
+                    },
+                    "Origins": {
+                      "Quantity": 1,
+                      "Items": []
+                    },
+                    "ViewerCertificate": {
+                      "MinimumProtocolVersion": "TLSv1.2_2021"
+                    },
+                    "Restrictions": {
+                      "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                      }
+                    },
+                    "WebACLId": ""
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-002",
+    "cases": [
+      {
+        "name": "fails one behavior allow-all",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E2AAA",
+                    "DomainName": "d3.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "CacheBehaviors": {
+                      "Quantity": 2,
+                      "Items": [
+                        {
+                          "PathPattern": "/api/*",
+                          "ViewerProtocolPolicy": "https-only"
+                        },
+                        {
+                          "PathPattern": "/img/*",
+                          "ViewerProtocolPolicy": "allow-all"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes all secure",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E2BBB",
+                    "DomainName": "d4.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "CacheBehaviors": {
+                      "Quantity": 1,
+                      "Items": [
+                        {
+                          "PathPattern": "/api/*",
+                          "ViewerProtocolPolicy": "https-only"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with no extra behaviors",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E2CCC",
+                    "DomainName": "d5.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "CacheBehaviors": {
+                      "Quantity": 0
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-003",
+    "cases": [
+      {
+        "name": "fails deprecated TLSv1",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E3AAA",
+                    "DomainName": "d6.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "https-only"
+                    },
+                    "ViewerCertificate": {
+                      "CloudFrontDefaultCertificate": false,
+                      "MinimumProtocolVersion": "TLSv1"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes TLSv1.2_2021",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E3BBB",
+                    "DomainName": "d7.cloudfront.net",
+                    "DefaultCacheBehavior": {
+                      "ViewerProtocolPolicy": "https-only"
+                    },
+                    "ViewerCertificate": {
+                      "ACMCertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/abc",
+                      "MinimumProtocolVersion": "TLSv1.2_2021"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-004",
+    "cases": [
+      {
+        "name": "fails empty WebACLId",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E4AAA",
+                    "DomainName": "d8.cloudfront.net",
+                    "WebACLId": ""
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with web acl arn",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E4BBB",
+                    "DomainName": "d9.cloudfront.net",
+                    "WebACLId": "arn:aws:wafv2:us-east-1:111122223333:global/webacl/prod/1234"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-005",
+    "cases": [
+      {
+        "name": "fails http-only custom origin",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E5AAA",
+                    "DomainName": "d10.cloudfront.net",
+                    "Origins": {
+                      "Quantity": 1,
+                      "Items": [
+                        {
+                          "Id": "custom-1",
+                          "DomainName": "origin.example.com",
+                          "CustomOriginConfig": {
+                            "HTTPPort": 80,
+                            "HTTPSPort": 443,
+                            "OriginProtocolPolicy": "http-only"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes https-only custom and s3 origin",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E5BBB",
+                    "DomainName": "d11.cloudfront.net",
+                    "Origins": {
+                      "Quantity": 2,
+                      "Items": [
+                        {
+                          "Id": "custom-1",
+                          "DomainName": "origin.example.com",
+                          "CustomOriginConfig": {
+                            "OriginProtocolPolicy": "https-only"
+                          }
+                        },
+                        {
+                          "Id": "s3-1",
+                          "DomainName": "bucket.s3.amazonaws.com",
+                          "S3OriginConfig": {
+                            "OriginAccessIdentity": ""
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-006",
+    "cases": [
+      {
+        "name": "fails restriction none",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E6AAA",
+                    "DomainName": "d12.cloudfront.net",
+                    "Restrictions": {
+                      "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes whitelist",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E6BBB",
+                    "DomainName": "d13.cloudfront.net",
+                    "Restrictions": {
+                      "GeoRestriction": {
+                        "RestrictionType": "whitelist",
+                        "Quantity": 2,
+                        "Items": ["AU", "US"]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-007",
+    "cases": [
+      {
+        "name": "fails logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E7AAA",
+            "exitCode": 0,
+            "output": {
+              "ETag": "E2QWERTY",
+              "DistributionConfig": {
+                "CallerReference": "ref-1",
+                "Comment": "",
+                "Enabled": true,
+                "DefaultRootObject": "index.html",
+                "Logging": {
+                  "Enabled": false,
+                  "IncludeCookies": false,
+                  "Bucket": "",
+                  "Prefix": ""
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E7BBB",
+            "exitCode": 0,
+            "output": {
+              "ETag": "E2ABCDE",
+              "DistributionConfig": {
+                "CallerReference": "ref-2",
+                "Comment": "",
+                "Enabled": true,
+                "DefaultRootObject": "index.html",
+                "Logging": {
+                  "Enabled": true,
+                  "IncludeCookies": false,
+                  "Bucket": "logs.s3.amazonaws.com",
+                  "Prefix": "cf/"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "distribution deleted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E7CCC",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchDistribution) when calling the GetDistributionConfig operation: The specified distribution does not exist."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-008",
+    "cases": [
+      {
+        "name": "fails empty default root object",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E8AAA",
+            "exitCode": 0,
+            "output": {
+              "ETag": "E2FFFFF",
+              "DistributionConfig": {
+                "CallerReference": "ref-3",
+                "Comment": "",
+                "Enabled": true,
+                "DefaultRootObject": "",
+                "Logging": {
+                  "Enabled": true,
+                  "Bucket": "logs.s3.amazonaws.com",
+                  "Prefix": ""
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes index.html",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E8BBB",
+            "exitCode": 0,
+            "output": {
+              "ETag": "E2GGGGG",
+              "DistributionConfig": {
+                "CallerReference": "ref-4",
+                "Comment": "",
+                "Enabled": true,
+                "DefaultRootObject": "index.html",
+                "Logging": {
+                  "Enabled": true,
+                  "Bucket": "logs.s3.amazonaws.com",
+                  "Prefix": ""
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.get_distribution_config",
+            "resourceKey": "E8CCC",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDenied) when calling the GetDistributionConfig operation: User is not authorized to perform: cloudfront:GetDistributionConfig"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFRONT-009",
+    "cases": [
+      {
+        "name": "fails s3 origin without oac",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E9AAA",
+                    "DomainName": "d14.cloudfront.net",
+                    "Origins": {
+                      "Quantity": 1,
+                      "Items": [
+                        {
+                          "Id": "s3-1",
+                          "DomainName": "bucket.s3.amazonaws.com",
+                          "S3OriginConfig": {
+                            "OriginAccessIdentity": ""
+                          },
+                          "OriginAccessControlId": ""
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes s3 origin with oac plus custom origin",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudfront.list_distributions",
+            "exitCode": 0,
+            "output": {
+              "DistributionList": {
+                "Quantity": 1,
+                "Items": [
+                  {
+                    "Id": "E9BBB",
+                    "DomainName": "d15.cloudfront.net",
+                    "Origins": {
+                      "Quantity": 2,
+                      "Items": [
+                        {
+                          "Id": "s3-1",
+                          "DomainName": "bucket.s3.amazonaws.com",
+                          "S3OriginConfig": {
+                            "OriginAccessIdentity": ""
+                          },
+                          "OriginAccessControlId": "E3OACID12345"
+                        },
+                        {
+                          "Id": "custom-1",
+                          "DomainName": "api.example.com",
+                          "CustomOriginConfig": {
+                            "OriginProtocolPolicy": "https-only"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

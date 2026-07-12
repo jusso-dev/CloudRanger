@@ -1,0 +1,50 @@
+collectors:
+  - id: aws.elbv2.describe_load_balancers
+    provider: aws
+    service: elbv2
+    description: Lists all Application/Network/Gateway load balancers (ELBv2) in a
+      region with scheme, type, security groups and state.
+    kind: single
+    command: aws elbv2 describe-load-balancers --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires elasticloadbalancing:DescribeLoadBalancers. Root object has a
+      LoadBalancers array. Type is application|network|gateway; Scheme is
+      internet-facing|internal.
+  - id: aws.elbv2.describe_load_balancer_attributes
+    provider: aws
+    service: elbv2
+    description: Retrieves the attributes for a single load balancer as a flat list
+      of Key/Value pairs (access_logs.s3.enabled, deletion_protection.enabled,
+      routing.http.drop_invalid_header_fields.enabled, waf.fail_open.enabled,
+      etc.).
+    kind: per_resource
+    command: aws elbv2 describe-load-balancer-attributes --load-balancer-arn
+      {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.elbv2.describe_load_balancers
+      itemsPath: LoadBalancers
+      resourceField: LoadBalancerArn
+    outputFormat: json
+    notes: Requires elasticloadbalancing:DescribeLoadBalancerAttributes. Root object
+      has an Attributes list of {Key, Value} entries; Value is a string
+      ("true"/"false"). Attribute keys present depend on load balancer type.
+  - id: aws.elbv2.get_web_acl_for_resource
+    provider: aws
+    service: elbv2
+    description: Retrieves the WAFv2 web ACL associated with a single load balancer
+      (Application Load Balancers only).
+    kind: per_resource
+    command: aws wafv2 get-web-acl-for-resource --resource-arn {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.elbv2.describe_load_balancers
+      itemsPath: LoadBalancers
+      resourceField: LoadBalancerArn
+    outputFormat: json
+    notes: Requires wafv2:GetWebACLForResource. Root object has WebACL which is a
+      structure when associated, or absent/null when no web ACL is attached.
+      Only meaningful for Application Load Balancers; NLB/GWLB return
+      WAFNonexistentItemException or similar.

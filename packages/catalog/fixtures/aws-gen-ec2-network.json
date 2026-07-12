@@ -1,0 +1,666 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-021",
+    "cases": [
+      {
+        "name": "non-default vpc",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_vpcs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Vpcs": [
+                {
+                  "VpcId": "vpc-aaa",
+                  "IsDefault": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "default vpc present",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_vpcs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Vpcs": [
+                {
+                  "VpcId": "vpc-def",
+                  "IsDefault": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-022",
+    "cases": [
+      {
+        "name": "default sg empty rules",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-def1",
+                  "GroupName": "default",
+                  "IpPermissions": [],
+                  "IpPermissionsEgress": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "default sg has egress allow",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-def2",
+                  "GroupName": "default",
+                  "IpPermissions": [],
+                  "IpPermissionsEgress": [
+                    {
+                      "IpProtocol": "-1",
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "non-default sg is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-app",
+                  "GroupName": "web",
+                  "IpPermissions": [],
+                  "IpPermissionsEgress": [
+                    {
+                      "IpProtocol": "-1",
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-023",
+    "cases": [
+      {
+        "name": "nacl no open ssh",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-1",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "6",
+                      "RuleAction": "allow",
+                      "Egress": false,
+                      "CidrBlock": "10.0.0.0/16",
+                      "PortRange": {
+                        "From": 22,
+                        "To": 22
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "nacl open ssh from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-2",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "6",
+                      "RuleAction": "allow",
+                      "Egress": false,
+                      "CidrBlock": "0.0.0.0/0",
+                      "PortRange": {
+                        "From": 22,
+                        "To": 22
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-024",
+    "cases": [
+      {
+        "name": "nacl no open rdp",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-1",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "6",
+                      "RuleAction": "deny",
+                      "Egress": false,
+                      "CidrBlock": "0.0.0.0/0",
+                      "PortRange": {
+                        "From": 3389,
+                        "To": 3389
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "nacl all-protocol open covers rdp",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-2",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "-1",
+                      "RuleAction": "allow",
+                      "Egress": false,
+                      "CidrBlock": "0.0.0.0/0"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-025",
+    "cases": [
+      {
+        "name": "no all-traffic internet rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-1",
+                  "GroupName": "web",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "all-traffic from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-2",
+                  "GroupName": "open",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "-1",
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-026",
+    "cases": [
+      {
+        "name": "no high-risk port open",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-1",
+                  "GroupName": "db",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3306,
+                      "ToPort": 3306,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "10.0.0.0/16"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "mysql open to internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-2",
+                  "GroupName": "db-open",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3306,
+                      "ToPort": 3306,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-027",
+    "cases": [
+      {
+        "name": "subnet no auto public ip",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_subnets",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Subnets": [
+                {
+                  "SubnetId": "subnet-1",
+                  "MapPublicIpOnLaunch": false,
+                  "VpcId": "vpc-aaa"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "subnet auto public ip",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_subnets",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Subnets": [
+                {
+                  "SubnetId": "subnet-2",
+                  "MapPublicIpOnLaunch": true,
+                  "VpcId": "vpc-aaa"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-028",
+    "cases": [
+      {
+        "name": "eip associated",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_addresses",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Addresses": [
+                {
+                  "AllocationId": "eipalloc-1",
+                  "PublicIp": "52.1.2.3",
+                  "AssociationId": "eipassoc-1",
+                  "InstanceId": "i-abc",
+                  "NetworkInterfaceId": "eni-abc"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "eip unassociated",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_addresses",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Addresses": [
+                {
+                  "AllocationId": "eipalloc-2",
+                  "PublicIp": "52.9.9.9",
+                  "Domain": "vpc"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-029",
+    "cases": [
+      {
+        "name": "s3 endpoint present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_vpc_endpoints",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "VpcEndpoints": [
+                {
+                  "VpcEndpointId": "vpce-1",
+                  "ServiceName": "com.amazonaws.us-east-1.s3",
+                  "VpcId": "vpc-aaa"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no s3 endpoint",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_vpc_endpoints",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "VpcEndpoints": [
+                {
+                  "VpcEndpointId": "vpce-2",
+                  "ServiceName": "com.amazonaws.us-east-1.dynamodb",
+                  "VpcId": "vpc-aaa"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-030",
+    "cases": [
+      {
+        "name": "no all-traffic nacl",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-1",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "6",
+                      "RuleAction": "allow",
+                      "Egress": false,
+                      "CidrBlock": "0.0.0.0/0",
+                      "PortRange": {
+                        "From": 443,
+                        "To": 443
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "all-traffic nacl from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_network_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NetworkAcls": [
+                {
+                  "NetworkAclId": "acl-2",
+                  "Entries": [
+                    {
+                      "RuleNumber": 100,
+                      "Protocol": "-1",
+                      "RuleAction": "allow",
+                      "Egress": false,
+                      "CidrBlock": "0.0.0.0/0"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-031",
+    "cases": [
+      {
+        "name": "no open smb",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-1",
+                  "GroupName": "files",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 445,
+                      "ToPort": 445,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "10.0.0.0/8"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "smb open to internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-2",
+                  "GroupName": "files-open",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 445,
+                      "ToPort": 445,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

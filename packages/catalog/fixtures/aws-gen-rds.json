@@ -1,0 +1,527 @@
+[
+  {
+    "controlId": "CR-AWS-RDS-010",
+    "cases": [
+      {
+        "name": "fail public snapshot",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_snapshot_attributes",
+            "region": "us-east-1",
+            "resourceKey": "mydbsnapshot",
+            "exitCode": 0,
+            "output": {
+              "DBSnapshotAttributesResult": {
+                "DBSnapshotIdentifier": "mydbsnapshot",
+                "DBSnapshotAttributes": [
+                  {
+                    "AttributeName": "restore",
+                    "AttributeValues": ["all"]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass shared to specific accounts",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_snapshot_attributes",
+            "region": "us-east-1",
+            "resourceKey": "privsnap",
+            "exitCode": 0,
+            "output": {
+              "DBSnapshotAttributesResult": {
+                "DBSnapshotIdentifier": "privsnap",
+                "DBSnapshotAttributes": [
+                  {
+                    "AttributeName": "restore",
+                    "AttributeValues": ["123456789012"]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass no restore sharing",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_snapshot_attributes",
+            "region": "us-east-1",
+            "resourceKey": "privsnap2",
+            "exitCode": 0,
+            "output": {
+              "DBSnapshotAttributesResult": {
+                "DBSnapshotIdentifier": "privsnap2",
+                "DBSnapshotAttributes": [
+                  {
+                    "AttributeName": "restore",
+                    "AttributeValues": []
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "na automated snapshot error",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_snapshot_attributes",
+            "region": "us-east-1",
+            "resourceKey": "rds:auto-2024-01-01",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (InvalidDBSnapshotState) when calling the DescribeDBSnapshotAttributes operation: Cannot get attributes for automated snapshot."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-011",
+    "cases": [
+      {
+        "name": "pass iam auth on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "IAMDatabaseAuthenticationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail iam auth off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "IAMDatabaseAuthenticationEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-012",
+    "cases": [
+      {
+        "name": "pass logs exported",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "EnabledCloudwatchLogsExports": ["audit", "error"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail empty exports",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "EnabledCloudwatchLogsExports": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no export field",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db3"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-013",
+    "cases": [
+      {
+        "name": "pass auto upgrade on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "AutoMinorVersionUpgrade": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail auto upgrade off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "AutoMinorVersionUpgrade": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-014",
+    "cases": [
+      {
+        "name": "pass copy tags on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "CopyTagsToSnapshot": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail copy tags off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "CopyTagsToSnapshot": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-015",
+    "cases": [
+      {
+        "name": "pass monitoring 60s",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "MonitoringInterval": 60,
+                  "MonitoringRoleArn": "arn:aws:iam::123456789012:role/rds-monitoring-role"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail monitoring 0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "MonitoringInterval": 0
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-016",
+    "cases": [
+      {
+        "name": "pass deletion protection on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "c1",
+                  "Engine": "aurora-mysql",
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail deletion protection off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "c2",
+                  "Engine": "aurora-postgresql",
+                  "DeletionProtection": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-017",
+    "cases": [
+      {
+        "name": "pass non-default port",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "Engine": "mysql",
+                  "Endpoint": {
+                    "Address": "db1.abc.us-east-1.rds.amazonaws.com",
+                    "Port": 13306
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail default mysql port",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "Engine": "mysql",
+                  "Endpoint": {
+                    "Address": "db2.abc.us-east-1.rds.amazonaws.com",
+                    "Port": 3306
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-018",
+    "cases": [
+      {
+        "name": "pass modern ca",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "CACertificateIdentifier": "rds-ca-rsa2048-g1"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail deprecated ca",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "CACertificateIdentifier": "rds-ca-2019"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-019",
+    "cases": [
+      {
+        "name": "pass pi encrypted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db1",
+                  "PerformanceInsightsEnabled": true,
+                  "PerformanceInsightsKMSKeyId": "arn:aws:kms:us-east-1:123456789012:key/abcd-1234"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail pi no key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db2",
+                  "PerformanceInsightsEnabled": true,
+                  "PerformanceInsightsKMSKeyId": ""
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "na pi disabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db3",
+                  "PerformanceInsightsEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

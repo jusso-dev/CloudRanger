@@ -1,0 +1,345 @@
+[
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-010",
+    "cases": [
+      {
+        "name": "pass kms key set",
+        "expected": "pass",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/enc",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "enc",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/enc",
+                  "LogFileValidationEnabled": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "IsOrganizationTrail": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no kms key",
+        "expected": "fail",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/plain",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "plain",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/plain",
+                  "LogFileValidationEnabled": true,
+                  "IsOrganizationTrail": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-011",
+    "cases": [
+      {
+        "name": "pass cloudwatch logs integrated",
+        "expected": "pass",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/cw",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "cw",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/cw",
+                  "LogFileValidationEnabled": true,
+                  "CloudWatchLogsLogGroupArn": "arn:aws:logs:us-east-1:111122223333:log-group:CloudTrail/DefaultLogGroup:*",
+                  "CloudWatchLogsRoleArn": "arn:aws:iam::111122223333:role/CloudTrail_CloudWatchLogs_Role"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no cloudwatch logs",
+        "expected": "fail",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/nocw",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "nocw",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/nocw",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-012",
+    "cases": [
+      {
+        "name": "pass no public acl grants",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "log-bucket-private",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "DisplayName": "acct",
+                "ID": "abc123ownerid"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "CanonicalUser",
+                    "DisplayName": "acct",
+                    "ID": "abc123ownerid"
+                  },
+                  "Permission": "FULL_CONTROL"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail allusers grant",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "log-bucket-public",
+            "exitCode": 0,
+            "output": {
+              "Owner": {
+                "DisplayName": "acct",
+                "ID": "abc123ownerid"
+              },
+              "Grants": [
+                {
+                  "Grantee": {
+                    "Type": "CanonicalUser",
+                    "DisplayName": "acct",
+                    "ID": "abc123ownerid"
+                  },
+                  "Permission": "FULL_CONTROL"
+                },
+                {
+                  "Grantee": {
+                    "Type": "Group",
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+                  },
+                  "Permission": "READ"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "error access denied on bucket acl",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_acl",
+            "resourceKey": "cross-account-bucket",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDenied) when calling the GetBucketAcl operation: Access Denied"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-013",
+    "cases": [
+      {
+        "name": "pass access logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_logging",
+            "resourceKey": "log-bucket-logged",
+            "exitCode": 0,
+            "output": {
+              "LoggingEnabled": {
+                "TargetBucket": "access-logs-bucket",
+                "TargetPrefix": "cloudtrail-logs/"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail access logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_logging",
+            "resourceKey": "log-bucket-unlogged",
+            "exitCode": 0,
+            "output": {}
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_logging",
+            "resourceKey": "cross-account-bucket",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDenied) when calling the GetBucketLogging operation: Access Denied"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-014",
+    "cases": [
+      {
+        "name": "pass multiregion with global events",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "org-trail",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/org-trail",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail only regional or global events off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "regional-trail",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": false,
+                  "IsMultiRegionTrail": false,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/regional-trail",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-015",
+    "cases": [
+      {
+        "name": "pass sns topic configured",
+        "expected": "pass",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/sns",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "sns",
+                  "S3BucketName": "log-bucket",
+                  "SnsTopicName": "cloudtrail-notify",
+                  "SnsTopicARN": "arn:aws:sns:us-east-1:111122223333:cloudtrail-notify",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/sns",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no sns topic",
+        "expected": "fail",
+        "resourceId": "arn:aws:cloudtrail:us-east-1:111122223333:trail/nosns",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "nosns",
+                  "S3BucketName": "log-bucket",
+                  "IncludeGlobalServiceEvents": true,
+                  "IsMultiRegionTrail": true,
+                  "HomeRegion": "us-east-1",
+                  "TrailARN": "arn:aws:cloudtrail:us-east-1:111122223333:trail/nosns",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

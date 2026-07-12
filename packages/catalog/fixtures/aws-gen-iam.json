@@ -1,0 +1,919 @@
+[
+  {
+    "controlId": "CR-AWS-IAM-011",
+    "cases": [
+      {
+        "name": "fails user with AdministratorAccess",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:user/Alice",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Alice",
+                  "UserId": "AIDAEX1",
+                  "Arn": "arn:aws:iam::123456789012:user/Alice",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": [],
+                  "UserPolicyList": [],
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AdministratorAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+                    }
+                  ]
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes user without admin",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:user/Bob",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Bob",
+                  "UserId": "AIDAEX2",
+                  "Arn": "arn:aws:iam::123456789012:user/Bob",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": ["Dev"],
+                  "UserPolicyList": [],
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AmazonS3ReadOnlyAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+                    }
+                  ]
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-012",
+    "cases": [
+      {
+        "name": "fails user with inline policy",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:user/Bob",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Bob",
+                  "UserId": "AIDAEX2",
+                  "Arn": "arn:aws:iam::123456789012:user/Bob",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": [],
+                  "AttachedManagedPolicies": [],
+                  "UserPolicyList": [
+                    {
+                      "PolicyName": "DenyBillingAndIAMPolicy",
+                      "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": {
+                          "Effect": "Deny",
+                          "Action": ["aws-portal:*", "iam:*"],
+                          "Resource": "*"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes user with no inline policy",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:user/Alice",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Alice",
+                  "UserId": "AIDAEX1",
+                  "Arn": "arn:aws:iam::123456789012:user/Alice",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": ["Admins"],
+                  "AttachedManagedPolicies": [],
+                  "UserPolicyList": []
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-013",
+    "cases": [
+      {
+        "name": "fails user with direct managed policy",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:user/Bob",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Bob",
+                  "UserId": "AIDAEX2",
+                  "Arn": "arn:aws:iam::123456789012:user/Bob",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": [],
+                  "UserPolicyList": [],
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AmazonS3ReadOnlyAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+                    }
+                  ]
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes user with only group membership",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:user/Alice",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [
+                {
+                  "UserName": "Alice",
+                  "UserId": "AIDAEX1",
+                  "Arn": "arn:aws:iam::123456789012:user/Alice",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "GroupList": ["Admins"],
+                  "UserPolicyList": [],
+                  "AttachedManagedPolicies": []
+                }
+              ],
+              "GroupDetailList": [],
+              "RoleDetailList": [],
+              "Policies": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-014",
+    "cases": [
+      {
+        "name": "passes reuse 24",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails reuse too low",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 8,
+                "RequireSymbols": false,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": false,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": false,
+                "PasswordReusePrevention": 5,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when no policy exists",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchEntity) when calling the GetAccountPasswordPolicy operation: The Password Policy with domain name 123456789012 cannot be found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-015",
+    "cases": [
+      {
+        "name": "passes expiry 90",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails expiry disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": false,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchEntity) when calling the GetAccountPasswordPolicy operation: The Password Policy with domain name 123456789012 cannot be found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-016",
+    "cases": [
+      {
+        "name": "passes length 14",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails length 8",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 8,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-017",
+    "cases": [
+      {
+        "name": "passes full complexity",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": true,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails missing symbols",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": {
+              "PasswordPolicy": {
+                "MinimumPasswordLength": 14,
+                "RequireSymbols": false,
+                "RequireNumbers": true,
+                "RequireUppercaseCharacters": true,
+                "RequireLowercaseCharacters": true,
+                "AllowUsersToChangePassword": true,
+                "ExpirePasswords": true,
+                "MaxPasswordAge": 90,
+                "PasswordReusePrevention": 24,
+                "HardExpiry": false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-018",
+    "cases": [
+      {
+        "name": "passes root mfa enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": {
+              "SummaryMap": {
+                "AccountMFAEnabled": 1,
+                "AccountAccessKeysPresent": 0,
+                "MFADevices": 3,
+                "MFADevicesInUse": 1,
+                "AccessKeysPerUserQuota": 2,
+                "Providers": 0,
+                "Users": 5,
+                "UsersQuota": 5000
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails root mfa disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": {
+              "SummaryMap": {
+                "AccountMFAEnabled": 0,
+                "AccountAccessKeysPresent": 0,
+                "MFADevices": 0,
+                "MFADevicesInUse": 0,
+                "AccessKeysPerUserQuota": 2,
+                "Providers": 0,
+                "Users": 5,
+                "UsersQuota": 5000
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-019",
+    "cases": [
+      {
+        "name": "passes no root keys",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": {
+              "SummaryMap": {
+                "AccountMFAEnabled": 1,
+                "AccountAccessKeysPresent": 0,
+                "MFADevices": 3,
+                "MFADevicesInUse": 1,
+                "AccessKeysPerUserQuota": 2,
+                "Providers": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails root keys present",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": {
+              "SummaryMap": {
+                "AccountMFAEnabled": 1,
+                "AccountAccessKeysPresent": 1,
+                "MFADevices": 3,
+                "MFADevicesInUse": 1,
+                "AccessKeysPerUserQuota": 2,
+                "Providers": 0
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-020",
+    "cases": [
+      {
+        "name": "passes active analyzer",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.accessanalyzer.list_analyzers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "analyzers": [
+                {
+                  "arn": "arn:aws:access-analyzer:us-east-1:123456789012:analyzer/account-analyzer",
+                  "name": "account-analyzer",
+                  "type": "ACCOUNT",
+                  "createdAt": "2023-01-01T00:00:00+00:00",
+                  "status": "ACTIVE",
+                  "lastResourceAnalyzed": "arn:aws:s3:::my-bucket",
+                  "lastResourceAnalyzedAt": "2024-06-01T00:00:00+00:00",
+                  "tags": {}
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails no analyzers",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.accessanalyzer.list_analyzers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "analyzers": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails analyzer disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.accessanalyzer.list_analyzers",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "analyzers": [
+                {
+                  "arn": "arn:aws:access-analyzer:us-east-1:123456789012:analyzer/old",
+                  "name": "old",
+                  "type": "ACCOUNT",
+                  "createdAt": "2023-01-01T00:00:00+00:00",
+                  "status": "DISABLED",
+                  "tags": {}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-021",
+    "cases": [
+      {
+        "name": "passes support role present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "GroupDetailList": [],
+              "Policies": [],
+              "RoleDetailList": [
+                {
+                  "RoleName": "support-role",
+                  "RoleId": "AROAEX1",
+                  "Arn": "arn:aws:iam::123456789012:role/support-role",
+                  "Path": "/",
+                  "CreateDate": "2022-01-01T00:00:00Z",
+                  "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Principal": {
+                          "AWS": "arn:aws:iam::123456789012:root"
+                        },
+                        "Action": "sts:AssumeRole"
+                      }
+                    ]
+                  },
+                  "InstanceProfileList": [],
+                  "RolePolicyList": [],
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AWSSupportAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AWSSupportAccess"
+                    }
+                  ],
+                  "RoleLastUsed": {}
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails no support role",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "GroupDetailList": [],
+              "Policies": [],
+              "RoleDetailList": [
+                {
+                  "RoleName": "EC2role",
+                  "RoleId": "AROAEX2",
+                  "Arn": "arn:aws:iam::123456789012:role/EC2role",
+                  "Path": "/",
+                  "CreateDate": "2022-01-01T00:00:00Z",
+                  "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": "ec2.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                      }
+                    ]
+                  },
+                  "InstanceProfileList": [],
+                  "RolePolicyList": [],
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AmazonS3FullAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+                    }
+                  ],
+                  "RoleLastUsed": {}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-022",
+    "cases": [
+      {
+        "name": "passes valid cert",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:server-certificate/prod-cert",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_server_certificates",
+            "exitCode": 0,
+            "output": {
+              "ServerCertificateMetadataList": [
+                {
+                  "Path": "/",
+                  "ServerCertificateName": "prod-cert",
+                  "ServerCertificateId": "ASCAEXAMPLE1",
+                  "Arn": "arn:aws:iam::123456789012:server-certificate/prod-cert",
+                  "UploadDate": "2025-01-01T00:00:00Z",
+                  "Expiration": "2030-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails expired cert",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:server-certificate/old-cert",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_server_certificates",
+            "exitCode": 0,
+            "output": {
+              "ServerCertificateMetadataList": [
+                {
+                  "Path": "/",
+                  "ServerCertificateName": "old-cert",
+                  "ServerCertificateId": "ASCAEXAMPLE2",
+                  "Arn": "arn:aws:iam::123456789012:server-certificate/old-cert",
+                  "UploadDate": "2018-01-01T00:00:00Z",
+                  "Expiration": "2019-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-023",
+    "cases": [
+      {
+        "name": "fails group with inline policy",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:group/Finance",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "RoleDetailList": [],
+              "Policies": [],
+              "GroupDetailList": [
+                {
+                  "GroupName": "Finance",
+                  "GroupId": "AGPAEX1",
+                  "Arn": "arn:aws:iam::123456789012:group/Finance",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "AttachedManagedPolicies": [],
+                  "GroupPolicyList": [
+                    {
+                      "PolicyName": "policygen-201310141157",
+                      "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                          {
+                            "Action": "aws-portal:*",
+                            "Sid": "Stmt1",
+                            "Resource": "*",
+                            "Effect": "Allow"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes group without inline policy",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:group/Admins",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "RoleDetailList": [],
+              "Policies": [],
+              "GroupDetailList": [
+                {
+                  "GroupName": "Admins",
+                  "GroupId": "AGPAEX2",
+                  "Arn": "arn:aws:iam::123456789012:group/Admins",
+                  "Path": "/",
+                  "CreateDate": "2020-01-01T00:00:00Z",
+                  "AttachedManagedPolicies": [
+                    {
+                      "PolicyName": "AdministratorAccess",
+                      "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+                    }
+                  ],
+                  "GroupPolicyList": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-024",
+    "cases": [
+      {
+        "name": "fails role trusting any AWS principal",
+        "expected": "fail",
+        "resourceId": "arn:aws:iam::123456789012:role/open-role",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "GroupDetailList": [],
+              "Policies": [],
+              "RoleDetailList": [
+                {
+                  "RoleName": "open-role",
+                  "RoleId": "AROAEX3",
+                  "Arn": "arn:aws:iam::123456789012:role/open-role",
+                  "Path": "/",
+                  "CreateDate": "2022-01-01T00:00:00Z",
+                  "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Principal": {
+                          "AWS": "*"
+                        },
+                        "Action": "sts:AssumeRole"
+                      }
+                    ]
+                  },
+                  "InstanceProfileList": [],
+                  "RolePolicyList": [],
+                  "AttachedManagedPolicies": [],
+                  "RoleLastUsed": {}
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes role trusting a service",
+        "expected": "pass",
+        "resourceId": "arn:aws:iam::123456789012:role/EC2role",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_authorization_details",
+            "exitCode": 0,
+            "output": {
+              "UserDetailList": [],
+              "GroupDetailList": [],
+              "Policies": [],
+              "RoleDetailList": [
+                {
+                  "RoleName": "EC2role",
+                  "RoleId": "AROAEX4",
+                  "Arn": "arn:aws:iam::123456789012:role/EC2role",
+                  "Path": "/",
+                  "CreateDate": "2022-01-01T00:00:00Z",
+                  "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": "ec2.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                      }
+                    ]
+                  },
+                  "InstanceProfileList": [],
+                  "RolePolicyList": [],
+                  "AttachedManagedPolicies": [],
+                  "RoleLastUsed": {}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

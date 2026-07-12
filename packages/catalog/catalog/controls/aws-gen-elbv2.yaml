@@ -1,0 +1,273 @@
+controls:
+  - id: CR-AWS-ELB-003
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: Load balancer access logging is enabled
+    description: The load balancer has the access_logs.s3.enabled attribute set to
+      true so request-level access logs are written to S3.
+    rationale: Without access logs there is no record of client requests, source
+      IPs, or response codes, undermining incident response and forensic
+      investigation.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: elbv2_logging_enabled
+      license: Apache-2.0
+    collector: aws.elbv2.describe_load_balancer_attributes
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Key
+            value: access_logs.s3.enabled
+          - op: equals
+            path: Value
+            value: "true"
+    failMessage: Load balancer access logging (access_logs.s3.enabled) is not enabled.
+    passMessage: Load balancer access logging is enabled.
+    remediation:
+      summary: Enable S3 access logging on the load balancer.
+      steps:
+        - Create/point to an S3 bucket with the required ELB write policy.
+        - Run aws elbv2 modify-load-balancer-attributes with
+          access_logs.s3.enabled=true and access_logs.s3.bucket set.
+      verifyCommand: aws elbv2 describe-load-balancer-attributes --load-balancer-arn
+        <arn> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+  - id: CR-AWS-ELB-004
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: Load balancer deletion protection is enabled
+    description: The load balancer has the deletion_protection.enabled attribute set
+      to true.
+    rationale: Without deletion protection a load balancer can be deleted
+      accidentally or by a compromised principal, causing an outage of all
+      services behind it.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: elbv2_deletion_protection
+      license: Apache-2.0
+    collector: aws.elbv2.describe_load_balancer_attributes
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Key
+            value: deletion_protection.enabled
+          - op: equals
+            path: Value
+            value: "true"
+    failMessage: Load balancer deletion protection is not enabled.
+    passMessage: Load balancer deletion protection is enabled.
+    remediation:
+      summary: Enable deletion protection on the load balancer.
+      steps:
+        - Run aws elbv2 modify-load-balancer-attributes with
+          deletion_protection.enabled=true.
+      verifyCommand: aws elbv2 describe-load-balancer-attributes --load-balancer-arn
+        <arn> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#deletion-protection
+  - id: CR-AWS-ELB-005
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: ALB drops invalid HTTP header fields
+    description: The Application Load Balancer has
+      routing.http.drop_invalid_header_fields.enabled set to true.
+    rationale: Forwarding invalid or non-conforming HTTP headers to targets enables
+      HTTP request smuggling and header-injection attacks.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: elbv2_desync_mitigation_mode
+      license: Apache-2.0
+    collector: aws.elbv2.describe_load_balancer_attributes
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: equals
+        path: Key
+        value: routing.http.drop_invalid_header_fields.enabled
+    passWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Key
+            value: routing.http.drop_invalid_header_fields.enabled
+          - op: equals
+            path: Value
+            value: "true"
+    failMessage: ALB does not drop invalid HTTP header fields.
+    passMessage: ALB drops invalid HTTP header fields.
+    remediation:
+      summary: Enable dropping of invalid HTTP header fields on the ALB.
+      steps:
+        - Run aws elbv2 modify-load-balancer-attributes with
+          routing.http.drop_invalid_header_fields.enabled=true.
+      verifyCommand: aws elbv2 describe-load-balancer-attributes --load-balancer-arn
+        <arn> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#drop-invalid-header-fields
+  - id: CR-AWS-ELB-006
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: Internet-facing ALBs are associated with a WAFv2 web ACL
+    description: Every internet-facing Application Load Balancer has a WAFv2 web ACL
+      associated with it.
+    rationale: Internet-facing ALBs without a WAF have no layer-7 protection against
+      SQL injection, XSS, and common web exploits reaching backend applications.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: elbv2_waf_acl_attached
+      license: Apache-2.0
+    collector: aws.elbv2.get_web_acl_for_resource
+    resourceIdField: $resourceKey
+    passWhen:
+      op: exists
+      path: WebACL.ARN
+    onError:
+      - contains: WAFNonexistentItemException
+        status: not_applicable
+        message: Resource type does not support WAF association.
+      - contains: AccessDenied
+        status: error
+    failMessage: Internet-facing ALB is not associated with a WAFv2 web ACL.
+    passMessage: ALB is associated with a WAFv2 web ACL.
+    remediation:
+      summary: Associate a WAFv2 web ACL with the ALB.
+      steps:
+        - Create or select a WAFv2 web ACL (Scope=REGIONAL).
+        - Run aws wafv2 associate-web-acl with the web ACL ARN and the ALB ARN
+          as --resource-arn.
+      verifyCommand: aws wafv2 get-web-acl-for-resource --resource-arn <alb-arn>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/waf/latest/developerguide/web-acl-associating-aws-resource.html
+  - id: CR-AWS-ELB-007
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: WAF-enabled ALBs do not fail open
+    description: When an ALB is WAF-enabled, the waf.fail_open.enabled attribute is
+      false so requests are not forwarded to targets if WAF is unavailable.
+    rationale: With WAF fail-open enabled, a WAF outage causes requests to bypass
+      inspection and reach targets unfiltered, defeating the web application
+      firewall.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: elbv2_waf_acl_attached
+      license: Apache-2.0
+    collector: aws.elbv2.describe_load_balancer_attributes
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: equals
+        path: Key
+        value: waf.fail_open.enabled
+    passWhen:
+      op: anyItem
+      path: Attributes
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Key
+            value: waf.fail_open.enabled
+          - op: equals
+            path: Value
+            value: "false"
+    failMessage: ALB WAF fail-open is enabled; requests bypass WAF when it is unavailable.
+    passMessage: ALB WAF fail-open is disabled; requests are blocked when WAF is
+      unavailable.
+    remediation:
+      summary: Disable WAF fail-open on the ALB.
+      steps:
+        - Run aws elbv2 modify-load-balancer-attributes with
+          waf.fail_open.enabled=false.
+      verifyCommand: aws elbv2 describe-load-balancer-attributes --load-balancer-arn
+        <arn> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html
+  - id: CR-AWS-ELB-008
+    version: 1.0.0
+    provider: aws
+    service: elbv2
+    title: Application Load Balancers are not internet-facing
+    description: Application Load Balancers use the internal scheme rather than
+      internet-facing, so they are not directly exposed to the public internet.
+    rationale: Internet-facing ALBs expand the attack surface; internal-only load
+      balancers should not be inadvertently exposed to the internet. This check
+      surfaces internet-facing ALBs for review.
+    severity: informational
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: elbv2_internet_facing
+      license: Apache-2.0
+    collector: aws.elbv2.describe_load_balancers
+    resourcesPath: LoadBalancers
+    resourceIdField: LoadBalancerArn
+    resourceNameField: LoadBalancerName
+    applicableWhen:
+      op: equals
+      path: Type
+      value: application
+    passWhen:
+      op: equals
+      path: Scheme
+      value: internal
+    failMessage: Application Load Balancer is internet-facing and exposed to the
+      public internet.
+    passMessage: Application Load Balancer is internal (not internet-facing).
+    remediation:
+      summary: Confirm internet exposure is intended; otherwise recreate the load
+        balancer as internal.
+      steps:
+        - Review whether the ALB must be internet-facing.
+        - If not, recreate it with --scheme internal and migrate DNS/targets,
+          since scheme cannot be changed in place.
+      verifyCommand: aws elbv2 describe-load-balancers --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html

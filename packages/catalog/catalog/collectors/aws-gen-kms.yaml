@@ -1,0 +1,35 @@
+collectors:
+  - id: aws.kms.describe_key
+    provider: aws
+    service: kms
+    description: Full KeyMetadata for one KMS key (state, manager, spec, origin,
+      enabled flag).
+    kind: per_resource
+    command: aws kms describe-key --key-id {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.kms.list_keys
+      itemsPath: Keys
+      resourceField: KeyId
+    outputFormat: json
+    notes: Requires kms:DescribeKey. AWS-managed and AWS-owned keys are also
+      returned; filter with KeyMetadata.KeyManager where a check should only
+      apply to customer-managed keys.
+  - id: aws.kms.get_key_policy
+    provider: aws
+    service: kms
+    description: The default key policy document for one KMS key (returned as a JSON
+      string in the Policy field).
+    kind: per_resource
+    command: aws kms get-key-policy --key-id {resource} --policy-name default
+      --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.kms.list_keys
+      itemsPath: Keys
+      resourceField: KeyId
+    outputFormat: json
+    notes: Requires kms:GetKeyPolicy. The Policy field is a raw JSON string, not a
+      parsed object, so policy-document checks match against the string with
+      contains/matches. This operation cannot run cross-account. AWS-managed
+      keys may return AccessDenied.

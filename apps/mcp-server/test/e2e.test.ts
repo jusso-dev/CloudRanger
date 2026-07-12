@@ -40,9 +40,19 @@ describe("MCP scan loop", () => {
   let scanId: string;
   let fingerprint: string;
 
+  // Scan is scoped to an explicit control set so assertions stay stable as the
+  // catalog grows (services: filters would pull in every ported control).
+  const SCAN_CONTROLS = [
+    "CR-AWS-IAM-001",
+    "CR-AWS-IAM-002",
+    "CR-AWS-IAM-003",
+    "CR-AWS-S3-001",
+    "CR-AWS-S3-003",
+  ];
+
   it("lists catalog controls", async () => {
     const result = await call("catalog_list_controls", { provider: "aws", service: "s3" });
-    expect(result.total).toBe(4);
+    expect(result.total).toBeGreaterThanOrEqual(4);
     expect(result.controls[0].source).toContain("prowler:");
   });
 
@@ -51,10 +61,10 @@ describe("MCP scan loop", () => {
       provider: "aws",
       scopeId: "123456789012",
       regions: ["ap-southeast-2"],
-      services: ["s3", "iam"],
+      controlIds: SCAN_CONTROLS,
     });
     scanId = result.scanId;
-    expect(result.controlCount).toBe(9);
+    expect(result.controlCount).toBe(5);
     expect(result.plan.steps.length).toBeGreaterThan(0);
     for (const step of result.plan.steps) {
       expect(step.command).toMatch(/^aws /);

@@ -1,0 +1,62 @@
+collectors:
+  - id: aws.lambda.list_functions
+    provider: aws
+    service: lambda
+    description: Lists all Lambda functions in a region with their configuration
+      (runtime, role, VPC config, tracing, DLQ, env vars, KMS key,
+      architectures).
+    kind: single
+    command: aws lambda list-functions --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns Functions[] each with the $LATEST configuration. KMSKeyArn is
+      only present when a customer-managed CMK encrypts environment variables.
+      Requires lambda:ListFunctions.
+  - id: aws.lambda.get_policy
+    provider: aws
+    service: lambda
+    description: Resource-based policy for one Lambda function.
+    kind: per_resource
+    command: aws lambda get-policy --function-name {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.lambda.list_functions
+      itemsPath: Functions
+      resourceField: FunctionName
+    outputFormat: json
+    notes: Returns a Policy field containing the policy as a JSON STRING plus
+      RevisionId. Raises ResourceNotFoundException when no resource policy
+      exists. Requires lambda:GetPolicy.
+  - id: aws.lambda.get_function_url_config
+    provider: aws
+    service: lambda
+    description: Function URL configuration for one Lambda function.
+    kind: per_resource
+    command: aws lambda get-function-url-config --function-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.lambda.list_functions
+      itemsPath: Functions
+      resourceField: FunctionName
+    outputFormat: json
+    notes: Returns FunctionUrl, AuthType (AWS_IAM or NONE), Cors, InvokeMode. Raises
+      ResourceNotFoundException when no function URL is configured. Requires
+      lambda:GetFunctionUrlConfig.
+  - id: aws.lambda.get_function_concurrency
+    provider: aws
+    service: lambda
+    description: Reserved concurrency setting for one Lambda function.
+    kind: per_resource
+    command: aws lambda get-function-concurrency --function-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.lambda.list_functions
+      itemsPath: Functions
+      resourceField: FunctionName
+    outputFormat: json
+    notes: Returns ReservedConcurrentExecutions when reserved concurrency is
+      configured; returns an empty object {} when it is not. Requires
+      lambda:GetFunctionConcurrency.

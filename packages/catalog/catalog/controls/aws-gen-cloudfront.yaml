@@ -1,0 +1,388 @@
+controls:
+  - id: CR-AWS-CLOUDFRONT-001
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Default cache behavior enforces HTTPS for viewers
+    description: The default cache behavior's ViewerProtocolPolicy redirects to or
+      requires HTTPS rather than allowing plain HTTP.
+    rationale: Serving content over HTTP exposes viewer traffic (cookies, tokens,
+      page content) to interception and tampering on the network path.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: cloudfront_distributions_https_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: in
+      path: DefaultCacheBehavior.ViewerProtocolPolicy
+      values:
+        - https-only
+        - redirect-to-https
+    failMessage: Default cache behavior allows plain HTTP (ViewerProtocolPolicy is
+      allow-all).
+    passMessage: Default cache behavior enforces HTTPS for viewers.
+    remediation:
+      summary: Set the default cache behavior viewer protocol policy to
+        redirect-to-https or https-only.
+      steps:
+        - Open the distribution in the CloudFront console and edit the Default
+          cache behavior.
+        - Set Viewer protocol policy to "Redirect HTTP to HTTPS" or "HTTPS Only".
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-viewers-to-cloudfront.html
+  - id: CR-AWS-CLOUDFRONT-002
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: All cache behaviors enforce HTTPS for viewers
+    description: Every additional cache behavior (not just the default) redirects to
+      or requires HTTPS.
+    rationale: A single cache behavior that allows HTTP undermines transport
+      security for the paths it matches, even when the default behavior is
+      secure.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: cloudfront_distributions_https_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: noneItem
+      path: CacheBehaviors.Items
+      condition:
+        op: equals
+        path: ViewerProtocolPolicy
+        value: allow-all
+    failMessage: A cache behavior allows plain HTTP (ViewerProtocolPolicy is allow-all).
+    passMessage: All cache behaviors enforce HTTPS for viewers.
+    remediation:
+      summary: Set every cache behavior's viewer protocol policy to redirect-to-https
+        or https-only.
+      steps:
+        - Edit each cache behavior on the distribution.
+        - Set Viewer protocol policy to "Redirect HTTP to HTTPS" or "HTTPS Only".
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-viewers-to-cloudfront.html
+  - id: CR-AWS-CLOUDFRONT-003
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution enforces a modern minimum TLS protocol version
+    description: The viewer certificate's MinimumProtocolVersion is TLSv1.2 or newer
+      (not SSLv3, TLSv1, or TLSv1.1).
+    rationale: Legacy TLS/SSL versions have known cryptographic weaknesses and allow
+      downgrade attacks against viewer connections.
+    severity: high
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: cloudfront_distributions_using_deprecated_ssl_protocols
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: ViewerCertificate.MinimumProtocolVersion
+        - op: not
+          expr:
+            op: in
+            path: ViewerCertificate.MinimumProtocolVersion
+            values:
+              - SSLv3
+              - TLSv1
+              - TLSv1_2016
+              - TLSv1.1_2016
+    failMessage: Distribution allows a deprecated minimum TLS/SSL protocol version.
+    passMessage: Distribution requires TLSv1.2 or newer.
+    remediation:
+      summary: Set the minimum viewer TLS protocol version to TLSv1.2_2021 (or newer).
+      steps:
+        - Edit the distribution's SSL/TLS settings.
+        - Set Security policy (Minimum protocol version) to TLSv1.2_2021 or the
+          newest available.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/secure-connections-supported-viewer-protocols-ciphers.html
+  - id: CR-AWS-CLOUDFRONT-004
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution is associated with a WAF web ACL
+    description: The distribution has a non-empty WebACLId, indicating an AWS WAF
+      web ACL is attached.
+    rationale: Without WAF, the distribution has no managed protection against
+      common web exploits, bot traffic, or layer-7 attacks.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfront_distributions_using_waf
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: WebACLId
+        - op: not
+          expr:
+            op: isEmpty
+            path: WebACLId
+    failMessage: Distribution has no AWS WAF web ACL associated.
+    passMessage: Distribution is protected by an AWS WAF web ACL.
+    remediation:
+      summary: Associate an AWS WAF web ACL with the distribution.
+      steps:
+        - Create or select an AWS WAFv2 web ACL scoped to CLOUDFRONT.
+        - Attach the web ACL to the distribution in the CloudFront console or
+          via update-distribution.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-aws-waf.html
+  - id: CR-AWS-CLOUDFRONT-005
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Custom origins are contacted over HTTPS only
+    description: Every custom origin uses OriginProtocolPolicy https-only (S3 REST
+      origins, which have no CustomOriginConfig, are not evaluated).
+    rationale: An http-only or match-viewer origin protocol can send origin-fetch
+      traffic in cleartext between CloudFront and the origin, exposing it to
+      interception.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: cloudfront_distributions_using_deprecated_ssl_protocols
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: noneItem
+      path: Origins.Items
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: CustomOriginConfig.OriginProtocolPolicy
+          - op: notEquals
+            path: CustomOriginConfig.OriginProtocolPolicy
+            value: https-only
+    failMessage: A custom origin does not use https-only origin protocol policy.
+    passMessage: All custom origins use https-only origin protocol.
+    remediation:
+      summary: Set every custom origin's protocol policy to HTTPS only.
+      steps:
+        - Edit each custom origin on the distribution.
+        - Set Protocol policy to "HTTPS Only".
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html
+  - id: CR-AWS-CLOUDFRONT-006
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution restricts viewer access by geography
+    description: The distribution's GeoRestriction RestrictionType is whitelist or
+      blacklist (not "none").
+    rationale: Without geo restriction the distribution serves all locations;
+      enabling geo restriction lets you block or limit access from regions you
+      do not serve.
+    severity: low
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfront_distributions_geo_restrictions_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: in
+      path: Restrictions.GeoRestriction.RestrictionType
+      values:
+        - whitelist
+        - blacklist
+    failMessage: Distribution has no geographic restriction (RestrictionType is none).
+    passMessage: Distribution applies a whitelist or blacklist geo restriction.
+    remediation:
+      summary: Configure a geographic restriction (allow or block list) on the
+        distribution.
+      steps:
+        - Open the distribution's Geographic restrictions settings.
+        - Set an Allow List or Block List with the appropriate countries.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/georestrictions.html
+  - id: CR-AWS-CLOUDFRONT-007
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Access logging is enabled on the distribution
+    description: The distribution configuration has Logging.Enabled set to true.
+    rationale: Without access logs there is no record of viewer requests,
+      undermining incident investigation, abuse detection, and traffic auditing.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: cloudfront_distributions_logging_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.get_distribution_config
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: DistributionConfig.Logging.Enabled
+      value: true
+    onError:
+      - contains: NoSuchDistribution
+        status: not_applicable
+        message: Distribution no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Access logging is disabled on the distribution.
+    passMessage: Access logging is enabled on the distribution.
+    remediation:
+      summary: Enable standard access logging to an S3 bucket for the distribution.
+      steps:
+        - Edit the distribution's Standard logging settings.
+        - Enable logging and choose a destination S3 bucket (and optional
+          prefix).
+      verifyCommand: aws cloudfront get-distribution-config --id <id> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html
+  - id: CR-AWS-CLOUDFRONT-008
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution has a default root object configured
+    description: The distribution configuration's DefaultRootObject is a non-empty
+      value (e.g. index.html).
+    rationale: Without a default root object, requests to the domain root can list
+      or expose the origin's directory contents, leaking object names and
+      structure.
+    severity: low
+    categories:
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfront_distributions_default_root_object
+      license: Apache-2.0
+    collector: aws.cloudfront.get_distribution_config
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: DistributionConfig.DefaultRootObject
+        - op: not
+          expr:
+            op: isEmpty
+            path: DistributionConfig.DefaultRootObject
+    onError:
+      - contains: NoSuchDistribution
+        status: not_applicable
+        message: Distribution no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Distribution has no default root object configured.
+    passMessage: Distribution has a default root object configured.
+    remediation:
+      summary: Set a default root object (such as index.html) on the distribution.
+      steps:
+        - Edit the distribution's general settings.
+        - Set Default root object to the desired file name (e.g. index.html).
+      verifyCommand: aws cloudfront get-distribution-config --id <id> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/DefaultRootObject.html
+  - id: CR-AWS-CLOUDFRONT-009
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: S3 REST origins use Origin Access Control
+    description: Every S3 REST origin (identified by an S3OriginConfig) has a
+      non-empty OriginAccessControlId so the bucket can stay private.
+    rationale: An S3 origin without OAC (or legacy OAI) generally requires a public
+      bucket, exposing objects directly and bypassing CloudFront controls.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfront_distributions_using_oac
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: noneItem
+      path: Origins.Items
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: S3OriginConfig
+          - op: or
+            exprs:
+              - op: notExists
+                path: OriginAccessControlId
+              - op: isEmpty
+                path: OriginAccessControlId
+    failMessage: An S3 REST origin has no Origin Access Control associated.
+    passMessage: All S3 REST origins use Origin Access Control.
+    remediation:
+      summary: Attach an Origin Access Control to each S3 origin and lock the bucket
+        policy to that OAC.
+      steps:
+        - Create an Origin Access Control (signing behavior SigV4).
+        - Associate the OAC with each S3 origin on the distribution.
+        - Update the S3 bucket policy to grant access only to the CloudFront
+          service via the OAC.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html

@@ -1,0 +1,280 @@
+controls:
+  - id: CR-AWS-CLOUDTRAIL-010
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: CloudTrail logs are encrypted at rest with a KMS CMK
+    description: Verifies each trail has a KMS key configured for SSE-KMS encryption
+      of delivered log files.
+    rationale: >
+      Without a customer-managed KMS key, log files rely only on default S3
+      encryption and cannot be access-scoped via key policy; attackers or
+      over-privileged principals who can read the log bucket can read plaintext
+      audit trails.
+    severity: medium
+    categories:
+      - logging
+      - encryption
+    source:
+      engine: prowler
+      id: cloudtrail_kms_encryption_enabled
+      license: Apache-2.0
+    collector: aws.cloudtrail.describe_trails
+    resourcesPath: trailList
+    resourceIdField: TrailARN
+    resourceNameField: Name
+    passWhen:
+      op: exists
+      path: KmsKeyId
+    failMessage: Trail is not encrypted with a KMS CMK.
+    passMessage: Trail is encrypted with a KMS CMK.
+    remediation:
+      summary: Configure a KMS CMK for the trail.
+      steps:
+        - Create or select a KMS key whose policy allows CloudTrail to encrypt
+          and authorized principals to decrypt.
+        - Update the trail to set the KMS key id (mutating; operator action).
+      verifyCommand: aws cloudtrail describe-trails --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.7"
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html
+  - id: CR-AWS-CLOUDTRAIL-011
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: CloudTrail is integrated with CloudWatch Logs
+    description: Verifies each trail delivers events to a CloudWatch Logs log group.
+    rationale: >
+      Without CloudWatch Logs integration there is no near-real-time stream to
+      build metric filters and alarms on (e.g. root usage, policy changes), so
+      security events are only discoverable by after-the-fact S3 log analysis.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: cloudtrail_cloudwatch_logging_enabled
+      license: Apache-2.0
+    collector: aws.cloudtrail.describe_trails
+    resourcesPath: trailList
+    resourceIdField: TrailARN
+    resourceNameField: Name
+    passWhen:
+      op: exists
+      path: CloudWatchLogsLogGroupArn
+    failMessage: Trail is not integrated with CloudWatch Logs.
+    passMessage: Trail delivers events to a CloudWatch Logs log group.
+    remediation:
+      summary: Configure a CloudWatch Logs log group for the trail.
+      steps:
+        - Create a CloudWatch Logs log group and an IAM role allowing CloudTrail
+          to write to it.
+        - Update the trail with the log group ARN and role ARN (mutating;
+          operator action).
+      verifyCommand: aws cloudtrail describe-trails --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.4"
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/send-cloudtrail-events-to-cloudwatch-logs.html
+  - id: CR-AWS-CLOUDTRAIL-012
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: CloudTrail S3 log bucket is not publicly accessible via ACL
+    description: >
+      Verifies the S3 bucket backing each trail has no ACL grant to the AllUsers
+      or AuthenticatedUsers groups.
+    rationale: >
+      A world-readable log bucket exposes the entire audit history of the
+      account, revealing infrastructure detail and any secrets logged in request
+      parameters.
+    severity: critical
+    categories:
+      - logging
+      - storage
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudtrail_logs_s3_bucket_is_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_acl
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: Grants
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Grantee.Type
+            value: Group
+          - op: or
+            exprs:
+              - op: endsWith
+                path: Grantee.URI
+                value: global/AllUsers
+              - op: endsWith
+                path: Grantee.URI
+                value: global/AuthenticatedUsers
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: NoSuchBucket
+        status: fail
+        message: Log bucket does not exist.
+    failMessage: CloudTrail log bucket grants access to AllUsers/AuthenticatedUsers.
+    passMessage: CloudTrail log bucket has no public ACL grants.
+    remediation:
+      summary: Remove public ACL grants from the log bucket.
+      steps:
+        - Remove AllUsers and AuthenticatedUsers grants from the bucket ACL.
+        - Enable S3 Block Public Access on the bucket.
+      verifyCommand: aws s3api get-bucket-acl --bucket <bucket> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.3"
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html
+  - id: CR-AWS-CLOUDTRAIL-013
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: CloudTrail S3 log bucket has server access logging enabled
+    description: >
+      Verifies the S3 bucket backing each trail has S3 server access logging
+      configured.
+    rationale: >
+      Access logging on the log bucket records who read or attempted to read the
+      audit logs, so tampering with or exfiltration of CloudTrail data is itself
+      auditable.
+    severity: low
+    categories:
+      - logging
+      - storage
+    source:
+      engine: prowler
+      id: cloudtrail_logs_s3_bucket_access_logging_enabled
+      license: Apache-2.0
+    collector: aws.s3.get_bucket_logging
+    resourceIdField: $resourceKey
+    passWhen:
+      op: exists
+      path: LoggingEnabled.TargetBucket
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: NoSuchBucket
+        status: fail
+        message: Log bucket does not exist.
+    failMessage: CloudTrail log bucket does not have server access logging enabled.
+    passMessage: CloudTrail log bucket has server access logging enabled.
+    remediation:
+      summary: Enable S3 server access logging on the log bucket.
+      steps:
+        - Choose or create a target bucket for access logs.
+        - Enable server access logging on the CloudTrail log bucket (mutating;
+          operator action).
+      verifyCommand: aws s3api get-bucket-logging --bucket <bucket> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.6"
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html
+  - id: CR-AWS-CLOUDTRAIL-014
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: A CloudTrail trail records global service events
+    description: >
+      Verifies at least one multi-region trail has IncludeGlobalServiceEvents
+      enabled so global-service (e.g. IAM, STS, CloudFront) activity is
+      captured.
+    rationale: >
+      Global services emit events in a single region; if no trail includes
+      global service events, IAM and STS activity — prime targets for privilege
+      abuse — goes unrecorded.
+    severity: high
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: cloudtrail_multi_region_enabled
+      license: Apache-2.0
+    collector: aws.cloudtrail.describe_trails
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: trailList
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: IsMultiRegionTrail
+            value: true
+          - op: equals
+            path: IncludeGlobalServiceEvents
+            value: true
+    failMessage: No multi-region trail records global service events.
+    passMessage: A multi-region trail records global service events.
+    remediation:
+      summary: Enable global service events on a multi-region trail.
+      steps:
+        - Ensure a multi-region trail exists.
+        - Enable IncludeGlobalServiceEvents on that trail (mutating; operator
+          action).
+      verifyCommand: aws cloudtrail describe-trails --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.1"
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-concepts.html
+  - id: CR-AWS-CLOUDTRAIL-015
+    version: 1.0.0
+    provider: aws
+    service: cloudtrail
+    title: CloudTrail trail is configured with SNS notification delivery
+    description: Verifies each trail has an SNS topic configured for log file
+      delivery notifications.
+    rationale: >
+      An SNS topic on log delivery enables downstream automation and alerting to
+      react promptly to new log files; without it there is no push signal that
+      delivery is occurring or has changed.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudtrail_bucket_requires_mfa_delete
+      license: Apache-2.0
+    collector: aws.cloudtrail.describe_trails
+    resourcesPath: trailList
+    resourceIdField: TrailARN
+    resourceNameField: Name
+    passWhen:
+      op: exists
+      path: SnsTopicARN
+    failMessage: Trail has no SNS topic configured for log delivery notifications.
+    passMessage: Trail delivers log file notifications to an SNS topic.
+    remediation:
+      summary: Configure an SNS topic on the trail.
+      steps:
+        - Create an SNS topic and grant CloudTrail permission to publish to it.
+        - Update the trail with the SNS topic name (mutating; operator action).
+      verifyCommand: aws cloudtrail describe-trails --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/awscloudtrail/latest/userguide/configure-sns-notifications-for-cloudtrail.html

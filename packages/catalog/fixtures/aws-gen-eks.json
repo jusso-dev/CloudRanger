@@ -1,0 +1,431 @@
+[
+  {
+    "controlId": "CR-AWS-EKS-001",
+    "cases": [
+      {
+        "name": "public endpoint disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "arn": "arn:aws:eks:us-east-1:111122223333:cluster/prod",
+                "version": "1.29",
+                "status": "ACTIVE",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": false,
+                  "endpointPrivateAccess": true,
+                  "publicAccessCidrs": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "public endpoint enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "arn": "arn:aws:eks:us-east-1:111122223333:cluster/dev",
+                "version": "1.29",
+                "status": "ACTIVE",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": true,
+                  "endpointPrivateAccess": true,
+                  "publicAccessCidrs": ["0.0.0.0/0"]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-002",
+    "cases": [
+      {
+        "name": "private access enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": false,
+                  "endpointPrivateAccess": true,
+                  "publicAccessCidrs": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "private access disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": true,
+                  "endpointPrivateAccess": false,
+                  "publicAccessCidrs": ["0.0.0.0/0"]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-003",
+    "cases": [
+      {
+        "name": "restricted cidrs pass",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": true,
+                  "endpointPrivateAccess": true,
+                  "publicAccessCidrs": ["203.0.113.0/24", "198.51.100.10/32"]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "open cidr fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": true,
+                  "endpointPrivateAccess": false,
+                  "publicAccessCidrs": ["0.0.0.0/0"]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "public endpoint disabled is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "priv",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "priv",
+                "resourcesVpcConfig": {
+                  "endpointPublicAccess": false,
+                  "endpointPrivateAccess": true,
+                  "publicAccessCidrs": []
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-004",
+    "cases": [
+      {
+        "name": "audit logging enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "logging": {
+                  "clusterLogging": [
+                    {
+                      "types": ["api", "audit", "authenticator"],
+                      "enabled": true
+                    },
+                    {
+                      "types": ["controllerManager", "scheduler"],
+                      "enabled": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "audit logging disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "logging": {
+                  "clusterLogging": [
+                    {
+                      "types": ["api", "audit", "authenticator", "controllerManager", "scheduler"],
+                      "enabled": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-005",
+    "cases": [
+      {
+        "name": "all log types enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "logging": {
+                  "clusterLogging": [
+                    {
+                      "types": ["api", "audit", "authenticator", "controllerManager", "scheduler"],
+                      "enabled": true
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "partial log types fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "logging": {
+                  "clusterLogging": [
+                    {
+                      "types": ["api", "audit"],
+                      "enabled": true
+                    },
+                    {
+                      "types": ["authenticator", "controllerManager", "scheduler"],
+                      "enabled": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-006",
+    "cases": [
+      {
+        "name": "secrets kms encryption enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "encryptionConfig": [
+                  {
+                    "resources": ["secrets"],
+                    "provider": {
+                      "keyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no encryption config fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "encryptionConfig": []
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-007",
+    "cases": [
+      {
+        "name": "supported version passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "version": "1.30"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "old version fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "version": "1.24"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EKS-008",
+    "cases": [
+      {
+        "name": "api and configmap mode passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "prod",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "prod",
+                "accessConfig": {
+                  "bootstrapClusterCreatorAdminPermissions": true,
+                  "authenticationMode": "API_AND_CONFIG_MAP"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "configmap only mode fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.eks.describe_cluster",
+            "region": "us-east-1",
+            "resourceKey": "dev",
+            "exitCode": 0,
+            "output": {
+              "cluster": {
+                "name": "dev",
+                "accessConfig": {
+                  "bootstrapClusterCreatorAdminPermissions": true,
+                  "authenticationMode": "CONFIG_MAP"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

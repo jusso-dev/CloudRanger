@@ -1,0 +1,51 @@
+collectors:
+  - id: aws.ec2.describe_vpcs
+    provider: aws
+    service: ec2
+    description: VPCs in one region.
+    kind: single
+    command: aws ec2 describe-vpcs --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns Vpcs array; IsDefault marks the default VPC.
+  - id: aws.ec2.describe_network_acls
+    provider: aws
+    service: ec2
+    description: Network ACLs and their entries in one region.
+    kind: single
+    command: aws ec2 describe-network-acls --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns NetworkAcls array; each Entries item has Egress, RuleAction
+      (allow/deny), Protocol (-1 = all), CidrBlock/Ipv6CidrBlock, optional
+      PortRange {From,To}.
+  - id: aws.ec2.describe_subnets
+    provider: aws
+    service: ec2
+    description: Subnets in one region.
+    kind: single
+    command: aws ec2 describe-subnets --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns Subnets array; MapPublicIpOnLaunch indicates auto-assign public
+      IPv4.
+  - id: aws.ec2.describe_addresses
+    provider: aws
+    service: ec2
+    description: Elastic IP addresses in one region.
+    kind: single
+    command: aws ec2 describe-addresses --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns Addresses array; unassociated EIPs lack
+      AssociationId/InstanceId/NetworkInterfaceId.
+  - id: aws.ec2.describe_vpc_endpoints
+    provider: aws
+    service: ec2
+    description: VPC endpoints in one region.
+    kind: single
+    command: aws ec2 describe-vpc-endpoints --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns VpcEndpoints array; ServiceName identifies the endpoint's
+      service, VpcId the owning VPC.

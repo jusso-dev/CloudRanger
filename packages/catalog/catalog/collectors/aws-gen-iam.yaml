@@ -1,0 +1,42 @@
+collectors:
+  - id: aws.iam.get_account_authorization_details
+    provider: aws
+    service: iam
+    description: Full snapshot of all IAM users, groups, roles, and customer/AWS
+      managed policies in the account, including inline policy documents,
+      attached managed policy references, role trust policies, and managed
+      policy version documents. With --output json the policy documents are
+      returned as decoded JSON objects (not URL-encoded strings).
+    kind: single
+    command: aws iam get-account-authorization-details --output json
+    regional: false
+    outputFormat: json
+    notes: Global IAM endpoint (no region). Requires
+      iam:GetAccountAuthorizationDetails. Response is paginated
+      (IsTruncated/Marker); the engine consumes the combined
+      UserDetailList/GroupDetailList/RoleDetailList/Policies arrays. Within a
+      Statement, Action/Resource/Principal fields may each be a single string or
+      an array, and Statement itself may be an object or an array.
+  - id: aws.iam.list_server_certificates
+    provider: aws
+    service: iam
+    description: Lists IAM server certificate metadata (name, ARN, upload date, and
+      expiration date) without the certificate body or private key.
+    kind: single
+    command: aws iam list-server-certificates --output json
+    regional: false
+    outputFormat: json
+    notes: Global IAM endpoint (no region). Requires iam:ListServerCertificates.
+      Returns an empty ServerCertificateMetadataList when no certificates exist.
+  - id: aws.accessanalyzer.list_analyzers
+    provider: aws
+    service: accessanalyzer
+    description: Lists IAM Access Analyzer analyzers in a region, including each
+      analyzer's name, ARN, type, and status.
+    kind: single
+    command: aws accessanalyzer list-analyzers --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires access-analyzer:ListAnalyzers. Regional service; an analyzer is
+      only effective while status is ACTIVE. Returns an empty analyzers list
+      when none are configured in the region.

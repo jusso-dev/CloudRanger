@@ -1,0 +1,34 @@
+collectors:
+  - id: aws.cloudfront.list_distributions
+    provider: aws
+    service: cloudfront
+    description: Lists all CloudFront distributions for the account
+      (DistributionSummary view). CloudFront is a global service; no region is
+      needed.
+    kind: single
+    command: aws cloudfront list-distributions --output json
+    regional: false
+    outputFormat: json
+    notes: 'Returns { "DistributionList": { "Items": [ DistributionSummary, ... ] }
+      }. The summary includes Origins, DefaultCacheBehavior, CacheBehaviors,
+      ViewerCertificate, Restrictions.GeoRestriction and WebACLId, but does NOT
+      include DefaultRootObject or Logging. When no distributions exist,
+      DistributionList has Quantity 0 and no Items key. Requires
+      cloudfront:ListDistributions.'
+  - id: aws.cloudfront.get_distribution_config
+    provider: aws
+    service: cloudfront
+    description: Full distribution configuration for one distribution, including
+      fields absent from the list summary (DefaultRootObject, Logging).
+    kind: per_resource
+    command: aws cloudfront get-distribution-config --id {resource} --output json
+    regional: false
+    parent:
+      collector: aws.cloudfront.list_distributions
+      itemsPath: DistributionList.Items
+      resourceField: Id
+    outputFormat: json
+    notes: 'Returns { "ETag": "...", "DistributionConfig": { "DefaultRootObject":
+      "...", "Logging": { "Enabled": bool, "Bucket": "...", ... }, ... } }.
+      DefaultRootObject is an empty string "" when unset. Requires
+      cloudfront:GetDistributionConfig.'

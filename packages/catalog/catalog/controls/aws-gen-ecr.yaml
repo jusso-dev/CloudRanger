@@ -1,0 +1,296 @@
+controls:
+  - id: CR-AWS-ECR-001
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository scans images on push
+    description: The repository's image scanning configuration has scanOnPush
+      enabled so images are scanned for vulnerabilities when pushed.
+    rationale: Without scan-on-push, vulnerable container images can be published
+      and deployed without any automated vulnerability detection, increasing the
+      risk of running known-exploitable software.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: ecr_repositories_scan_images_on_push_enabled
+      license: Apache-2.0
+    collector: aws.ecr.describe_repositories
+    resourcesPath: repositories
+    resourceIdField: repositoryName
+    resourceNameField: repositoryName
+    passWhen:
+      op: equals
+      path: imageScanningConfiguration.scanOnPush
+      value: true
+    failMessage: ECR repository does not have scan-on-push enabled.
+    passMessage: ECR repository scans images on push.
+    remediation:
+      summary: Enable scan-on-push for the repository.
+      steps:
+        - Enable image scanning on push via aws ecr
+          put-image-scanning-configuration --repository-name <name>
+          --image-scanning-configuration scanOnPush=true.
+        - Consider enabling enhanced scanning at the registry level for
+          continuous scanning.
+      verifyCommand: aws ecr describe-repositories --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html
+  - id: CR-AWS-ECR-002
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository enforces image tag immutability
+    description: The repository's imageTagMutability is set to IMMUTABLE so existing
+      image tags cannot be overwritten.
+    rationale: Mutable tags allow an attacker or accidental push to replace a
+      trusted image tag with a malicious or unverified image, undermining
+      supply-chain integrity and deployment reproducibility.
+    severity: medium
+    categories:
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: ecr_repositories_tag_immutability_enabled
+      license: Apache-2.0
+    collector: aws.ecr.describe_repositories
+    resourcesPath: repositories
+    resourceIdField: repositoryName
+    resourceNameField: repositoryName
+    passWhen:
+      op: equals
+      path: imageTagMutability
+      value: IMMUTABLE
+    failMessage: ECR repository allows mutable image tags.
+    passMessage: ECR repository enforces immutable image tags.
+    remediation:
+      summary: Set the repository tag mutability to IMMUTABLE.
+      steps:
+        - Run aws ecr put-image-tag-mutability --repository-name <name>
+          --image-tag-mutability IMMUTABLE.
+      verifyCommand: aws ecr describe-repositories --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html
+  - id: CR-AWS-ECR-003
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository is encrypted with a customer-managed KMS key
+    description: The repository's encryption configuration uses encryptionType KMS
+      rather than the default AES256 server-side encryption.
+    rationale: Default AES256 encryption does not provide customer control over key
+      rotation, access policies, or auditability. A customer-managed KMS key
+      enables key-level access control and CloudTrail auditing of image data
+      access.
+    severity: low
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: ecr_repositories_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.ecr.describe_repositories
+    resourcesPath: repositories
+    resourceIdField: repositoryName
+    resourceNameField: repositoryName
+    passWhen:
+      op: equals
+      path: encryptionConfiguration.encryptionType
+      value: KMS
+    failMessage: ECR repository is not encrypted with a KMS key (uses default AES256).
+    passMessage: ECR repository is encrypted with a KMS key.
+    remediation:
+      summary: Recreate the repository with KMS encryption.
+      steps:
+        - ECR encryption configuration is set at creation time and cannot be
+          changed afterward.
+        - Create a new repository with aws ecr create-repository
+          --repository-name <name> --encryption-configuration
+          encryptionType=KMS,kmsKey=<key-arn> and migrate images.
+      verifyCommand: aws ecr describe-repositories --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/encryption-at-rest.html
+  - id: CR-AWS-ECR-004
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository has a lifecycle policy configured
+    description: The repository has a lifecycle policy so stale and untagged images
+      are automatically expired.
+    rationale: Without a lifecycle policy, repositories accumulate stale and
+      vulnerable images indefinitely, increasing storage cost and the chance an
+      old vulnerable image is pulled and deployed.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: ecr_repositories_lifecycle_policy_enabled
+      license: Apache-2.0
+    collector: aws.ecr.get_lifecycle_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: exists
+      path: lifecyclePolicyText
+    onError:
+      - contains: LifecyclePolicyNotFoundException
+        status: fail
+        message: No lifecycle policy configured for repository.
+      - contains: AccessDenied
+        status: error
+    failMessage: ECR repository has no lifecycle policy configured.
+    passMessage: ECR repository has a lifecycle policy configured.
+    remediation:
+      summary: Attach a lifecycle policy to the repository.
+      steps:
+        - Define a lifecycle policy JSON that expires untagged and old images.
+        - Apply it with aws ecr put-lifecycle-policy --repository-name <name>
+          --lifecycle-policy-text file://policy.json.
+      verifyCommand: aws ecr get-lifecycle-policy --repository-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html
+  - id: CR-AWS-ECR-005
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository policy does not grant public access
+    description: The repository resource policy does not contain any Allow statement
+      with a wildcard Principal, which would expose images to any AWS principal
+      on the internet.
+    rationale: A repository policy that allows a wildcard principal makes container
+      images readable (or pushable) by anyone, leaking proprietary code and
+      potentially allowing image tampering.
+    severity: high
+    categories:
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: ecr_repositories_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.ecr.get_repository_policy
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: exists
+      path: policyText
+    passWhen:
+      op: not
+      expr:
+        op: or
+        exprs:
+          - op: contains
+            path: policyText
+            value: '"Principal":"*"'
+          - op: contains
+            path: policyText
+            value: '"AWS":"*"'
+          - op: contains
+            path: policyText
+            value: '"Principal": "*"'
+          - op: contains
+            path: policyText
+            value: '"AWS": "*"'
+    onError:
+      - contains: RepositoryPolicyNotFoundException
+        status: pass
+        message: No repository policy attached; not publicly accessible.
+      - contains: AccessDenied
+        status: error
+    failMessage: ECR repository policy grants access to a wildcard principal (public).
+    passMessage: ECR repository policy does not grant public access.
+    remediation:
+      summary: Remove wildcard principals from the repository policy.
+      steps:
+        - Edit the repository policy to scope Principal to specific account or
+          role ARNs.
+        - Apply with aws ecr set-repository-policy --repository-name <name>
+          --policy-text file://policy.json.
+      verifyCommand: aws ecr get-repository-policy --repository-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html
+  - id: CR-AWS-ECR-006
+    version: 1.0.0
+    provider: aws
+    service: ecr
+    title: ECR repository policy does not grant untrusted cross-account access
+    description: The repository resource policy does not use a wildcard principal
+      without a source-account or org condition, avoiding uncontrolled
+      cross-account access.
+    rationale: A cross-account Allow statement using a wildcard principal with no
+      aws:PrincipalOrgID or aws:SourceAccount condition can grant unintended
+      external accounts access to pull or push images, enabling data
+      exfiltration or image tampering.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: ecr_repositories_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.ecr.get_repository_policy
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: exists
+      path: policyText
+    passWhen:
+      op: or
+      exprs:
+        - op: not
+          expr:
+            op: or
+            exprs:
+              - op: contains
+                path: policyText
+                value: '"Principal":"*"'
+              - op: contains
+                path: policyText
+                value: '"AWS":"*"'
+              - op: contains
+                path: policyText
+                value: '"Principal": "*"'
+              - op: contains
+                path: policyText
+                value: '"AWS": "*"'
+        - op: or
+          exprs:
+            - op: contains
+              path: policyText
+              value: aws:PrincipalOrgID
+            - op: contains
+              path: policyText
+              value: aws:SourceAccount
+            - op: contains
+              path: policyText
+              value: aws:SourceArn
+    onError:
+      - contains: RepositoryPolicyNotFoundException
+        status: pass
+        message: No repository policy attached; no cross-account grant.
+      - contains: AccessDenied
+        status: error
+    failMessage: ECR repository policy grants wildcard-principal access without an
+      account or org condition.
+    passMessage: ECR repository policy does not grant unconditioned cross-account access.
+    remediation:
+      summary: Scope cross-account access to trusted accounts or add org conditions.
+      steps:
+        - Replace wildcard principals with specific account or role ARNs, or add
+          an aws:PrincipalOrgID / aws:SourceAccount condition.
+        - Apply with aws ecr set-repository-policy --repository-name <name>
+          --policy-text file://policy.json.
+      verifyCommand: aws ecr get-repository-policy --repository-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html

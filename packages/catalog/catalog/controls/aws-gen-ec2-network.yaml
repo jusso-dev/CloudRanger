@@ -1,0 +1,576 @@
+controls:
+  - id: CR-AWS-EC2-021
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No default VPC is present
+    description: The account has no default VPC in the region, or the default VPC
+      has been removed.
+    rationale: Default VPCs ship with permissive defaults and are often used
+      unintentionally; removing them reduces accidental public exposure.
+    severity: low
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: vpc_different_regions
+      license: Apache-2.0
+    collector: aws.ec2.describe_vpcs
+    resourcesPath: Vpcs
+    resourceIdField: VpcId
+    resourceNameField: VpcId
+    passWhen:
+      op: notEquals
+      path: IsDefault
+      value: true
+    failMessage: This VPC is the account default VPC.
+    passMessage: VPC is not the default VPC.
+    remediation:
+      summary: Delete the default VPC where it is not required.
+      steps:
+        - Migrate any resources out of the default VPC.
+        - Delete the default VPC in each region where it is unused.
+      verifyCommand: aws ec2 describe-vpcs --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html
+  - id: CR-AWS-EC2-022
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: Default security group restricts all traffic
+    description: Every default security group has no ingress and no egress rules, so
+      it permits no traffic.
+    rationale: The default security group is applied automatically to resources
+      without an explicit group; leaving its rules open silently exposes those
+      resources.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_securitygroup_default_restrict_traffic
+      license: Apache-2.0
+    collector: aws.ec2.describe_security_groups
+    resourcesPath: SecurityGroups
+    resourceIdField: GroupId
+    resourceNameField: GroupName
+    applicableWhen:
+      op: equals
+      path: GroupName
+      value: default
+    passWhen:
+      op: and
+      exprs:
+        - op: isEmpty
+          path: IpPermissions
+        - op: isEmpty
+          path: IpPermissionsEgress
+    failMessage: Default security group still has ingress or egress rules.
+    passMessage: Default security group permits no traffic.
+    remediation:
+      summary: Remove all rules from the default security group.
+      steps:
+        - Remove every inbound rule from the default security group.
+        - Remove every outbound rule from the default security group.
+      verifyCommand: aws ec2 describe-security-groups --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.4"
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/default-security-group.html
+  - id: CR-AWS-EC2-023
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No network ACL allows ingress SSH from the internet
+    description: No NACL has an allow ingress entry for TCP 22 from 0.0.0.0/0 or ::/0.
+    rationale: A wide-open NACL undermines subnet-level segmentation and can expose
+      SSH even when security groups are tightened.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_networkacl_allow_ingress_tcp_port_22
+      license: Apache-2.0
+    collector: aws.ec2.describe_network_acls
+    resourcesPath: NetworkAcls
+    resourceIdField: NetworkAclId
+    resourceNameField: NetworkAclId
+    passWhen:
+      op: noneItem
+      path: Entries
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Egress
+            value: false
+          - op: equals
+            path: RuleAction
+            value: allow
+          - op: or
+            exprs:
+              - op: equals
+                path: Protocol
+                value: "-1"
+              - op: and
+                exprs:
+                  - op: equals
+                    path: Protocol
+                    value: "6"
+                  - op: portIncludes
+                    fromPath: PortRange.From
+                    toPath: PortRange.To
+                    value: 22
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: CidrBlock
+              - op: isPublicCidr
+                path: Ipv6CidrBlock
+    failMessage: Network ACL allows inbound SSH (22/tcp) from the internet.
+    passMessage: No NACL entry opens SSH to the internet.
+    remediation:
+      summary: Remove or narrow the wide-open NACL ingress entry.
+      steps:
+        - Replace the 0.0.0.0/0 or ::/0 source with specific trusted CIDRs.
+        - Restrict the entry to only required ports.
+      verifyCommand: aws ec2 describe-network-acls --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.1"
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html
+  - id: CR-AWS-EC2-024
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No network ACL allows ingress RDP from the internet
+    description: No NACL has an allow ingress entry for TCP 3389 from 0.0.0.0/0 or ::/0.
+    rationale: World-open RDP at the subnet boundary is a top ransomware and
+      initial-access vector.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_networkacl_allow_ingress_tcp_port_3389
+      license: Apache-2.0
+    collector: aws.ec2.describe_network_acls
+    resourcesPath: NetworkAcls
+    resourceIdField: NetworkAclId
+    resourceNameField: NetworkAclId
+    passWhen:
+      op: noneItem
+      path: Entries
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Egress
+            value: false
+          - op: equals
+            path: RuleAction
+            value: allow
+          - op: or
+            exprs:
+              - op: equals
+                path: Protocol
+                value: "-1"
+              - op: and
+                exprs:
+                  - op: equals
+                    path: Protocol
+                    value: "6"
+                  - op: portIncludes
+                    fromPath: PortRange.From
+                    toPath: PortRange.To
+                    value: 3389
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: CidrBlock
+              - op: isPublicCidr
+                path: Ipv6CidrBlock
+    failMessage: Network ACL allows inbound RDP (3389/tcp) from the internet.
+    passMessage: No NACL entry opens RDP to the internet.
+    remediation:
+      summary: Remove or narrow the wide-open NACL ingress entry.
+      steps:
+        - Replace the 0.0.0.0/0 or ::/0 source with specific trusted CIDRs.
+        - Restrict the entry to only required ports.
+      verifyCommand: aws ec2 describe-network-acls --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.1"
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html
+  - id: CR-AWS-EC2-025
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No security group opens all traffic to the internet
+    description: No security group has an ingress rule allowing all protocols/all
+      ports from 0.0.0.0/0 or ::/0.
+    rationale: An all-ports, all-protocols internet-facing rule exposes every
+      service on the attached resources to the public.
+    severity: critical
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_securitygroup_allow_ingress_from_internet_to_any_port
+      license: Apache-2.0
+    collector: aws.ec2.describe_security_groups
+    resourcesPath: SecurityGroups
+    resourceIdField: GroupId
+    resourceNameField: GroupName
+    passWhen:
+      op: noneItem
+      path: IpPermissions
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: IpProtocol
+            value: "-1"
+          - op: or
+            exprs:
+              - op: anyItem
+                path: IpRanges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIp
+              - op: anyItem
+                path: Ipv6Ranges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIpv6
+    failMessage: Security group allows all traffic from the internet.
+    passMessage: No all-traffic internet ingress rule.
+    remediation:
+      summary: Remove the all-traffic internet ingress rule.
+      steps:
+        - Delete the rule permitting all protocols from 0.0.0.0/0 or ::/0.
+        - Add only the specific ports and sources actually required.
+      verifyCommand: aws ec2 describe-security-groups --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.3"
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules.html
+  - id: CR-AWS-EC2-026
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No security group opens high-risk admin ports to the internet
+    description: No security group ingress rule exposes common high-risk ports (FTP
+      20/21, Telnet 23, MySQL 3306, PostgreSQL 5432, MongoDB 27017, Redis 6379)
+      from the internet.
+    rationale: Database and legacy-service ports open to the world are routinely
+      scanned and exploited for data theft and lateral movement.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_securitygroup_allow_ingress_from_internet_to_high_risk_tcp_ports
+      license: Apache-2.0
+    collector: aws.ec2.describe_security_groups
+    resourcesPath: SecurityGroups
+    resourceIdField: GroupId
+    resourceNameField: GroupName
+    passWhen:
+      op: noneItem
+      path: IpPermissions
+      condition:
+        op: and
+        exprs:
+          - op: or
+            exprs:
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 21
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 23
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 3306
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 5432
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 6379
+              - op: portIncludes
+                fromPath: FromPort
+                toPath: ToPort
+                value: 27017
+          - op: or
+            exprs:
+              - op: anyItem
+                path: IpRanges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIp
+              - op: anyItem
+                path: Ipv6Ranges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIpv6
+    failMessage: Security group exposes a high-risk service port to the internet.
+    passMessage: No high-risk service port open to the internet.
+    remediation:
+      summary: Restrict high-risk ports to trusted sources.
+      steps:
+        - Replace 0.0.0.0/0 or ::/0 on database and legacy-service ports with
+          specific CIDRs.
+        - Prefer private access via VPN, bastion, or VPC endpoints.
+      verifyCommand: aws ec2 describe-security-groups --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules.html
+  - id: CR-AWS-EC2-027
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: Subnets do not auto-assign public IPv4 addresses
+    description: No subnet has MapPublicIpOnLaunch enabled, so instances are not
+      automatically made internet-reachable.
+    rationale: Auto-assigning public IPs can silently place workloads on the
+      internet without an explicit decision, widening the attack surface.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: vpc_subnet_no_public_ip_by_default
+      license: Apache-2.0
+    collector: aws.ec2.describe_subnets
+    resourcesPath: Subnets
+    resourceIdField: SubnetId
+    resourceNameField: SubnetId
+    passWhen:
+      op: notEquals
+      path: MapPublicIpOnLaunch
+      value: true
+    failMessage: Subnet auto-assigns public IPv4 addresses on launch.
+    passMessage: Subnet does not auto-assign public IPv4 addresses.
+    remediation:
+      summary: Disable auto-assign public IPv4 on the subnet.
+      steps:
+        - Turn off the auto-assign public IPv4 address setting for the subnet.
+        - Assign public IPs explicitly only where required.
+      verifyCommand: aws ec2 describe-subnets --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html
+  - id: CR-AWS-EC2-028
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No unassociated Elastic IP addresses
+    description: Every allocated Elastic IP is associated with an instance or
+      network interface.
+    rationale: Unassociated EIPs incur charges and can be reassigned to unexpected
+      resources, and often indicate orphaned or forgotten infrastructure.
+    severity: low
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: ec2_elastic_ip_unassigned
+      license: Apache-2.0
+    collector: aws.ec2.describe_addresses
+    resourcesPath: Addresses
+    resourceIdField: AllocationId
+    resourceNameField: PublicIp
+    passWhen:
+      op: or
+      exprs:
+        - op: exists
+          path: AssociationId
+        - op: exists
+          path: InstanceId
+        - op: exists
+          path: NetworkInterfaceId
+    failMessage: Elastic IP is allocated but not associated with any resource.
+    passMessage: Elastic IP is associated with a resource.
+    remediation:
+      summary: Release unassociated Elastic IPs.
+      steps:
+        - Confirm the Elastic IP is genuinely unused.
+        - Release the Elastic IP allocation to remove exposure and cost.
+      verifyCommand: aws ec2 describe-addresses --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html
+  - id: CR-AWS-EC2-029
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: An S3 gateway VPC endpoint exists
+    description: The region has at least one VPC endpoint for the S3 service.
+    rationale: Using a VPC endpoint for S3 keeps traffic off the public internet,
+      reducing exposure and data-exfiltration paths while enabling endpoint
+      policies.
+    severity: low
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: vpc_endpoint_services_allowed_principals_trust_boundaries
+      license: Apache-2.0
+    collector: aws.ec2.describe_vpc_endpoints
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: VpcEndpoints
+      condition:
+        op: endsWith
+        path: ServiceName
+        value: .s3
+    failMessage: No S3 VPC endpoint found in the region.
+    passMessage: An S3 VPC endpoint is present.
+    remediation:
+      summary: Create an S3 gateway VPC endpoint.
+      steps:
+        - Create a gateway VPC endpoint for the S3 service in the VPC.
+        - Associate it with the route tables serving private subnets.
+      verifyCommand: aws ec2 describe-vpc-endpoints --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html
+  - id: CR-AWS-EC2-030
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No network ACL is open to all traffic from the internet
+    description: No NACL has an allow ingress entry for all protocols from 0.0.0.0/0
+      or ::/0.
+    rationale: An all-protocol, internet-sourced NACL allow entry removes
+      subnet-level defense-in-depth entirely.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_networkacl_allow_ingress_any_port
+      license: Apache-2.0
+    collector: aws.ec2.describe_network_acls
+    resourcesPath: NetworkAcls
+    resourceIdField: NetworkAclId
+    resourceNameField: NetworkAclId
+    passWhen:
+      op: noneItem
+      path: Entries
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: Egress
+            value: false
+          - op: equals
+            path: RuleAction
+            value: allow
+          - op: equals
+            path: Protocol
+            value: "-1"
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: CidrBlock
+              - op: isPublicCidr
+                path: Ipv6CidrBlock
+    failMessage: Network ACL allows all inbound traffic from the internet.
+    passMessage: No all-traffic internet NACL ingress entry.
+    remediation:
+      summary: Remove or narrow the all-traffic NACL ingress entry.
+      steps:
+        - Replace the all-protocol 0.0.0.0/0 or ::/0 allow entry with scoped
+          entries.
+        - Limit to only the protocols, ports, and CIDRs required.
+      verifyCommand: aws ec2 describe-network-acls --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html
+  - id: CR-AWS-EC2-031
+    version: 1.0.0
+    provider: aws
+    service: ec2-network
+    title: No security group opens the Windows SMB port to the internet
+    description: No security group ingress rule exposes TCP 445 (SMB) from 0.0.0.0/0
+      or ::/0.
+    rationale: Internet-exposed SMB is a well-known worm and ransomware propagation
+      vector (e.g. WannaCry) and must never face the public internet.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_445
+      license: Apache-2.0
+    collector: aws.ec2.describe_security_groups
+    resourcesPath: SecurityGroups
+    resourceIdField: GroupId
+    resourceNameField: GroupName
+    passWhen:
+      op: noneItem
+      path: IpPermissions
+      condition:
+        op: and
+        exprs:
+          - op: portIncludes
+            fromPath: FromPort
+            toPath: ToPort
+            value: 445
+          - op: or
+            exprs:
+              - op: anyItem
+                path: IpRanges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIp
+              - op: anyItem
+                path: Ipv6Ranges
+                condition:
+                  op: isPublicCidr
+                  path: CidrIpv6
+    failMessage: Security group allows SMB (445/tcp) from the internet.
+    passMessage: No internet-open SMB ingress.
+    remediation:
+      summary: Restrict port 445 to trusted internal sources.
+      steps:
+        - Remove 0.0.0.0/0 or ::/0 from the port 445 rule.
+        - Allow SMB only from specific internal CIDRs or over VPN.
+      verifyCommand: aws ec2 describe-security-groups --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules.html
