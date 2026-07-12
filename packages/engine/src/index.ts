@@ -1,0 +1,27 @@
+export * from "./types.js";
+export { getPath } from "./path.js";
+export { evaluateExpression, isSafeRegex, type ExprContext } from "./expr.js";
+export {
+  controlSchema,
+  collectorSchema,
+  expressionSchema,
+  providerSchema,
+  severitySchema,
+} from "./schema.js";
+export { validateReadOnlyCommand, validateParamValue } from "./safety.js";
+export { evaluateControls, type EvaluateOptions } from "./evaluate.js";
+export { findingFingerprint, evidenceHash } from "./fingerprint.js";
+export {
+  reconcileOne,
+  type PriorFinding,
+  type ReconcileAction,
+  type ReconcileActionType,
+} from "./reconcile.js";
+export { buildPlan, type CollectionPlan, type PlanStep } from "./plan.js";
+export { loadCatalog, type LoadedCatalog, type CatalogIssue } from "./load.js";
+export {
+  runFixtureFile,
+  fixtureFileSchema,
+  type FixtureFile,
+  type FixtureCaseResult,
+} from "./fixtures.js";

@@ -1,0 +1,959 @@
+[
+  {
+    "controlId": "CR-AWS-IAM-001",
+    "cases": [
+      {
+        "name": "passes when root MFA enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": { "SummaryMap": { "AccountMFAEnabled": 1, "AccountAccessKeysPresent": 0 } }
+          }
+        ]
+      },
+      {
+        "name": "fails when root MFA disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": { "SummaryMap": { "AccountMFAEnabled": 0 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-002",
+    "cases": [
+      {
+        "name": "passes when no root access keys",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": { "SummaryMap": { "AccountAccessKeysPresent": 0 } }
+          }
+        ]
+      },
+      {
+        "name": "fails when root access key exists",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_summary",
+            "exitCode": 0,
+            "output": { "SummaryMap": { "AccountAccessKeysPresent": 1 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-003",
+    "cases": [
+      {
+        "name": "passes at length 14",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": { "PasswordPolicy": { "MinimumPasswordLength": 14 } }
+          }
+        ]
+      },
+      {
+        "name": "fails at length 8",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 0,
+            "output": { "PasswordPolicy": { "MinimumPasswordLength": 8 } }
+          }
+        ]
+      },
+      {
+        "name": "fails when no policy exists (NoSuchEntity)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.get_account_password_policy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchEntity) when calling the GetAccountPasswordPolicy operation: The Password Policy with domain name 123456789012 cannot be found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-004",
+    "cases": [
+      {
+        "name": "passes with MFA device",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_mfa_devices",
+            "resourceKey": "alice",
+            "exitCode": 0,
+            "output": {
+              "MFADevices": [
+                { "UserName": "alice", "SerialNumber": "arn:aws:iam::123456789012:mfa/alice" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without MFA device",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_mfa_devices",
+            "resourceKey": "bob",
+            "exitCode": 0,
+            "output": { "MFADevices": [] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-IAM-005",
+    "cases": [
+      {
+        "name": "passes with fresh active key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_access_keys",
+            "resourceKey": "alice",
+            "exitCode": 0,
+            "output": {
+              "AccessKeyMetadata": [
+                { "UserName": "alice", "Status": "Active", "CreateDate": "2025-12-01T00:00:00Z" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with old inactive key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_access_keys",
+            "resourceKey": "carol",
+            "exitCode": 0,
+            "output": {
+              "AccessKeyMetadata": [
+                { "UserName": "carol", "Status": "Inactive", "CreateDate": "2024-01-01T00:00:00Z" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with active key older than 90 days",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.iam.list_access_keys",
+            "resourceKey": "bob",
+            "exitCode": 0,
+            "output": {
+              "AccessKeyMetadata": [
+                { "UserName": "bob", "Status": "Active", "CreateDate": "2025-09-01T00:00:00Z" }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-001",
+    "cases": [
+      {
+        "name": "passes with all four settings",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_public_access_block",
+            "resourceKey": "good-bucket",
+            "exitCode": 0,
+            "output": {
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "IgnorePublicAcls": true,
+                "BlockPublicPolicy": true,
+                "RestrictPublicBuckets": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with one setting off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_public_access_block",
+            "resourceKey": "partial-bucket",
+            "exitCode": 0,
+            "output": {
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "IgnorePublicAcls": true,
+                "BlockPublicPolicy": true,
+                "RestrictPublicBuckets": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when configuration absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_public_access_block",
+            "resourceKey": "bare-bucket",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchPublicAccessBlockConfiguration) when calling the GetPublicAccessBlock operation"
+          }
+        ]
+      },
+      {
+        "name": "errors on access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_public_access_block",
+            "resourceKey": "denied-bucket",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDenied) when calling the GetPublicAccessBlock operation"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-002",
+    "cases": [
+      {
+        "name": "passes with default SSE",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_encryption",
+            "resourceKey": "enc-bucket",
+            "exitCode": 0,
+            "output": {
+              "ServerSideEncryptionConfiguration": {
+                "Rules": [
+                  {
+                    "ApplyServerSideEncryptionByDefault": { "SSEAlgorithm": "aws:kms" },
+                    "BucketKeyEnabled": true
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when no encryption configuration",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_encryption",
+            "resourceKey": "plain-bucket",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ServerSideEncryptionConfigurationNotFoundError) when calling the GetBucketEncryption operation"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-003",
+    "cases": [
+      {
+        "name": "passes when versioning enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_versioning",
+            "resourceKey": "versioned-bucket",
+            "exitCode": 0,
+            "output": { "Status": "Enabled" }
+          }
+        ]
+      },
+      {
+        "name": "fails when versioning never enabled (empty output)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_versioning",
+            "resourceKey": "unversioned-bucket",
+            "exitCode": 0,
+            "output": {}
+          }
+        ]
+      },
+      {
+        "name": "fails when versioning suspended",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3.get_bucket_versioning",
+            "resourceKey": "suspended-bucket",
+            "exitCode": 0,
+            "output": { "Status": "Suspended" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-001",
+    "cases": [
+      {
+        "name": "fails when SSH open to 0.0.0.0/0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-1",
+                  "GroupName": "open-ssh",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 22,
+                      "ToPort": 22,
+                      "IpRanges": [{ "CidrIp": "0.0.0.0/0" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when all-traffic rule open to IPv6 world",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-2",
+                  "GroupName": "all-open",
+                  "IpPermissions": [
+                    { "IpProtocol": "-1", "IpRanges": [], "Ipv6Ranges": [{ "CidrIpv6": "::/0" }] }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with restricted source",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-3",
+                  "GroupName": "restricted",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 22,
+                      "ToPort": 22,
+                      "IpRanges": [{ "CidrIp": "203.0.113.0/24" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-002",
+    "cases": [
+      {
+        "name": "fails when RDP open to world",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-4",
+                  "GroupName": "open-rdp",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3389,
+                      "ToPort": 3389,
+                      "IpRanges": [{ "CidrIp": "0.0.0.0/0" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when RDP restricted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-5",
+                  "GroupName": "restricted-rdp",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3389,
+                      "ToPort": 3389,
+                      "IpRanges": [{ "CidrIp": "10.0.0.0/8" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-003",
+    "cases": [
+      {
+        "name": "passes when enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.get_ebs_encryption_by_default",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "EbsEncryptionByDefault": true }
+          }
+        ]
+      },
+      {
+        "name": "fails when disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.get_ebs_encryption_by_default",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "EbsEncryptionByDefault": false }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-004",
+    "cases": [
+      {
+        "name": "passes when IMDSv2 required",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-good",
+                      "State": { "Name": "running" },
+                      "MetadataOptions": { "HttpTokens": "required" }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when IMDSv1 allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-bad",
+                      "State": { "Name": "running" },
+                      "MetadataOptions": { "HttpTokens": "optional" }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable for terminated instance",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-gone",
+                      "State": { "Name": "terminated" },
+                      "MetadataOptions": { "HttpTokens": "optional" }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-001",
+    "cases": [
+      {
+        "name": "passes with a multi-region trail",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "org-trail",
+                  "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/org-trail",
+                  "IsMultiRegionTrail": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with only single-region trails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "local-trail",
+                  "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/local-trail",
+                  "IsMultiRegionTrail": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with no trails at all",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": { "trailList": [] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-002",
+    "cases": [
+      {
+        "name": "passes with validation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "trail-a",
+                  "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/trail-a",
+                  "LogFileValidationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with validation disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.describe_trails",
+            "exitCode": 0,
+            "output": {
+              "trailList": [
+                {
+                  "Name": "trail-b",
+                  "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/trail-b",
+                  "LogFileValidationEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDTRAIL-003",
+    "cases": [
+      {
+        "name": "passes when logging",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.get_trail_status",
+            "resourceKey": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/trail-a",
+            "exitCode": 0,
+            "output": { "IsLogging": true }
+          }
+        ]
+      },
+      {
+        "name": "fails when stopped",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudtrail.get_trail_status",
+            "resourceKey": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/trail-b",
+            "exitCode": 0,
+            "output": { "IsLogging": false }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-001",
+    "cases": [
+      {
+        "name": "passes when private",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-private", "PubliclyAccessible": false }]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when public",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-public", "PubliclyAccessible": true }]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-002",
+    "cases": [
+      {
+        "name": "passes when encrypted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-enc", "StorageEncrypted": true }]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when unencrypted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-plain", "StorageEncrypted": false }]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-003",
+    "cases": [
+      {
+        "name": "passes with retention 7",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-backed", "BackupRetentionPeriod": 7 }]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with retention 0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [{ "DBInstanceIdentifier": "db-nobackup", "BackupRetentionPeriod": 0 }]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-004",
+    "cases": [
+      {
+        "name": "passes with deletion protection",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                { "DBInstanceIdentifier": "db-protected", "DeletionProtection": true }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without deletion protection",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                { "DBInstanceIdentifier": "db-unprotected", "DeletionProtection": false }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KMS-001",
+    "cases": [
+      {
+        "name": "passes with rotation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "ap-southeast-2",
+            "resourceKey": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": { "KeyRotationEnabled": true }
+          }
+        ]
+      },
+      {
+        "name": "fails with rotation disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "ap-southeast-2",
+            "resourceKey": "abcd1234-12ab-34cd-56ef-1234567890ab",
+            "exitCode": 0,
+            "output": { "KeyRotationEnabled": false }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when access denied (AWS-managed key)",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kms.get_key_rotation_status",
+            "region": "ap-southeast-2",
+            "resourceKey": "aws-managed-key",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetKeyRotationStatus operation"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-GUARDDUTY-001",
+    "cases": [
+      {
+        "name": "passes with a detector",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.guardduty.list_detectors",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "DetectorIds": ["12abc34d567e8fa901bc2d34e56789f0"] }
+          }
+        ]
+      },
+      {
+        "name": "fails with no detectors",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.guardduty.list_detectors",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "DetectorIds": [] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CONFIG-001",
+    "cases": [
+      {
+        "name": "passes when recording",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.config.describe_configuration_recorder_status",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "ConfigurationRecordersStatus": [{ "name": "default", "recording": true }] }
+          }
+        ]
+      },
+      {
+        "name": "fails when recorder stopped",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.config.describe_configuration_recorder_status",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "ConfigurationRecordersStatus": [{ "name": "default", "recording": false }]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when no recorder exists",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.config.describe_configuration_recorder_status",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "ConfigurationRecordersStatus": [] }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,582 @@
+[
+  {
+    "controlId": "CR-GCP-STORAGE-001",
+    "cases": [
+      {
+        "name": "fails with allUsers binding",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "public-bucket",
+            "exitCode": 0,
+            "output": {
+              "bindings": [{ "role": "roles/storage.objectViewer", "members": ["allUsers"] }]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with allAuthenticatedUsers binding",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "authed-bucket",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/storage.objectViewer",
+                  "members": ["allAuthenticatedUsers", "user:alice@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with scoped members only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "private-bucket",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/storage.admin",
+                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-002",
+    "cases": [
+      {
+        "name": "passes with uniform access",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [{ "name": "uniform-bucket", "uniform_bucket_level_access": true }]
+          }
+        ]
+      },
+      {
+        "name": "fails without uniform access",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [{ "name": "acl-bucket", "uniform_bucket_level_access": false }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-003",
+    "cases": [
+      {
+        "name": "passes when enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [{ "name": "sealed-bucket", "public_access_prevention": "enforced" }]
+          }
+        ]
+      },
+      {
+        "name": "fails when inherited",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [{ "name": "loose-bucket", "public_access_prevention": "inherited" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-001",
+    "cases": [
+      {
+        "name": "fails with SSH open to world",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-ssh-all",
+                "direction": "INGRESS",
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{ "IPProtocol": "tcp", "ports": ["22"] }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with all-protocol rule open to world",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-everything",
+                "direction": "INGRESS",
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{ "IPProtocol": "all" }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with restricted source",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-ssh-office",
+                "direction": "INGRESS",
+                "disabled": false,
+                "sourceRanges": ["203.0.113.0/24"],
+                "allowed": [{ "IPProtocol": "tcp", "ports": ["22"] }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable when rule disabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-ssh-disabled",
+                "direction": "INGRESS",
+                "disabled": true,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{ "IPProtocol": "tcp", "ports": ["22"] }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-002",
+    "cases": [
+      {
+        "name": "fails with RDP open in a range",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-win-mgmt",
+                "direction": "INGRESS",
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{ "IPProtocol": "tcp", "ports": ["3300-3400"] }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with unrelated ports",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-web",
+                "direction": "INGRESS",
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [{ "IPProtocol": "tcp", "ports": ["80", "443"] }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-001",
+    "cases": [
+      {
+        "name": "fails when default network exists",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [{ "name": "default", "autoCreateSubnetworks": true }]
+          }
+        ]
+      },
+      {
+        "name": "passes for custom network",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [{ "name": "prod-vpc", "autoCreateSubnetworks": false }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-001",
+    "cases": [
+      {
+        "name": "fails on default compute SA",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "legacy-vm",
+                "serviceAccounts": [
+                  { "email": "123456789012-compute@developer.gserviceaccount.com" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with dedicated SA",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-vm",
+                "serviceAccounts": [{ "email": "app-runtime@proj.iam.gserviceaccount.com" }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for GKE nodes",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "gke-cluster-pool-1",
+                "serviceAccounts": [
+                  { "email": "123456789012-compute@developer.gserviceaccount.com" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-002",
+    "cases": [
+      {
+        "name": "fails when serial port enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "serial-vm",
+                "metadata": { "items": [{ "key": "serial-port-enable", "value": "true" }] }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when metadata absent",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "quiet-vm", "metadata": { "items": [] } }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-003",
+    "cases": [
+      {
+        "name": "fails with IP forwarding",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "router-vm", "canIpForward": true }]
+          }
+        ]
+      },
+      {
+        "name": "passes without IP forwarding",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "plain-vm", "canIpForward": false }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-004",
+    "cases": [
+      {
+        "name": "passes with shielded config",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "shielded-vm",
+                "shieldedInstanceConfig": {
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true,
+                  "enableSecureBoot": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without shielded config",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "bare-vm" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-001",
+    "cases": [
+      {
+        "name": "passes private-IP only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "sql-private", "settings": { "ipConfiguration": { "ipv4Enabled": false } } }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with public IP",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "sql-public", "settings": { "ipConfiguration": { "ipv4Enabled": true } } }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-002",
+    "cases": [
+      {
+        "name": "passes with requireSsl",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "sql-tls", "settings": { "ipConfiguration": { "requireSsl": true } } }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with sslMode ENCRYPTED_ONLY",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-mode",
+                "settings": { "ipConfiguration": { "sslMode": "ENCRYPTED_ONLY" } }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without SSL enforcement",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "sql-open", "settings": { "ipConfiguration": { "ipv4Enabled": true } } }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-001",
+    "cases": [
+      {
+        "name": "fails with stale user-managed key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "app@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app/keys/1",
+                "keyType": "USER_MANAGED",
+                "validAfterTime": "2025-01-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with only system-managed keys",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "clean@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/clean/keys/2",
+                "keyType": "SYSTEM_MANAGED",
+                "validAfterTime": "2024-01-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with fresh user-managed key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "fresh@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/fresh/keys/3",
+                "keyType": "USER_MANAGED",
+                "validAfterTime": "2025-12-15T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-002",
+    "cases": [
+      {
+        "name": "fails with public project binding",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": { "bindings": [{ "role": "roles/viewer", "members": ["allUsers"] }] }
+          }
+        ]
+      },
+      {
+        "name": "passes with scoped bindings",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [{ "role": "roles/owner", "members": ["user:admin@example.com"] }]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

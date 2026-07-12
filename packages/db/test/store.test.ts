@@ -1,0 +1,154 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { CloudRangerStore } from "../src/index.js";
+import type { EvaluationResult } from "@cloudranger/engine";
+
+let store: CloudRangerStore;
+
+beforeEach(() => {
+  store = new CloudRangerStore(":memory:");
+});
+
+const failResult = (overrides: Partial<EvaluationResult> = {}): EvaluationResult => ({
+  controlId: "CR-AWS-S3-001",
+  controlVersion: "1.0.0",
+  provider: "aws",
+  service: "s3",
+  severity: "high",
+  status: "fail",
+  resourceId: "my-bucket",
+  message: "Bucket does not block public access.",
+  evidence: { "PublicAccessBlockConfiguration.BlockPublicAcls": false },
+  evaluatedAt: new Date().toISOString(),
+  ...overrides,
+});
+
+function runScan(results: EvaluationResult[]) {
+  const scan = store.createScan({
+    provider: "aws",
+    scopeId: "123456789012",
+    regions: ["ap-southeast-2"],
+    controlIds: ["CR-AWS-S3-001"],
+  });
+  const summary = store.finalizeScan(scan.id, results, [
+    { controlId: "CR-AWS-S3-001", status: "evaluated", missingCollectors: [] },
+  ]);
+  return { scan, summary };
+}
+
+describe("finding lifecycle across scans", () => {
+  it("create -> recur -> resolve -> reopen preserves identity and history", () => {
+    const { summary: s1 } = runScan([failResult()]);
+    expect(s1.findingsCreated).toBe(1);
+    const findings = store.searchFindings({ state: ["open"] }).findings;
+    expect(findings).toHaveLength(1);
+    const fp = findings[0]!.fingerprint;
+    expect(findings[0]!.occurrenceCount).toBe(1);
+
+    const { summary: s2 } = runScan([failResult()]);
+    expect(s2.findingsRecurred).toBe(1);
+    expect(store.getFinding(fp)!.occurrenceCount).toBe(2);
+    expect(store.getFinding(fp)!.state).toBe("open");
+
+    const { summary: s3 } = runScan([
+      failResult({ status: "pass", message: "Bucket blocks all public access." }),
+    ]);
+    expect(s3.findingsResolved).toBe(1);
+    const resolved = store.getFinding(fp)!;
+    expect(resolved.state).toBe("resolved");
+    expect(resolved.resolvedAt).toBeTruthy();
+
+    const { summary: s4 } = runScan([failResult()]);
+    expect(s4.findingsReopened).toBe(1);
+    const reopened = store.getFinding(fp)!;
+    expect(reopened.state).toBe("reopened");
+    expect(reopened.reopenCount).toBe(1);
+    expect(reopened.occurrenceCount).toBe(3);
+
+    const events = store.getFindingEvents(fp).map((e) => e.eventType);
+    expect(events).toEqual(["created", "recurred", "resolved", "reopened"]);
+  });
+
+  it("error results never resolve an open finding", () => {
+    runScan([failResult()]);
+    const fp = store.searchFindings({}).findings[0]!.fingerprint;
+    runScan([failResult({ status: "error", message: "AccessDenied" })]);
+    expect(store.getFinding(fp)!.state).toBe("open");
+  });
+
+  it("different regions produce distinct findings", () => {
+    runScan([
+      failResult({ resourceId: "sg-1", region: "ap-southeast-2" }),
+      failResult({ resourceId: "sg-1", region: "us-east-1" }),
+    ]);
+    expect(store.searchFindings({}).total).toBe(2);
+  });
+});
+
+describe("workflow state", () => {
+  it("risk acceptance requires a reason and records an event", () => {
+    runScan([failResult()]);
+    const fp = store.searchFindings({}).findings[0]!.fingerprint;
+    expect(() => store.setWorkflowState(fp, "risk_accepted", { actor: "justin" })).toThrow(
+      /reason/,
+    );
+    const updated = store.setWorkflowState(fp, "risk_accepted", {
+      actor: "justin",
+      reason: "Public bucket hosts the static marketing site",
+      expiresAt: "2026-12-31T00:00:00Z",
+    });
+    expect(updated.workflowState).toBe("risk_accepted");
+    expect(store.getFindingEvents(fp).at(-1)!.eventType).toBe("workflow_change");
+  });
+});
+
+describe("evidence handling", () => {
+  it("rejects evidence for evaluated scans", () => {
+    const { scan } = runScan([failResult()]);
+    expect(() =>
+      store.addEvidence(scan.id, [{ collectorId: "aws.s3.list_buckets", output: {}, exitCode: 0 }]),
+    ).toThrow(/not accepted/);
+  });
+
+  it("stores and returns evidence with stats", () => {
+    const scan = store.createScan({ provider: "aws", scopeId: "1", regions: [], controlIds: [] });
+    store.addEvidence(scan.id, [
+      { collectorId: "aws.s3.list_buckets", output: { Buckets: [] }, exitCode: 0 },
+      {
+        collectorId: "aws.iam.get_account_summary",
+        output: null,
+        errorText: "denied",
+        exitCode: 255,
+      },
+    ]);
+    expect(store.getEvidence(scan.id)).toHaveLength(2);
+    const stats = store.evidenceStats(scan.id);
+    expect(stats.find((s) => s.collectorId === "aws.iam.get_account_summary")!.errors).toBe(1);
+  });
+});
+
+describe("report data", () => {
+  it("aggregates open findings and defines its metrics", () => {
+    runScan([failResult(), failResult({ resourceId: "other-bucket", severity: "critical" })]);
+    const report = store.reportData({}) as any;
+    expect(report.openFindingsBySeverity).toEqual({ high: 1, critical: 1 });
+    expect(report.metricDefinitions.openFindingsBySeverity).toContain("open or reopened");
+    expect(report.recentScans).toHaveLength(1);
+  });
+});
+
+describe("audit log", () => {
+  it("chains hashes, redacts secrets, and detects tampering", () => {
+    store.audit({
+      actor: "agent",
+      tool: "scan_start",
+      args: { provider: "aws", apiKey: "supersecret" },
+      success: true,
+    });
+    store.audit({ actor: "agent", tool: "findings_search", success: true });
+    const entries = store.searchAudit() as any[];
+    expect(entries[1].args.apiKey).toBe("[REDACTED]");
+    expect(store.verifyAuditChain()).toBeNull();
+    store.db.prepare("UPDATE audit_log SET args = '{}' WHERE id = 1").run();
+    expect(store.verifyAuditChain()).toBe(1);
+  });
+});

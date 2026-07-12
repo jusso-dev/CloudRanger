@@ -1,0 +1,71 @@
+# Azure evidence collectors. Commands run against the subscription currently
+# selected in the agent's az CLI context; the scan plan instructions tell the
+# agent to confirm the subscription matches the scan scope before collecting.
+collectors:
+  - id: azure.storage.list_accounts
+    provider: azure
+    service: storage
+    description: All storage accounts in the subscription.
+    kind: single
+    command: az storage account list --output json
+    regional: false
+    outputFormat: json
+    notes: "Requires Reader on the subscription."
+
+  - id: azure.network.list_nsgs
+    provider: azure
+    service: network
+    description: All network security groups and their rules.
+    kind: single
+    command: az network nsg list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.keyvault.list
+    provider: azure
+    service: keyvault
+    description: All key vaults (summary view).
+    kind: single
+    command: az keyvault list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.keyvault.show
+    provider: azure
+    service: keyvault
+    description: Full properties for one key vault.
+    kind: per_resource
+    command: az keyvault show --name {resource} --output json
+    regional: false
+    parent:
+      collector: azure.keyvault.list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+
+  - id: azure.sql.list_servers
+    provider: azure
+    service: sql
+    description: All Azure SQL logical servers.
+    kind: single
+    command: az sql server list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.vm.list
+    provider: azure
+    service: compute
+    description: All virtual machines.
+    kind: single
+    command: az vm list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.webapp.list
+    provider: azure
+    service: appservice
+    description: All App Service web apps.
+    kind: single
+    command: az webapp list --output json
+    regional: false
+    outputFormat: json

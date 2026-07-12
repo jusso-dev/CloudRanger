@@ -1,0 +1,36 @@
+{
+  "name": "cloudranger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source, local-first, agent-driven multi-cloud CSPM. MCP server + deterministic control engine + SQLite finding history.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,md,json,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,md,json,yaml,yml}\"",
+    "catalog:validate": "pnpm --filter @cloudranger/cli exec cloudranger catalog validate",
+    "catalog:test": "pnpm --filter @cloudranger/catalog test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "eslint": "^9.30.0",
+    "@eslint/js": "^9.30.0",
+    "typescript-eslint": "^8.35.0",
+    "prettier": "^3.6.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

@@ -1,0 +1,522 @@
+[
+  {
+    "controlId": "CR-AZURE-STORAGE-001",
+    "cases": [
+      {
+        "name": "passes when HTTPS-only enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "prodstorage", "enableHttpsTrafficOnly": true }]
+          }
+        ]
+      },
+      {
+        "name": "fails when HTTP allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "legacystorage", "enableHttpsTrafficOnly": false }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-002",
+    "cases": [
+      {
+        "name": "passes when public blob access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "prodstorage", "allowBlobPublicAccess": false }]
+          }
+        ]
+      },
+      {
+        "name": "passes when property absent (modern default deny)",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "newstorage" }]
+          }
+        ]
+      },
+      {
+        "name": "fails when public blob access allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "openstorage", "allowBlobPublicAccess": true }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-003",
+    "cases": [
+      {
+        "name": "passes at TLS1_2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "prodstorage", "minimumTlsVersion": "TLS1_2" }]
+          }
+        ]
+      },
+      {
+        "name": "fails at TLS1_0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "legacystorage", "minimumTlsVersion": "TLS1_0" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-004",
+    "cases": [
+      {
+        "name": "passes with default deny",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "lockedstorage", "networkRuleSet": { "defaultAction": "Deny" } }]
+          }
+        ]
+      },
+      {
+        "name": "fails with default allow",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "openstorage", "networkRuleSet": { "defaultAction": "Allow" } }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-005",
+    "cases": [
+      {
+        "name": "passes when shared key disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "entrastorage", "allowSharedKeyAccess": false }]
+          }
+        ]
+      },
+      {
+        "name": "fails when shared key allowed explicitly",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "keystorage", "allowSharedKeyAccess": true }]
+          }
+        ]
+      },
+      {
+        "name": "fails when property absent (defaults to enabled)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "defaultstorage" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-001",
+    "cases": [
+      {
+        "name": "fails with SSH allowed from any",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-open",
+                "name": "nsg-open",
+                "securityRules": [
+                  {
+                    "name": "allow-ssh",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "22",
+                    "sourceAddressPrefix": "*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with SSH in port ranges from Internet tag",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-ranges",
+                "name": "nsg-ranges",
+                "securityRules": [
+                  {
+                    "name": "allow-mgmt",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "*",
+                    "destinationPortRanges": ["20-25", "443"],
+                    "sourceAddressPrefix": "Internet"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with restricted source",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-restricted",
+                "name": "nsg-restricted",
+                "securityRules": [
+                  {
+                    "name": "allow-ssh-office",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "22",
+                    "sourceAddressPrefix": "203.0.113.0/24"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when rule is deny",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-deny",
+                "name": "nsg-deny",
+                "securityRules": [
+                  {
+                    "name": "deny-ssh",
+                    "access": "Deny",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "22",
+                    "sourceAddressPrefix": "*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-002",
+    "cases": [
+      {
+        "name": "fails with RDP open to any",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-rdp",
+                "name": "nsg-rdp",
+                "securityRules": [
+                  {
+                    "name": "allow-rdp",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "3389",
+                    "sourceAddressPrefix": "0.0.0.0/0"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with restricted RDP",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-rdp-ok",
+                "name": "nsg-rdp-ok",
+                "securityRules": [
+                  {
+                    "name": "allow-rdp-office",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "3389",
+                    "sourceAddressPrefixes": ["203.0.113.0/24"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-001",
+    "cases": [
+      {
+        "name": "passes with purge protection",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-prod",
+              "properties": { "enableSoftDelete": true, "enablePurgeProtection": true }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without purge protection",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-dev",
+            "exitCode": 0,
+            "output": { "name": "kv-dev", "properties": { "enableSoftDelete": true } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-002",
+    "cases": [
+      {
+        "name": "passes with soft delete",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": { "name": "kv-prod", "properties": { "enableSoftDelete": true } }
+          }
+        ]
+      },
+      {
+        "name": "fails without soft delete",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-legacy",
+            "exitCode": 0,
+            "output": { "name": "kv-legacy", "properties": { "enableSoftDelete": false } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-001",
+    "cases": [
+      {
+        "name": "passes when public access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [{ "name": "sql-private", "publicNetworkAccess": "Disabled" }]
+          }
+        ]
+      },
+      {
+        "name": "fails when public access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [{ "name": "sql-public", "publicNetworkAccess": "Enabled" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-002",
+    "cases": [
+      {
+        "name": "passes at TLS 1.2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [{ "name": "sql-modern", "minimalTlsVersion": "1.2" }]
+          }
+        ]
+      },
+      {
+        "name": "fails at TLS 1.0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [{ "name": "sql-legacy", "minimalTlsVersion": "1.0" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-VM-001",
+    "cases": [
+      {
+        "name": "passes with managed disk",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-managed",
+                "name": "vm-managed",
+                "storageProfile": {
+                  "osDisk": { "managedDisk": { "id": "/subscriptions/s/disks/osdisk1" } }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with unmanaged disk",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-legacy",
+                "name": "vm-legacy",
+                "storageProfile": {
+                  "osDisk": { "vhd": { "uri": "https://legacy.blob.core.windows.net/vhds/os.vhd" } }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APP-001",
+    "cases": [
+      {
+        "name": "passes with httpsOnly",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-secure",
+                "name": "app-secure",
+                "httpsOnly": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without httpsOnly",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-open",
+                "name": "app-open",
+                "httpsOnly": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

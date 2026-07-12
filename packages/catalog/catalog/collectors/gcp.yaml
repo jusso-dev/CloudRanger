@@ -1,0 +1,91 @@
+# GCP evidence collectors. {project} is substituted with the scan scope
+# (project ID) when the plan is generated.
+collectors:
+  - id: gcp.storage.buckets_list
+    provider: gcp
+    service: storage
+    description: All Cloud Storage buckets in the project.
+    kind: single
+    command: gcloud storage buckets list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.storage.bucket_iam_policy
+    provider: gcp
+    service: storage
+    description: IAM policy for one bucket.
+    kind: per_resource
+    command: gcloud storage buckets get-iam-policy gs://{resource} --format json
+    regional: false
+    parent:
+      collector: gcp.storage.buckets_list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+
+  - id: gcp.compute.instances_list
+    provider: gcp
+    service: compute
+    description: All Compute Engine instances in the project.
+    kind: single
+    command: gcloud compute instances list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.compute.firewall_rules_list
+    provider: gcp
+    service: compute
+    description: All VPC firewall rules in the project.
+    kind: single
+    command: gcloud compute firewall-rules list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.compute.networks_list
+    provider: gcp
+    service: compute
+    description: All VPC networks in the project.
+    kind: single
+    command: gcloud compute networks list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.sql.instances_list
+    provider: gcp
+    service: sql
+    description: All Cloud SQL instances in the project.
+    kind: single
+    command: gcloud sql instances list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.iam.service_accounts_list
+    provider: gcp
+    service: iam
+    description: All service accounts in the project.
+    kind: single
+    command: gcloud iam service-accounts list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.iam.service_account_keys_list
+    provider: gcp
+    service: iam
+    description: Keys for one service account.
+    kind: per_resource
+    command: gcloud iam service-accounts keys list --iam-account {resource} --project {project} --format json
+    regional: false
+    parent:
+      collector: gcp.iam.service_accounts_list
+      itemsPath: $
+      resourceField: email
+    outputFormat: json
+
+  - id: gcp.project.iam_policy
+    provider: gcp
+    service: iam
+    description: Project-level IAM policy including audit configs.
+    kind: single
+    command: gcloud projects get-iam-policy {project} --format json
+    regional: false
+    outputFormat: json

@@ -1,0 +1,425 @@
+# Azure posture controls. Logic ported from Prowler (Apache-2.0) and Trivy
+# (Apache-2.0) check implementations, evaluated against az CLI JSON output.
+# CIS references are CIS Microsoft Azure Foundations Benchmark section
+# identifiers only.
+controls:
+  - id: CR-AZURE-STORAGE-001
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account enforces HTTPS-only traffic
+    description: Verifies secure transfer (HTTPS-only) is required on each storage account.
+    rationale: >
+      Allowing HTTP permits credential and data interception in transit.
+    severity: high
+    categories: [storage, encryption-in-transit]
+    source:
+      { engine: prowler, id: storage_secure_transfer_required_is_enabled, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: enableHttpsTrafficOnly, value: true }
+    failMessage: Storage account allows insecure (HTTP) transfer.
+    passMessage: Storage account requires HTTPS.
+    remediation:
+      summary: Enable "secure transfer required" on the storage account.
+      steps:
+        - Confirm no legacy client depends on HTTP.
+        - Enable secure transfer required (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.1"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-require-secure-transfer
+
+  - id: CR-AZURE-STORAGE-002
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account disallows public blob access
+    description: Verifies anonymous blob access is disabled at the account level.
+    rationale: >
+      Anonymous blob access is Azure's most common data exposure path; the
+      account-level switch is the authoritative guardrail.
+    severity: high
+    categories: [storage, public-exposure]
+    source:
+      { engine: prowler, id: storage_blob_public_access_level_is_disabled, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - { op: equals, path: allowBlobPublicAccess, value: false }
+        - { op: notExists, path: allowBlobPublicAccess }
+    failMessage: Storage account permits public blob access.
+    passMessage: Public blob access is disallowed.
+    remediation:
+      summary: Set allowBlobPublicAccess to false.
+      steps:
+        - Audit containers currently serving public content.
+        - Disable public blob access at the account level (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.7"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-prevent
+
+  - id: CR-AZURE-STORAGE-003
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account requires TLS 1.2 or higher
+    description: Verifies the minimum TLS version is TLS1_2 or TLS1_3.
+    rationale: >
+      TLS 1.0/1.1 have known weaknesses and fail modern compliance baselines.
+    severity: medium
+    categories: [storage, encryption-in-transit]
+    source: { engine: prowler, id: storage_ensure_minimum_tls_version_12, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: in, path: minimumTlsVersion, values: [TLS1_2, TLS1_3] }
+    failMessage: Storage account allows TLS below 1.2.
+    passMessage: Storage account requires TLS 1.2+.
+    remediation:
+      summary: Set minimum TLS version to TLS1_2.
+      steps:
+        - Update the account's minimumTlsVersion (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.15"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/common/transport-layer-security-configure-minimum-version
+
+  - id: CR-AZURE-STORAGE-004
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account default network access is deny
+    description: Verifies the storage firewall default action is Deny.
+    rationale: >
+      A default-allow storage firewall exposes the account to the entire
+      internet regardless of container ACLs.
+    severity: medium
+    categories: [storage, network]
+    source:
+      { engine: prowler, id: storage_default_network_access_rule_is_denied, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: networkRuleSet.defaultAction, value: Deny }
+    failMessage: Storage account network default action is Allow.
+    passMessage: Storage account network default action is Deny.
+    remediation:
+      summary: Set the default network rule to Deny and allowlist required networks.
+      steps:
+        - Enumerate legitimate clients (VNets, IPs, trusted services).
+        - Set defaultAction=Deny with explicit allow rules (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.8"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-network-security
+
+  - id: CR-AZURE-STORAGE-005
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account shared key access is disabled
+    description: Verifies shared key (account key) authorization is disabled in favour of Entra ID.
+    rationale: >
+      Account keys grant full data-plane access, cannot be scoped, and leak
+      easily. Entra ID authorization provides identity-bound, auditable access.
+    severity: medium
+    categories: [storage, identity]
+    source: { engine: prowler, id: storage_account_key_access_disabled, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: allowSharedKeyAccess, value: false }
+    failMessage: Storage account allows shared key access.
+    passMessage: Shared key access is disabled.
+    remediation:
+      summary: Disable shared key authorization after migrating clients to Entra ID.
+      steps:
+        - Identify clients using account keys or SAS derived from them.
+        - Migrate to Entra ID RBAC, then disable shared key access.
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.12"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/common/shared-key-authorization-prevent
+
+  - id: CR-AZURE-NETWORK-001
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows SSH from the internet
+    description: >
+      Verifies no network security group has an inbound allow rule for TCP 22
+      from Any/Internet/0.0.0.0/0.
+    rationale: >
+      World-open SSH on Azure VMs is continuously brute forced and is a
+      primary initial access vector.
+    severity: high
+    categories: [network, public-exposure]
+    source: { engine: prowler, id: network_ssh_internet_access_restricted, license: Apache-2.0 }
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: access, value: Allow }
+          - { op: equals, path: direction, value: Inbound }
+          - { op: in, path: protocol, values: [Tcp, "*"] }
+          - op: or
+            exprs:
+              - { op: portStringIncludes, path: destinationPortRange, value: 22 }
+              - { op: portStringIncludes, path: destinationPortRanges, value: 22 }
+          - op: or
+            exprs:
+              - { op: isPublicCidr, path: sourceAddressPrefix }
+              - {
+                  op: anyItem,
+                  path: sourceAddressPrefixes,
+                  condition: { op: isPublicCidr, path: $ },
+                }
+    failMessage: NSG allows SSH (22/tcp) from the internet.
+    passMessage: No internet-open SSH rule.
+    remediation:
+      summary: Restrict SSH sources or use Azure Bastion.
+      steps:
+        - Prefer Azure Bastion or just-in-time VM access.
+        - Replace Any/Internet sources with specific ranges (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["6.1"] }
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+
+  - id: CR-AZURE-NETWORK-002
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows RDP from the internet
+    description: >
+      Verifies no network security group has an inbound allow rule for TCP
+      3389 from Any/Internet/0.0.0.0/0.
+    rationale: >
+      Internet-exposed RDP is the leading ransomware entry point on Azure
+      Windows workloads.
+    severity: high
+    categories: [network, public-exposure]
+    source: { engine: prowler, id: network_rdp_internet_access_restricted, license: Apache-2.0 }
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: access, value: Allow }
+          - { op: equals, path: direction, value: Inbound }
+          - { op: in, path: protocol, values: [Tcp, "*"] }
+          - op: or
+            exprs:
+              - { op: portStringIncludes, path: destinationPortRange, value: 3389 }
+              - { op: portStringIncludes, path: destinationPortRanges, value: 3389 }
+          - op: or
+            exprs:
+              - { op: isPublicCidr, path: sourceAddressPrefix }
+              - {
+                  op: anyItem,
+                  path: sourceAddressPrefixes,
+                  condition: { op: isPublicCidr, path: $ },
+                }
+    failMessage: NSG allows RDP (3389/tcp) from the internet.
+    passMessage: No internet-open RDP rule.
+    remediation:
+      summary: Restrict RDP sources or use Azure Bastion / JIT access.
+      steps:
+        - Prefer Azure Bastion or just-in-time VM access.
+        - Replace Any/Internet sources with specific ranges (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["6.2"] }
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+
+  - id: CR-AZURE-KEYVAULT-001
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault has purge protection enabled
+    description: Verifies purge protection is enabled on each key vault.
+    rationale: >
+      Without purge protection an attacker (or mistake) can permanently
+      destroy keys and the data they encrypt within the soft-delete window.
+    severity: high
+    categories: [keys, resilience]
+    source: { engine: prowler, id: keyvault_recoverability_enabled, license: Apache-2.0 }
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: properties.enablePurgeProtection, value: true }
+    failMessage: Key vault does not have purge protection.
+    passMessage: Key vault has purge protection.
+    remediation:
+      summary: Enable purge protection (irreversible setting).
+      steps:
+        - Enable purge protection on the vault (operator action; cannot be undone).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["8.4"] }
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/soft-delete-overview
+
+  - id: CR-AZURE-KEYVAULT-002
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault has soft delete enabled
+    description: Verifies soft delete is enabled on each key vault.
+    rationale: >
+      Soft delete allows recovery of deleted vaults and secrets during the
+      retention window.
+    severity: medium
+    categories: [keys, resilience]
+    source: { engine: prowler, id: keyvault_recoverability_enabled, license: Apache-2.0 }
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: properties.enableSoftDelete, value: true }
+    failMessage: Key vault does not have soft delete enabled.
+    passMessage: Key vault has soft delete.
+    remediation:
+      summary: Enable soft delete on the vault.
+      steps:
+        - Enable soft delete (default on new vaults; operator action for legacy ones).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["8.4"] }
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/soft-delete-overview
+
+  - id: CR-AZURE-SQL-001
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server public network access is disabled
+    description: Verifies each Azure SQL logical server disables public network access.
+    rationale: >
+      Publicly reachable SQL endpoints expose authentication surface to the
+      internet; private endpoints remove that exposure entirely.
+    severity: high
+    categories: [database, public-exposure]
+    source: { engine: trivy, id: avd-azu-0022-sql-public-access, license: Apache-2.0 }
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: publicNetworkAccess, value: Disabled }
+    failMessage: SQL server allows public network access.
+    passMessage: SQL server public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Create private endpoints for consuming applications.
+        - Disable public network access (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+
+  - id: CR-AZURE-SQL-002
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server requires TLS 1.2 or higher
+    description: Verifies the minimal TLS version on each SQL logical server is at least 1.2.
+    rationale: >
+      Legacy TLS exposes database sessions to downgrade and interception
+      attacks.
+    severity: medium
+    categories: [database, encryption-in-transit]
+    source: { engine: prowler, id: sqlserver_tls_version_is_encrypted, license: Apache-2.0 }
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: in, path: minimalTlsVersion, values: ["1.2", "1.3"] }
+    failMessage: SQL server allows TLS below 1.2.
+    passMessage: SQL server requires TLS 1.2+.
+    remediation:
+      summary: Set minimal TLS version to 1.2.
+      steps:
+        - Update the server's minimal TLS version (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["4.1"] }
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+
+  - id: CR-AZURE-VM-001
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine uses managed disks
+    description: Verifies each VM's OS disk is a managed disk.
+    rationale: >
+      Unmanaged disks live in user storage accounts without per-disk RBAC,
+      encryption management or reliability guarantees.
+    severity: medium
+    categories: [compute, storage]
+    source: { engine: prowler, id: vm_ensure_using_managed_disks, license: Apache-2.0 }
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: exists, path: storageProfile.osDisk.managedDisk }
+    failMessage: VM uses unmanaged disks.
+    passMessage: VM uses managed disks.
+    remediation:
+      summary: Migrate the VM to managed disks.
+      steps:
+        - Plan a maintenance window and run the managed-disk migration (operator action).
+      verifyCommand: az vm list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["7.2"] }
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview
+
+  - id: CR-AZURE-APP-001
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service enforces HTTPS-only
+    description: Verifies each web app redirects HTTP to HTTPS (httpsOnly=true).
+    rationale: >
+      Apps accepting plain HTTP expose sessions and credentials in transit.
+    severity: medium
+    categories: [appservice, encryption-in-transit]
+    source: { engine: prowler, id: app_ensure_http_is_redirected_to_https, license: Apache-2.0 }
+    collector: azure.webapp.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: equals, path: httpsOnly, value: true }
+    failMessage: Web app does not enforce HTTPS-only.
+    passMessage: Web app enforces HTTPS-only.
+    remediation:
+      summary: Enable HTTPS Only on the web app.
+      steps:
+        - Enable HTTPS Only in the app's TLS settings (operator action).
+      verifyCommand: az webapp list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["9.2"] }
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-ssl-bindings

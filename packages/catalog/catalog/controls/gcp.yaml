@@ -1,0 +1,513 @@
+# GCP posture controls. Logic ported from Prowler (Apache-2.0) and Trivy
+# (Apache-2.0) check implementations, evaluated against gcloud CLI JSON
+# output. CIS references are CIS Google Cloud Platform Foundation Benchmark
+# section identifiers only.
+controls:
+  - id: CR-GCP-STORAGE-001
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket is not publicly accessible via IAM
+    description: >
+      Verifies no bucket IAM binding grants access to allUsers or
+      allAuthenticatedUsers.
+    rationale: >
+      Public bucket IAM bindings expose every object to the internet (or any
+      authenticated Google account) regardless of object-level intent.
+    severity: critical
+    categories: [storage, public-exposure]
+    source: { engine: prowler, id: cloudstorage_bucket_public_access, license: Apache-2.0 }
+    collector: gcp.storage.bucket_iam_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: anyItem
+        path: members
+        condition: { op: in, path: $, values: [allUsers, allAuthenticatedUsers] }
+    failMessage: Bucket IAM grants access to allUsers or allAuthenticatedUsers.
+    passMessage: Bucket has no public IAM bindings.
+    remediation:
+      summary: Remove public members from the bucket IAM policy.
+      steps:
+        - Confirm the bucket is not intentionally public (static site, public dataset).
+        - Remove allUsers/allAuthenticatedUsers bindings (operator action).
+        - Consider enforcing public access prevention at the bucket or org level.
+      verifyCommand: gcloud storage buckets get-iam-policy gs://<bucket> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["5.1"] }
+    references:
+      - https://cloud.google.com/storage/docs/access-control/making-data-public
+
+  - id: CR-GCP-STORAGE-002
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket uses uniform bucket-level access
+    description: Verifies uniform bucket-level access is enabled (no legacy object ACLs).
+    rationale: >
+      Mixed IAM and object ACLs make effective access impossible to reason
+      about; uniform access makes IAM authoritative.
+    severity: medium
+    categories: [storage, identity]
+    source:
+      { engine: prowler, id: cloudstorage_bucket_uniform_bucket_level_access, license: Apache-2.0 }
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: uniform_bucket_level_access, value: true }
+    failMessage: Bucket does not use uniform bucket-level access.
+    passMessage: Bucket uses uniform bucket-level access.
+    remediation:
+      summary: Enable uniform bucket-level access.
+      steps:
+        - Audit object ACLs that would be superseded.
+        - Enable uniform bucket-level access (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["5.2"] }
+    references:
+      - https://cloud.google.com/storage/docs/uniform-bucket-level-access
+
+  - id: CR-GCP-STORAGE-003
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket enforces public access prevention
+    description: Verifies public access prevention is enforced on the bucket.
+    rationale: >
+      Enforced public access prevention guarantees the bucket can never be
+      made public, even by a future misconfiguration.
+    severity: medium
+    categories: [storage, public-exposure]
+    source: { engine: trivy, id: avd-gcp-0001-public-access-prevention, license: Apache-2.0 }
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: public_access_prevention, value: enforced }
+    failMessage: Bucket does not enforce public access prevention.
+    passMessage: Bucket enforces public access prevention.
+    remediation:
+      summary: Set public access prevention to enforced.
+      steps:
+        - Enforce public access prevention on the bucket or via org policy (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://cloud.google.com/storage/docs/public-access-prevention
+
+  - id: CR-GCP-FIREWALL-001
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: No firewall rule allows SSH from the internet
+    description: >
+      Verifies no enabled ingress firewall rule permits TCP 22 from
+      0.0.0.0/0.
+    rationale: >
+      World-open SSH across a VPC exposes every matching instance to brute
+      force and exploitation.
+    severity: high
+    categories: [network, public-exposure]
+    source:
+      {
+        engine: prowler,
+        id: compute_firewall_ssh_access_from_the_internet_allowed,
+        license: Apache-2.0,
+      }
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - { op: not, expr: { op: equals, path: disabled, value: true } }
+        - { op: equals, path: direction, value: INGRESS }
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - { op: anyItem, path: sourceRanges, condition: { op: isPublicCidr, path: $ } }
+          - op: anyItem
+            path: allowed
+            condition:
+              op: and
+              exprs:
+                - { op: in, path: IPProtocol, values: [tcp, all] }
+                - op: or
+                  exprs:
+                    - { op: notExists, path: ports }
+                    - { op: portStringIncludes, path: ports, value: 22 }
+    failMessage: Firewall rule allows SSH (22/tcp) from the internet.
+    passMessage: Firewall rule does not open SSH to the internet.
+    remediation:
+      summary: Restrict SSH sources or use IAP TCP forwarding.
+      steps:
+        - Prefer Identity-Aware Proxy TCP forwarding for admin access.
+        - Replace 0.0.0.0/0 with specific source ranges (operator action).
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["3.6"] }
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+
+  - id: CR-GCP-FIREWALL-002
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: No firewall rule allows RDP from the internet
+    description: >
+      Verifies no enabled ingress firewall rule permits TCP 3389 from
+      0.0.0.0/0.
+    rationale: >
+      Internet-exposed RDP is a leading ransomware entry point.
+    severity: high
+    categories: [network, public-exposure]
+    source:
+      {
+        engine: prowler,
+        id: compute_firewall_rdp_access_from_the_internet_allowed,
+        license: Apache-2.0,
+      }
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - { op: not, expr: { op: equals, path: disabled, value: true } }
+        - { op: equals, path: direction, value: INGRESS }
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - { op: anyItem, path: sourceRanges, condition: { op: isPublicCidr, path: $ } }
+          - op: anyItem
+            path: allowed
+            condition:
+              op: and
+              exprs:
+                - { op: in, path: IPProtocol, values: [tcp, all] }
+                - op: or
+                  exprs:
+                    - { op: notExists, path: ports }
+                    - { op: portStringIncludes, path: ports, value: 3389 }
+    failMessage: Firewall rule allows RDP (3389/tcp) from the internet.
+    passMessage: Firewall rule does not open RDP to the internet.
+    remediation:
+      summary: Restrict RDP sources or use IAP TCP forwarding.
+      steps:
+        - Prefer Identity-Aware Proxy TCP forwarding.
+        - Replace 0.0.0.0/0 with specific source ranges (operator action).
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["3.7"] }
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+
+  - id: CR-GCP-NETWORK-001
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Project has no default network
+    description: Verifies the legacy auto-created "default" network does not exist.
+    rationale: >
+      The default network ships permissive firewall rules and flat topology;
+      production projects should use purpose-built VPCs.
+    severity: medium
+    categories: [network, governance]
+    source: { engine: prowler, id: compute_network_default_in_use, license: Apache-2.0 }
+    collector: gcp.compute.networks_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: notEquals, path: name, value: default }
+    failMessage: The default network exists in this project.
+    passMessage: Network is not the auto-created default.
+    remediation:
+      summary: Migrate workloads off the default network and delete it.
+      steps:
+        - Create a custom-mode VPC with least-privilege firewall rules.
+        - Migrate workloads, then delete the default network (operator action).
+      verifyCommand: gcloud compute networks list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["3.1"] }
+    references:
+      - https://cloud.google.com/vpc/docs/vpc
+
+  - id: CR-GCP-COMPUTE-001
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance does not use the default compute service account
+    description: >
+      Verifies instances do not run as the auto-created Compute Engine
+      default service account.
+    rationale: >
+      The default compute service account historically carries broad project
+      Editor permissions; compromising the instance compromises the project.
+    severity: high
+    categories: [compute, identity]
+    source:
+      { engine: prowler, id: compute_instance_default_service_account_in_use, license: Apache-2.0 }
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr: { op: startsWith, path: name, value: gke- }
+    passWhen:
+      op: noneItem
+      path: serviceAccounts
+      condition: { op: endsWith, path: email, value: -compute@developer.gserviceaccount.com }
+    failMessage: Instance runs as the default compute service account.
+    passMessage: Instance uses a dedicated service account.
+    remediation:
+      summary: Attach a purpose-built least-privilege service account.
+      steps:
+        - Create a dedicated service account with only required roles.
+        - Stop the instance, swap the service account, restart (operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.1"] }
+    references:
+      - https://cloud.google.com/compute/docs/access/service-accounts
+
+  - id: CR-GCP-COMPUTE-002
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance serial port access is disabled
+    description: Verifies serial-port-enable metadata is not set to true on instances.
+    rationale: >
+      Interactive serial console access bypasses network controls and, with
+      known credentials, gives shell access from anywhere.
+    severity: medium
+    categories: [compute]
+    source: { engine: prowler, id: compute_instance_serial_ports_in_use, license: Apache-2.0 }
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: noneItem
+      path: metadata.items
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: key, value: serial-port-enable }
+          - { op: in, path: value, values: ["true", "TRUE", "True", "1", true, 1] }
+    failMessage: Instance enables interactive serial port access.
+    passMessage: Serial port access is disabled.
+    remediation:
+      summary: Remove or set serial-port-enable=false in instance metadata.
+      steps:
+        - Update instance metadata to disable serial port access (operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.5"] }
+    references:
+      - https://cloud.google.com/compute/docs/instances/interacting-with-serial-console
+
+  - id: CR-GCP-COMPUTE-003
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance does not allow IP forwarding
+    description: Verifies canIpForward is not enabled on instances.
+    rationale: >
+      IP forwarding lets an instance spoof/route arbitrary traffic, defeating
+      network segmentation assumptions.
+    severity: medium
+    categories: [compute, network]
+    source: { engine: prowler, id: compute_instance_ip_forwarding_is_enabled, license: Apache-2.0 }
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr: { op: startsWith, path: name, value: gke- }
+    passWhen: { op: not, expr: { op: equals, path: canIpForward, value: true } }
+    failMessage: Instance has IP forwarding enabled.
+    passMessage: IP forwarding is disabled.
+    remediation:
+      summary: Recreate the instance without canIpForward unless it is a NAT/router.
+      steps:
+        - Confirm the instance is not an intentional router/NAT appliance.
+        - Recreate without IP forwarding (property is immutable; operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.6"] }
+    references:
+      - https://cloud.google.com/vpc/docs/using-routes
+
+  - id: CR-GCP-COMPUTE-004
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has Shielded VM vTPM and integrity monitoring
+    description: Verifies vTPM and integrity monitoring are enabled on instances.
+    rationale: >
+      Shielded VM protections detect boot-level tampering and rootkits via
+      measured boot.
+    severity: medium
+    categories: [compute, integrity]
+    source: { engine: prowler, id: compute_instance_shielded_vm_enabled, license: Apache-2.0 }
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - { op: equals, path: shieldedInstanceConfig.enableVtpm, value: true }
+        - { op: equals, path: shieldedInstanceConfig.enableIntegrityMonitoring, value: true }
+    failMessage: Instance lacks Shielded VM vTPM and/or integrity monitoring.
+    passMessage: Shielded VM protections are enabled.
+    remediation:
+      summary: Enable Shielded VM options (requires instance stop).
+      steps:
+        - Stop the instance, enable vTPM and integrity monitoring, restart (operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.8"] }
+    references:
+      - https://cloud.google.com/security/shielded-cloud/shielded-vm
+
+  - id: CR-GCP-SQL-001
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL instance has no public IP
+    description: Verifies Cloud SQL instances do not expose a public IPv4 address.
+    rationale: >
+      Public database endpoints are internet-scannable authentication surface;
+      private IP with the Cloud SQL Auth Proxy removes it.
+    severity: high
+    categories: [database, public-exposure]
+    source: { engine: prowler, id: cloudsql_instance_public_ip, license: Apache-2.0 }
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      { op: not, expr: { op: equals, path: settings.ipConfiguration.ipv4Enabled, value: true } }
+    failMessage: Cloud SQL instance has a public IP.
+    passMessage: Cloud SQL instance is private-IP only.
+    remediation:
+      summary: Move to private IP and the Cloud SQL Auth Proxy.
+      steps:
+        - Configure private services access and enable private IP.
+        - Migrate clients, then disable the public IP (operator action).
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["6.6"] }
+    references:
+      - https://cloud.google.com/sql/docs/mysql/private-ip
+
+  - id: CR-GCP-SQL-002
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL requires TLS/SSL connections
+    description: Verifies Cloud SQL instances require encrypted connections.
+    rationale: >
+      Without required SSL, database sessions can be intercepted in transit.
+    severity: medium
+    categories: [database, encryption-in-transit]
+    source: { engine: prowler, id: cloudsql_instance_ssl_connections, license: Apache-2.0 }
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - { op: equals, path: settings.ipConfiguration.requireSsl, value: true }
+        - op: in
+          path: settings.ipConfiguration.sslMode
+          values: [ENCRYPTED_ONLY, TRUSTED_CLIENT_CERTIFICATE_REQUIRED]
+    failMessage: Cloud SQL instance does not require SSL/TLS.
+    passMessage: Cloud SQL instance requires SSL/TLS.
+    remediation:
+      summary: Enforce SSL-only connections.
+      steps:
+        - Set ssl-mode to ENCRYPTED_ONLY (operator action) after verifying client support.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["6.4"] }
+    references:
+      - https://cloud.google.com/sql/docs/mysql/configure-ssl-instance
+
+  - id: CR-GCP-IAM-001
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No user-managed service account keys older than 90 days
+    description: >
+      Verifies service accounts have no user-managed keys created more than
+      90 days ago.
+    rationale: >
+      User-managed keys are long-lived bearer credentials; unrotated keys
+      accumulate leak exposure indefinitely.
+    severity: high
+    categories: [identity, credentials]
+    source: { engine: prowler, id: iam_sa_user_managed_key_rotate_90_days, license: Apache-2.0 }
+    collector: gcp.iam.service_account_keys_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: keyType, value: USER_MANAGED }
+          - { op: daysSinceGt, path: validAfterTime, value: 90 }
+    failMessage: Service account has a user-managed key older than 90 days.
+    passMessage: No stale user-managed keys.
+    remediation:
+      summary: Rotate or eliminate user-managed keys; prefer workload identity.
+      steps:
+        - Identify what uses the key; migrate to workload identity federation or impersonation.
+        - Create a replacement key if unavoidable, then delete the old one (operator action).
+      verifyCommand: gcloud iam service-accounts keys list --iam-account <sa-email> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["1.7"] }
+    references:
+      - https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+
+  - id: CR-GCP-IAM-002
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Project IAM policy grants no public access
+    description: >
+      Verifies the project IAM policy contains no bindings for allUsers or
+      allAuthenticatedUsers.
+    rationale: >
+      Project-level public bindings expose every matching resource in the
+      project to the internet or any Google account.
+    severity: critical
+    categories: [identity, public-exposure]
+    source:
+      { engine: prowler, id: iam_policy_allusers_or_allauthenticatedusers, license: Apache-2.0 }
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: anyItem
+        path: members
+        condition: { op: in, path: $, values: [allUsers, allAuthenticatedUsers] }
+    failMessage: Project IAM policy grants roles to allUsers or allAuthenticatedUsers.
+    passMessage: No public members in the project IAM policy.
+    remediation:
+      summary: Remove public members from project IAM bindings.
+      steps:
+        - Identify why the binding exists; scope it to specific principals.
+        - Remove the public member (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["1.1"] }
+    references:
+      - https://cloud.google.com/iam/docs/overview

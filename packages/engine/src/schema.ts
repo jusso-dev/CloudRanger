@@ -1,0 +1,159 @@
+import { z } from "zod";
+
+export const providerSchema = z.enum(["aws", "azure", "gcp"]);
+export const severitySchema = z.enum(["informational", "low", "medium", "high", "critical"]);
+
+const pathString = z.string().min(1).max(300);
+
+export const expressionSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.object({ op: z.literal("equals"), path: pathString, value: z.unknown() }).strict(),
+    z.object({ op: z.literal("notEquals"), path: pathString, value: z.unknown() }).strict(),
+    z.object({ op: z.literal("exists"), path: pathString }).strict(),
+    z.object({ op: z.literal("notExists"), path: pathString }).strict(),
+    z
+      .object({ op: z.literal("in"), path: pathString, values: z.array(z.unknown()).min(1) })
+      .strict(),
+    z
+      .object({ op: z.literal("notIn"), path: pathString, values: z.array(z.unknown()).min(1) })
+      .strict(),
+    z.object({ op: z.literal("contains"), path: pathString, value: z.string() }).strict(),
+    z.object({ op: z.literal("notContains"), path: pathString, value: z.string() }).strict(),
+    z.object({ op: z.literal("startsWith"), path: pathString, value: z.string() }).strict(),
+    z.object({ op: z.literal("endsWith"), path: pathString, value: z.string() }).strict(),
+    z.object({ op: z.literal("gt"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("gte"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("lt"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("lte"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("daysSinceGt"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("daysSinceLt"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("matches"), path: pathString, pattern: z.string().max(200) }).strict(),
+    z.object({ op: z.literal("lengthEquals"), path: pathString, value: z.number().int() }).strict(),
+    z.object({ op: z.literal("lengthGt"), path: pathString, value: z.number().int() }).strict(),
+    z.object({ op: z.literal("isEmpty"), path: pathString }).strict(),
+    z.object({ op: z.literal("isPublicCidr"), path: pathString }).strict(),
+    z
+      .object({
+        op: z.literal("portIncludes"),
+        fromPath: pathString,
+        toPath: pathString,
+        value: z.number().int().min(0).max(65535),
+      })
+      .strict(),
+    z
+      .object({
+        op: z.literal("portStringIncludes"),
+        path: pathString,
+        value: z.number().int().min(0).max(65535),
+      })
+      .strict(),
+    z.object({ op: z.literal("and"), exprs: z.array(expressionSchema).min(1) }).strict(),
+    z.object({ op: z.literal("or"), exprs: z.array(expressionSchema).min(1) }).strict(),
+    z.object({ op: z.literal("not"), expr: expressionSchema }).strict(),
+    z.object({ op: z.literal("anyItem"), path: pathString, condition: expressionSchema }).strict(),
+    z.object({ op: z.literal("allItems"), path: pathString, condition: expressionSchema }).strict(),
+    z.object({ op: z.literal("noneItem"), path: pathString, condition: expressionSchema }).strict(),
+  ]),
+);
+
+export const collectorSchema = z
+  .object({
+    id: z.string().regex(/^(aws|azure|gcp)\.[a-z0-9_]+\.[a-z0-9_]+$/),
+    provider: providerSchema,
+    service: z.string().min(1),
+    description: z.string().min(1),
+    kind: z.enum(["single", "per_resource"]),
+    command: z.string().min(1).max(500),
+    regional: z.boolean(),
+    parent: z
+      .object({
+        collector: z.string(),
+        itemsPath: z.string(),
+        resourceField: z.string(),
+      })
+      .strict()
+      .optional(),
+    outputFormat: z.literal("json"),
+    notes: z.string().optional(),
+  })
+  .strict()
+  .superRefine((c, ctx) => {
+    if (c.kind === "per_resource" && !c.parent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "per_resource collector requires parent",
+      });
+    }
+    if (c.kind === "per_resource" && !c.command.includes("{resource}")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "per_resource collector command must contain {resource}",
+      });
+    }
+    if (c.regional && c.provider === "aws" && !c.command.includes("{region}")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "regional aws collector command must contain {region}",
+      });
+    }
+  });
+
+export const controlSchema = z
+  .object({
+    id: z.string().regex(/^CR-(AWS|AZURE|GCP)-[A-Z0-9]+-\d{3}$/),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/),
+    provider: providerSchema,
+    service: z.string().min(1),
+    title: z.string().min(1).max(200),
+    description: z.string().min(1),
+    rationale: z.string().min(1),
+    severity: severitySchema,
+    categories: z.array(z.string()).min(1),
+    source: z
+      .object({
+        engine: z.enum(["prowler", "trivy", "steampipe", "custom"]),
+        id: z.string().min(1),
+        license: z.string().min(1),
+      })
+      .strict(),
+    collector: z.string().min(1),
+    resourcesPath: z.string().optional(),
+    resourceIdField: z.string().min(1),
+    resourceNameField: z.string().optional(),
+    applicableWhen: expressionSchema.optional(),
+    passWhen: expressionSchema,
+    onError: z
+      .array(
+        z
+          .object({
+            contains: z.string().min(1),
+            status: z.enum(["pass", "fail", "not_applicable", "error"]),
+            message: z.string().optional(),
+          })
+          .strict(),
+      )
+      .optional(),
+    failMessage: z.string().min(1),
+    passMessage: z.string().min(1),
+    remediation: z
+      .object({
+        summary: z.string().min(1),
+        steps: z.array(z.string()).min(1),
+        verifyCommand: z.string().optional(),
+      })
+      .strict(),
+    compliance: z.array(
+      z
+        .object({
+          framework: z.string().min(1),
+          version: z.string().optional(),
+          controls: z.array(z.string()).min(1),
+        })
+        .strict(),
+    ),
+    references: z.array(z.string()),
+  })
+  .strict();
+
+export type ParsedControl = z.infer<typeof controlSchema>;
+export type ParsedCollector = z.infer<typeof collectorSchema>;

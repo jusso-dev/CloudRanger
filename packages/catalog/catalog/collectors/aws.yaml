@@ -1,0 +1,207 @@
+# AWS evidence collectors. Every command is read-only and executed by the
+# operating agent (Claude/Codex) in its own shell using the operator's AWS
+# credentials. CloudRanger never runs these itself.
+collectors:
+  - id: aws.iam.get_account_summary
+    provider: aws
+    service: iam
+    description: Account-level IAM summary including root MFA and root access key posture.
+    kind: single
+    command: aws iam get-account-summary --output json
+    regional: false
+    outputFormat: json
+    notes: "Requires iam:GetAccountSummary."
+
+  - id: aws.iam.get_account_password_policy
+    provider: aws
+    service: iam
+    description: Account password policy.
+    kind: single
+    command: aws iam get-account-password-policy --output json
+    regional: false
+    outputFormat: json
+    notes: "Errors with NoSuchEntity when no policy is configured — submit the error; controls treat it as fail."
+
+  - id: aws.iam.list_users
+    provider: aws
+    service: iam
+    description: All IAM users.
+    kind: single
+    command: aws iam list-users --output json
+    regional: false
+    outputFormat: json
+
+  - id: aws.iam.list_mfa_devices
+    provider: aws
+    service: iam
+    description: MFA devices for one IAM user.
+    kind: per_resource
+    command: aws iam list-mfa-devices --user-name {resource} --output json
+    regional: false
+    parent:
+      collector: aws.iam.list_users
+      itemsPath: Users
+      resourceField: UserName
+    outputFormat: json
+
+  - id: aws.iam.list_access_keys
+    provider: aws
+    service: iam
+    description: Access keys for one IAM user.
+    kind: per_resource
+    command: aws iam list-access-keys --user-name {resource} --output json
+    regional: false
+    parent:
+      collector: aws.iam.list_users
+      itemsPath: Users
+      resourceField: UserName
+    outputFormat: json
+
+  - id: aws.cloudtrail.describe_trails
+    provider: aws
+    service: cloudtrail
+    description: All CloudTrail trails visible to the account (including org/shadow trails).
+    kind: single
+    command: aws cloudtrail describe-trails --output json
+    regional: false
+    outputFormat: json
+
+  - id: aws.cloudtrail.get_trail_status
+    provider: aws
+    service: cloudtrail
+    description: Logging status for one trail.
+    kind: per_resource
+    command: aws cloudtrail get-trail-status --name {resource} --output json
+    regional: false
+    parent:
+      collector: aws.cloudtrail.describe_trails
+      itemsPath: trailList
+      resourceField: TrailARN
+    outputFormat: json
+
+  - id: aws.s3.list_buckets
+    provider: aws
+    service: s3
+    description: All S3 buckets in the account.
+    kind: single
+    command: aws s3api list-buckets --output json
+    regional: false
+    outputFormat: json
+
+  - id: aws.s3.get_public_access_block
+    provider: aws
+    service: s3
+    description: Public access block configuration for one bucket.
+    kind: per_resource
+    command: aws s3api get-public-access-block --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: "Errors with NoSuchPublicAccessBlockConfiguration when unset — submit the error; controls treat it as fail."
+
+  - id: aws.s3.get_bucket_encryption
+    provider: aws
+    service: s3
+    description: Default encryption configuration for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-encryption --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+
+  - id: aws.s3.get_bucket_versioning
+    provider: aws
+    service: s3
+    description: Versioning state for one bucket.
+    kind: per_resource
+    command: aws s3api get-bucket-versioning --bucket {resource} --output json
+    regional: false
+    parent:
+      collector: aws.s3.list_buckets
+      itemsPath: Buckets
+      resourceField: Name
+    outputFormat: json
+    notes: "Returns an empty object when versioning has never been enabled."
+
+  - id: aws.ec2.describe_security_groups
+    provider: aws
+    service: ec2
+    description: Security groups in one region.
+    kind: single
+    command: aws ec2 describe-security-groups --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.ec2.describe_instances
+    provider: aws
+    service: ec2
+    description: EC2 instances in one region.
+    kind: single
+    command: aws ec2 describe-instances --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.ec2.get_ebs_encryption_by_default
+    provider: aws
+    service: ec2
+    description: Whether EBS encryption-by-default is enabled in one region.
+    kind: single
+    command: aws ec2 get-ebs-encryption-by-default --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.rds.describe_db_instances
+    provider: aws
+    service: rds
+    description: RDS instances in one region.
+    kind: single
+    command: aws rds describe-db-instances --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.kms.list_keys
+    provider: aws
+    service: kms
+    description: KMS keys in one region.
+    kind: single
+    command: aws kms list-keys --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.kms.get_key_rotation_status
+    provider: aws
+    service: kms
+    description: Rotation status for one KMS key.
+    kind: per_resource
+    command: aws kms get-key-rotation-status --key-id {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.kms.list_keys
+      itemsPath: Keys
+      resourceField: KeyId
+    outputFormat: json
+    notes: "AWS-managed keys rotate automatically. AccessDeniedException on some AWS-managed keys is expected — submit the error."
+
+  - id: aws.guardduty.list_detectors
+    provider: aws
+    service: guardduty
+    description: GuardDuty detector IDs in one region.
+    kind: single
+    command: aws guardduty list-detectors --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.config.describe_configuration_recorder_status
+    provider: aws
+    service: config
+    description: AWS Config recorder status in one region.
+    kind: single
+    command: aws configservice describe-configuration-recorder-status --region {region} --output json
+    regional: true
+    outputFormat: json
