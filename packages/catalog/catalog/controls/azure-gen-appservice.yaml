@@ -1,0 +1,390 @@
+controls:
+  - id: CR-AZURE-APPSERVICE-100
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service uses a managed identity
+    description: Verifies each web app has a system- or user-assigned managed
+      identity rather than embedded credentials.
+    rationale: >
+      Without a managed identity, apps store connection strings, keys or secrets
+      in code or config, which are easily leaked and cannot be rotated
+      centrally. A managed identity removes standing secrets from the app.
+    severity: medium
+    categories:
+      - appservice
+      - identity
+    source:
+      engine: prowler
+      id: app_ensure_using_managed_identity
+      license: Apache-2.0
+    collector: azure.webapp.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: identity.type
+        - op: notEquals
+          path: identity.type
+          value: None
+    failMessage: Web app has no managed identity configured.
+    passMessage: Web app uses a managed identity.
+    remediation:
+      summary: Enable a system-assigned or user-assigned managed identity.
+      steps:
+        - Enable a managed identity on the app's Identity blade (operator
+          action).
+        - Grant the identity least-privilege access to the resources the app
+          needs.
+      verifyCommand: az webapp list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/overview-managed-identity
+  - id: CR-AZURE-APPSERVICE-101
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service requires incoming client certificates
+    description: Verifies clientCertEnabled is true so mutual TLS is enforced for
+      inbound requests.
+    rationale: >
+      Without client certificate authentication, any caller that reaches the app
+      endpoint is accepted at the transport layer, removing a strong mutual-TLS
+      control for sensitive workloads.
+    severity: medium
+    categories:
+      - appservice
+      - identity
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: app_client_certificates_on
+      license: Apache-2.0
+    collector: azure.webapp.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: clientCertEnabled
+      value: true
+    failMessage: Web app does not require incoming client certificates.
+    passMessage: Web app requires incoming client certificates.
+    remediation:
+      summary: Enable incoming client certificates (mutual TLS) on the app.
+      steps:
+        - Set client certificate mode to Require on the app's Configuration
+          blade (operator action).
+      verifyCommand: az webapp list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "9.4"
+    references:
+      - https://learn.microsoft.com/azure/app-service/app-service-web-configure-tls-mutual-auth
+  - id: CR-AZURE-APPSERVICE-102
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service HTTP/2 is enabled
+    description: Verifies http20Enabled is true in the site configuration.
+    rationale: >
+      HTTP/2 provides improved security posture and performance over legacy
+      HTTP/1.1; leaving it disabled keeps apps on an older, less-hardened
+      protocol path.
+    severity: low
+    categories:
+      - appservice
+      - network
+    source:
+      engine: prowler
+      id: app_ensure_http_is_redirected_to_https
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: http20Enabled
+      value: true
+    failMessage: Web app does not have HTTP/2 enabled.
+    passMessage: Web app has HTTP/2 enabled.
+    remediation:
+      summary: Enable HTTP version 2.0 in the app's general settings.
+      steps:
+        - Set HTTP Version to 2.0 in the app's Configuration - General settings
+          (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "9.10"
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-common
+  - id: CR-AZURE-APPSERVICE-103
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service remote debugging is disabled
+    description: Verifies remoteDebuggingEnabled is false in the site configuration.
+    rationale: >
+      Remote debugging opens a privileged channel into the running app process
+      and, if left enabled in production, can be abused to inspect memory,
+      credentials and control flow.
+    severity: high
+    categories:
+      - appservice
+      - public-exposure
+    source:
+      engine: prowler
+      id: app_ensure_remote_debugging_disabled
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: remoteDebuggingEnabled
+      value: false
+    failMessage: Web app has remote debugging enabled.
+    passMessage: Web app has remote debugging disabled.
+    remediation:
+      summary: Disable remote debugging on the app.
+      steps:
+        - Turn off Remote debugging in the app's Configuration - General
+          settings (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-common
+  - id: CR-AZURE-APPSERVICE-104
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service Always On is enabled
+    description: Verifies alwaysOn is true so the app process stays warm and
+      continuous jobs keep running.
+    rationale: >
+      With Always On disabled the app is unloaded when idle, which drops
+      continuous WebJobs and background security tasks (log flushing, agents)
+      and can produce gaps in availability and telemetry.
+    severity: low
+    categories:
+      - appservice
+      - resilience
+    source:
+      engine: prowler
+      id: app_ensure_always_on_enabled
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: alwaysOn
+      value: true
+    failMessage: Web app does not have Always On enabled.
+    passMessage: Web app has Always On enabled.
+    remediation:
+      summary: Enable Always On in the app's general settings.
+      steps:
+        - Set Always On to On in the app's Configuration - General settings
+          (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-common
+  - id: CR-AZURE-APPSERVICE-105
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service HTTP logging is enabled
+    description: Verifies httpLoggingEnabled is true in the site configuration.
+    rationale: >
+      Without HTTP logging there is no record of web requests, undermining
+      incident investigation, abuse detection and forensic analysis of the app's
+      public surface.
+    severity: medium
+    categories:
+      - appservice
+      - logging
+    source:
+      engine: prowler
+      id: app_ensure_http_logging_enabled
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: httpLoggingEnabled
+      value: true
+    failMessage: Web app does not have HTTP logging enabled.
+    passMessage: Web app has HTTP logging enabled.
+    remediation:
+      summary: Enable web server (HTTP) logging on the app.
+      steps:
+        - Enable Web server logging in the app's App Service logs blade
+          (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/troubleshoot-diagnostic-logs
+  - id: CR-AZURE-APPSERVICE-106
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service detailed error logging is enabled
+    description: Verifies detailedErrorLoggingEnabled is true in the site configuration.
+    rationale: >
+      Detailed error logs capture the context around HTTP failures, which is
+      essential for detecting exploitation attempts and diagnosing security
+      relevant errors on the public endpoint.
+    severity: low
+    categories:
+      - appservice
+      - logging
+    source:
+      engine: prowler
+      id: app_ensure_detailed_error_messages_enabled
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: detailedErrorLoggingEnabled
+      value: true
+    failMessage: Web app does not have detailed error logging enabled.
+    passMessage: Web app has detailed error logging enabled.
+    remediation:
+      summary: Enable detailed error messages logging on the app.
+      steps:
+        - Enable Detailed error messages in the app's App Service logs blade
+          (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/troubleshoot-diagnostic-logs
+  - id: CR-AZURE-APPSERVICE-107
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service failed request tracing is enabled
+    description: Verifies requestTracingEnabled is true in the site configuration.
+    rationale: >
+      Failed request tracing records the full pipeline for failing requests,
+      which supports detection and investigation of attacks and abuse against
+      the application endpoint.
+    severity: low
+    categories:
+      - appservice
+      - logging
+    source:
+      engine: prowler
+      id: app_ensure_failed_request_tracing_enabled
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: requestTracingEnabled
+      value: true
+    failMessage: Web app does not have failed request tracing enabled.
+    passMessage: Web app has failed request tracing enabled.
+    remediation:
+      summary: Enable failed request tracing on the app.
+      steps:
+        - Enable Failed request tracing in the app's App Service logs blade
+          (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/troubleshoot-diagnostic-logs
+  - id: CR-AZURE-APPSERVICE-108
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service enforces a strong minimum TLS cipher suite
+    description: Verifies minTlsCipherSuite is not a weak CBC-based cipher when present.
+    rationale: >
+      Even with TLS 1.2 enforced, allowing weak CBC cipher suites leaves
+      sessions exposed to known padding and downgrade weaknesses; requiring a
+      strong minimum cipher hardens transport security.
+    severity: low
+    categories:
+      - appservice
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: app_minimum_tls_version_12
+      license: Apache-2.0
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: exists
+      path: minTlsCipherSuite
+    passWhen:
+      op: not
+      expr:
+        op: contains
+        path: minTlsCipherSuite
+        value: CBC
+    failMessage: Web app permits a weak CBC-based minimum TLS cipher suite.
+    passMessage: Web app enforces a strong minimum TLS cipher suite.
+    remediation:
+      summary: Set the minimum TLS cipher suite to a strong GCM-based suite.
+      steps:
+        - Set the minimum TLS cipher suite to a strong AEAD/GCM suite in the
+          app's TLS/SSL settings (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-ssl-bindings
+  - id: CR-AZURE-APPSERVICE-109
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service client certificate mode requires certificates
+    description: When client certificates are enabled, verifies clientCertMode is
+      Required rather than Optional.
+    rationale: >
+      An Optional client certificate mode accepts connections that present no
+      certificate, silently weakening the intended mutual-TLS control; Required
+      mode rejects such connections.
+    severity: medium
+    categories:
+      - appservice
+      - identity
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: app_client_certificates_on
+      license: Apache-2.0
+    collector: azure.webapp.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: clientCertEnabled
+      value: true
+    passWhen:
+      op: equals
+      path: clientCertMode
+      value: Required
+    failMessage: Web app has client certificates enabled but not required.
+    passMessage: Web app requires client certificates (mode Required).
+    remediation:
+      summary: Set client certificate mode to Required.
+      steps:
+        - Change client certificate mode from Optional to Required on the app's
+          Configuration blade (operator action).
+      verifyCommand: az webapp list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "9.4"
+    references:
+      - https://learn.microsoft.com/azure/app-service/app-service-web-configure-tls-mutual-auth

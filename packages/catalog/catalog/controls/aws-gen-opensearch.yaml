@@ -1,0 +1,350 @@
+controls:
+  - id: CR-AWS-OPENSEARCH-001
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain has encryption at rest enabled
+    description: The domain's EncryptionAtRestOptions.Enabled is true so index data
+      and automated snapshots are encrypted with KMS.
+    rationale: Without encryption at rest, an attacker with access to underlying
+      storage or snapshots can read cluster data in cleartext.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: opensearch_service_domains_encryption_at_rest_enabled
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: equals
+      path: DomainStatus.EncryptionAtRestOptions.Enabled
+      value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not have encryption at rest enabled.
+    passMessage: OpenSearch domain has encryption at rest enabled.
+    remediation:
+      summary: Enable encryption at rest on the domain.
+      steps:
+        - Encryption at rest can only be enabled at domain creation; recreate
+          the domain with EncryptionAtRestOptions.Enabled set to true and a KMS
+          key, then reindex data.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/encryption-at-rest.html
+  - id: CR-AWS-OPENSEARCH-002
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain has node-to-node encryption enabled
+    description: The domain's NodeToNodeEncryptionOptions.Enabled is true so traffic
+      between cluster nodes is encrypted in transit.
+    rationale: Unencrypted inter-node traffic can be intercepted on the network,
+      exposing indexed data as it replicates across the cluster.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: opensearch_service_domains_node_to_node_encryption_enabled
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: equals
+      path: DomainStatus.NodeToNodeEncryptionOptions.Enabled
+      value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not have node-to-node encryption enabled.
+    passMessage: OpenSearch domain has node-to-node encryption enabled.
+    remediation:
+      summary: Enable node-to-node encryption on the domain.
+      steps:
+        - Node-to-node encryption can only be enabled at domain creation;
+          recreate the domain with NodeToNodeEncryptionOptions.Enabled set to
+          true and migrate data.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/ntn.html
+  - id: CR-AWS-OPENSEARCH-003
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain enforces HTTPS on its endpoint
+    description: The domain's DomainEndpointOptions.EnforceHTTPS is true so all
+      client traffic to the domain endpoint must use TLS.
+    rationale: Allowing plaintext HTTP to the endpoint lets credentials and query
+      data be intercepted in transit.
+    severity: high
+    categories:
+      - encryption
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: opensearch_service_domains_https_communications_enforced
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: equals
+      path: DomainStatus.DomainEndpointOptions.EnforceHTTPS
+      value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not enforce HTTPS on its endpoint.
+    passMessage: OpenSearch domain enforces HTTPS on its endpoint.
+    remediation:
+      summary: Require HTTPS for the domain endpoint.
+      steps:
+        - Update the domain endpoint options to set EnforceHTTPS to true.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/infrastructure-security.html
+  - id: CR-AWS-OPENSEARCH-004
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain uses a strong TLS security policy
+    description: The domain's DomainEndpointOptions.TLSSecurityPolicy requires TLS
+      1.2 or higher (not a TLS 1.0 policy).
+    rationale: Legacy TLS 1.0/1.1 policies allow weak ciphers and downgrade attacks
+      against connections to the domain endpoint.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: opensearch_service_domains_use_cognito_authentication_for_kibana
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    applicableWhen:
+      op: equals
+      path: DomainStatus.DomainEndpointOptions.EnforceHTTPS
+      value: true
+    passWhen:
+      op: startsWith
+      path: DomainStatus.DomainEndpointOptions.TLSSecurityPolicy
+      value: Policy-Min-TLS-1-2
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain uses a weak TLS security policy (below TLS 1.2).
+    passMessage: OpenSearch domain uses a TLS 1.2+ security policy.
+    remediation:
+      summary: Set the endpoint TLS security policy to a TLS 1.2 minimum policy.
+      steps:
+        - Update the domain endpoint options TLSSecurityPolicy to
+          Policy-Min-TLS-1-2-2019-07 or a newer TLS 1.2+ policy.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/infrastructure-security.html
+  - id: CR-AWS-OPENSEARCH-005
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain publishes audit logs
+    description: The domain has LogPublishingOptions.AUDIT_LOGS enabled and
+      delivering to a CloudWatch Logs group.
+    rationale: Without audit logs there is no record of authentication,
+      authorization, and data-access events for investigation of misuse.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: opensearch_service_domains_audit_logging_enabled
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: equals
+      path: DomainStatus.LogPublishingOptions.AUDIT_LOGS.Enabled
+      value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not publish audit logs.
+    passMessage: OpenSearch domain publishes audit logs.
+    remediation:
+      summary: Enable audit log publishing to CloudWatch Logs.
+      steps:
+        - Enable fine-grained access control (required for audit logs), then
+          configure LogPublishingOptions for AUDIT_LOGS with a CloudWatch Logs
+          log group ARN.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/audit-logs.html
+  - id: CR-AWS-OPENSEARCH-006
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain publishes slow logs
+    description: The domain has at least one of SEARCH_SLOW_LOGS or INDEX_SLOW_LOGS
+      enabled in LogPublishingOptions.
+    rationale: Slow logs are needed to diagnose performance and availability
+      problems and to detect abnormal query patterns.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: opensearch_service_domains_cloudwatch_logging_enabled
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: DomainStatus.LogPublishingOptions.SEARCH_SLOW_LOGS.Enabled
+          value: true
+        - op: equals
+          path: DomainStatus.LogPublishingOptions.INDEX_SLOW_LOGS.Enabled
+          value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not publish search or index slow logs.
+    passMessage: OpenSearch domain publishes slow logs to CloudWatch Logs.
+    remediation:
+      summary: Enable slow log publishing to CloudWatch Logs.
+      steps:
+        - Configure LogPublishingOptions for SEARCH_SLOW_LOGS and
+          INDEX_SLOW_LOGS with a CloudWatch Logs log group ARN.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/createdomain-configure-slow-logs.html
+  - id: CR-AWS-OPENSEARCH-007
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain is deployed inside a VPC
+    description: The domain has VPCOptions with a VPCId, so it is not exposed on a
+      public endpoint reachable from the internet.
+    rationale: A public-access OpenSearch domain is directly reachable from the
+      internet, dramatically enlarging the attack surface for data exposure and
+      abuse.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: opensearch_service_domains_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: exists
+      path: DomainStatus.VPCOptions.VPCId
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain is publicly accessible (no VPC configured).
+    passMessage: OpenSearch domain is deployed inside a VPC.
+    remediation:
+      summary: Deploy the domain inside a VPC.
+      steps:
+        - VPC placement is set at creation; recreate the domain with VPCOptions
+          specifying private subnets and security groups, then migrate data.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/vpc.html
+  - id: CR-AWS-OPENSEARCH-008
+    version: 1.0.0
+    provider: aws
+    service: opensearch
+    title: OpenSearch domain has fine-grained access control enabled
+    description: The domain's AdvancedSecurityOptions.Enabled is true, enabling
+      document/field-level and role-based access control.
+    rationale: Without fine-grained access control, access is governed only by
+      coarse IP or IAM policies, making least-privilege data access hard to
+      enforce and enabling broad data exposure.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: opensearch_service_domains_fine_grained_access_control_enabled
+      license: Apache-2.0
+    collector: aws.opensearch.describe_domain
+    resourceIdField: $resourceKey
+    resourceNameField: DomainStatus.DomainName
+    passWhen:
+      op: equals
+      path: DomainStatus.AdvancedSecurityOptions.Enabled
+      value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Domain no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: OpenSearch domain does not have fine-grained access control enabled.
+    passMessage: OpenSearch domain has fine-grained access control enabled.
+    remediation:
+      summary: Enable fine-grained access control on the domain.
+      steps:
+        - Ensure encryption at rest, node-to-node encryption, and EnforceHTTPS
+          are enabled (prerequisites), then enable AdvancedSecurityOptions and
+          configure master user or IAM role.
+      verifyCommand: aws opensearch describe-domain --domain-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/opensearch-service/latest/developerguide/fgac.html

@@ -1,0 +1,104 @@
+[
+  {
+    "controlId": "CR-AWS-LOGS-001",
+    "cases": [
+      {
+        "name": "pass retention set",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.logs.describe_log_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "logGroups": [
+                {
+                  "logGroupName": "/aws/lambda/app",
+                  "creationTime": 1600000000000,
+                  "retentionInDays": 30,
+                  "metricFilterCount": 0,
+                  "arn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/app:*",
+                  "storedBytes": 4096
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no retention (never expire)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.logs.describe_log_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "logGroups": [
+                {
+                  "logGroupName": "/aws/lambda/forever",
+                  "creationTime": 1600000000000,
+                  "metricFilterCount": 0,
+                  "arn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/forever:*",
+                  "storedBytes": 1024000
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-LOGS-003",
+    "cases": [
+      {
+        "name": "pass kms encrypted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.logs.describe_log_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "logGroups": [
+                {
+                  "logGroupName": "/aws/cloudtrail/audit",
+                  "creationTime": 1600000000000,
+                  "retentionInDays": 365,
+                  "metricFilterCount": 1,
+                  "arn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/cloudtrail/audit:*",
+                  "storedBytes": 90000000,
+                  "kmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no kms key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.logs.describe_log_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "logGroups": [
+                {
+                  "logGroupName": "/aws/lambda/app",
+                  "creationTime": 1600000000000,
+                  "retentionInDays": 30,
+                  "metricFilterCount": 0,
+                  "arn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/app:*",
+                  "storedBytes": 4096
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

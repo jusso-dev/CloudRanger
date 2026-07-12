@@ -1,0 +1,34 @@
+collectors:
+  - id: aws.opensearch.list_domain_names
+    provider: aws
+    service: opensearch
+    description: Lists the names of all Amazon OpenSearch Service (and legacy
+      Elasticsearch) domains in a region.
+    kind: single
+    command: aws opensearch list-domain-names --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a DomainNames array where each item has DomainName and EngineType
+      (OpenSearch or Elasticsearch). Provides only names; per-domain
+      configuration requires describe-domain.
+  - id: aws.opensearch.describe_domain
+    provider: aws
+    service: opensearch
+    description: Returns the full configuration and status (DomainStatus) of one
+      OpenSearch Service domain.
+    kind: per_resource
+    command: aws opensearch describe-domain --domain-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.opensearch.list_domain_names
+      itemsPath: DomainNames
+      resourceField: DomainName
+    outputFormat: json
+    notes: Output root has a single DomainStatus object holding
+      EncryptionAtRestOptions, NodeToNodeEncryptionOptions,
+      DomainEndpointOptions, LogPublishingOptions, VPCOptions,
+      AdvancedSecurityOptions and identity fields (DomainId, DomainName, ARN).
+      LogPublishingOptions is keyed by log type (AUDIT_LOGS, SEARCH_SLOW_LOGS,
+      INDEX_SLOW_LOGS, ES_APPLICATION_LOGS) and is absent/empty when no logs are
+      published. VPCOptions is present only for VPC-attached domains.

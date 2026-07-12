@@ -1,0 +1,43 @@
+collectors:
+  - id: aws.apigateway.get_rest_apis
+    provider: aws
+    service: apigateway
+    description: Lists all REST APIs (API Gateway v1) in the region. Returns the
+      account-level inventory of REST APIs used as the parent for per-API stage
+      collection.
+    kind: single
+    command: aws apigateway get-rest-apis --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: 'Returns { "item": [ { "id": "...", "name": "...", "createdDate": ...,
+      "apiKeySource": "...", "endpointConfiguration": { "types": [ ... ] },
+      "disableExecuteApiEndpoint": bool, ... }, ... ] }. When no REST APIs exist
+      the "item" key is absent or an empty array. Requires apigateway:GET on
+      /restapis.'
+  - id: aws.apigateway.get_stages
+    provider: aws
+    service: apigateway
+    description: Returns all deployment stages for one REST API, including per-stage
+      method settings, access/execution logging, WAF association, client
+      certificate, cache and tracing configuration.
+    kind: per_resource
+    command: aws apigateway get-stages --rest-api-id {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.apigateway.get_rest_apis
+      itemsPath: item
+      resourceField: id
+    outputFormat: json
+    notes: 'Returns { "item": [ { "stageName": "...", "deploymentId": "...",
+      "clientCertificateId": "...", "cacheClusterEnabled": bool,
+      "cacheClusterStatus": "...", "methodSettings": { "*/*": {
+      "metricsEnabled": bool, "loggingLevel": "OFF|ERROR|INFO",
+      "dataTraceEnabled": bool, "cacheDataEncrypted": bool, ... } },
+      "accessLogSettings": { "format": "...", "destinationArn": "..." },
+      "webAclArn": "...", "tracingEnabled": bool, "tags": { ... } }, ... ] }.
+      Keys such as accessLogSettings, webAclArn, clientCertificateId and the
+      "*/*" methodSettings entry are ABSENT (not null) when unconfigured.
+      loggingLevel is "OFF" when execution logging is disabled. An API with no
+      stages returns an empty "item" array. Requires apigateway:GET on
+      /restapis/{id}/stages.'

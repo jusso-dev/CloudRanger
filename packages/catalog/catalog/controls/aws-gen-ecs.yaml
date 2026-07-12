@@ -1,0 +1,207 @@
+controls:
+  - id: CR-AWS-ECS-001
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition has no privileged containers
+    description: No container in the task definition runs with privileged set to true.
+    rationale: A privileged container gets near-root access to the host kernel and
+      devices, so a container escape becomes a full host compromise of the
+      ECS/Fargate node.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_privileged_containers
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: equals
+        path: privileged
+        value: true
+    failMessage: Task definition has at least one container running in privileged mode.
+    passMessage: No container in the task definition is privileged.
+    remediation:
+      summary: Remove privileged mode from all containers.
+      steps:
+        - Set privileged to false (or omit it) on every container definition.
+        - Register a new revision and update the service to use it.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html
+  - id: CR-AWS-ECS-002
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition configures container logging
+    description: Every container in the task definition sets a logConfiguration so
+      stdout/stderr is shipped to a log driver.
+    rationale: Containers without a log configuration lose stdout/stderr once they
+      exit, leaving no forensic trail for incident response or detection.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: ecs_task_definitions_logging_block_mode
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: allItems
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: exists
+        path: logConfiguration.logDriver
+    failMessage: At least one container has no logConfiguration/logDriver set.
+    passMessage: All containers configure a logging driver.
+    remediation:
+      summary: Add a logConfiguration to every container.
+      steps:
+        - Add a logConfiguration block (for example logDriver awslogs) to each
+          container definition.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html
+  - id: CR-AWS-ECS-003
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition uses a read-only root filesystem
+    description: Every container in the task definition sets readonlyRootFilesystem to true.
+    rationale: A writable root filesystem lets an attacker who lands in a container
+      drop tools, modify binaries and persist; a read-only root filesystem
+      removes that foothold.
+    severity: medium
+    categories:
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: ecs_task_definitions_readonly_root_filesystems
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: allItems
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: equals
+        path: readonlyRootFilesystem
+        value: true
+    failMessage: At least one container does not set readonlyRootFilesystem to true.
+    passMessage: All containers use a read-only root filesystem.
+    remediation:
+      summary: Enable readonlyRootFilesystem on every container.
+      steps:
+        - Set readonlyRootFilesystem to true on each container definition.
+        - Mount writable volumes only where the workload genuinely needs to
+          write.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html
+  - id: CR-AWS-ECS-005
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition does not use host network mode
+    description: The task definition networkMode is not host.
+    rationale: Host network mode shares the host's network namespace with the
+      container, exposing host ports and bypassing security-group isolation
+      between tasks.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ecs_task_definitions_host_networking_mode_users
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: notEquals
+      path: taskDefinition.networkMode
+      value: host
+    failMessage: Task definition uses host network mode.
+    passMessage: Task definition does not use host network mode.
+    remediation:
+      summary: Use awsvpc or bridge network mode.
+      steps:
+        - Change networkMode to awsvpc (recommended) or bridge.
+        - Re-register the task definition and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  - id: CR-AWS-ECS-006
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition containers do not run as root
+    description: No container runs as the root user; each sets a non-root user (not
+      empty, not root, not uid 0).
+    rationale: A container running as root that is compromised has maximal
+      privileges inside the container and a larger attack surface for host
+      escape.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: ecs_task_definitions_containers_readonly_root_filesystems
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: allItems
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: user
+          - op: notEquals
+            path: user
+            value: root
+          - op: notEquals
+            path: user
+            value: "0"
+          - op: not
+            expr:
+              op: startsWith
+              path: user
+              value: "0:"
+    failMessage: At least one container runs as root (user unset, root, or uid 0).
+    passMessage: All containers specify a non-root user.
+    remediation:
+      summary: Set a non-root user on every container.
+      steps:
+        - Set the user field to a non-root user or uid on each container
+          definition.
+        - Ensure the image contains that user and its files are owned
+          appropriately.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html

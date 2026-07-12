@@ -1,0 +1,505 @@
+controls:
+  - id: CR-GCP-SQL-100
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL instance does not allow the world (0.0.0.0/0) in authorized
+      networks
+    description: >
+      No entry in settings.ipConfiguration.authorizedNetworks permits 0.0.0.0/0
+      (or ::/0), which would open the database to the entire internet.
+    rationale: >
+      An authorized network of 0.0.0.0/0 makes the Cloud SQL public endpoint
+      reachable from any host on the internet, exposing it to credential
+      stuffing and exploitation of the database engine.
+    severity: high
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudsql_instance_public_access
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: noneItem
+      path: settings.ipConfiguration.authorizedNetworks
+      condition:
+        op: isPublicCidr
+        path: value
+    failMessage: Cloud SQL instance authorizes 0.0.0.0/0 in its authorized networks.
+    passMessage: Cloud SQL instance does not authorize the entire internet.
+    remediation:
+      summary: Remove the 0.0.0.0/0 authorized network.
+      steps:
+        - Replace 0.0.0.0/0 authorized networks with specific client CIDR ranges.
+        - Prefer private IP and the Cloud SQL Auth Proxy over public authorized
+          networks.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.5"
+    references:
+      - https://cloud.google.com/sql/docs/mysql/configure-ip
+      - https://cloud.google.com/sql/docs/mysql/authorize-networks
+  - id: CR-GCP-SQL-101
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL automated backups are enabled
+    description: >
+      Verifies settings.backupConfiguration.enabled is true so the instance has
+      scheduled automated backups.
+    rationale: >
+      Without automated backups, a corruption, ransomware or accidental-delete
+      event has no recovery point, risking permanent data loss.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: cloudsql_instance_automated_backups
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: settings.backupConfiguration.enabled
+      value: true
+    failMessage: Cloud SQL instance does not have automated backups enabled.
+    passMessage: Cloud SQL instance has automated backups enabled.
+    remediation:
+      summary: Enable automated backups.
+      steps:
+        - Enable automated backups and set a backup start time and retention
+          window.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.7"
+    references:
+      - https://cloud.google.com/sql/docs/mysql/backup-recovery/backups
+  - id: CR-GCP-SQL-102
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance has point-in-time recovery enabled
+    description: >
+      For POSTGRES instances, verifies
+      settings.backupConfiguration.pointInTimeRecoveryEnabled is true.
+    rationale: >
+      Point-in-time recovery captures WAL so the database can be restored to a
+      precise moment; without it, recovery is limited to the last daily backup,
+      widening the potential data-loss window.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_point_in_time_recovery_enabled
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: equals
+      path: settings.backupConfiguration.pointInTimeRecoveryEnabled
+      value: true
+    failMessage: PostgreSQL instance does not have point-in-time recovery enabled.
+    passMessage: PostgreSQL instance has point-in-time recovery enabled.
+    remediation:
+      summary: Enable point-in-time recovery (WAL archiving).
+      steps:
+        - Enable point-in-time recovery on the instance backup configuration.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.7"
+    references:
+      - https://cloud.google.com/sql/docs/postgres/backup-recovery/pitr
+  - id: CR-GCP-SQL-103
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: MySQL Cloud SQL instance has binary logging enabled
+    description: >
+      For MYSQL instances, verifies
+      settings.backupConfiguration.binaryLogEnabled is true, which is required
+      for point-in-time recovery and replication.
+    rationale: >
+      Without binary logging a MySQL instance cannot perform point-in-time
+      recovery, so recovery is capped at the last full backup.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: cloudsql_instance_mysql_local_infile_off
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: MYSQL
+    passWhen:
+      op: equals
+      path: settings.backupConfiguration.binaryLogEnabled
+      value: true
+    failMessage: MySQL instance does not have binary logging enabled.
+    passMessage: MySQL instance has binary logging enabled.
+    remediation:
+      summary: Enable binary logging.
+      steps:
+        - Enable automated backups, then enable binary logging on the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.7"
+    references:
+      - https://cloud.google.com/sql/docs/mysql/backup-recovery/pitr
+  - id: CR-GCP-SQL-104
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: MySQL Cloud SQL instance has local_infile disabled
+    description: >
+      For MYSQL instances, verifies the local_infile database flag is set to off.
+    rationale: >
+      local_infile allows the server to read local files during LOAD DATA, which
+      can be abused via SQL injection to read arbitrary files or exfiltrate
+      data.
+    severity: medium
+    categories:
+      - database
+      - hardening
+    source:
+      engine: prowler
+      id: cloudsql_instance_mysql_local_infile_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: MYSQL
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: local_infile
+          - op: equals
+            path: value
+            value: off
+    failMessage: MySQL instance does not have local_infile set to off.
+    passMessage: MySQL instance has local_infile disabled.
+    remediation:
+      summary: Set the local_infile flag to off.
+      steps:
+        - Add the database flag local_infile=off to the instance and restart if
+          required.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.1.2
+    references:
+      - https://cloud.google.com/sql/docs/mysql/flags
+  - id: CR-GCP-SQL-105
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance has log_checkpoints enabled
+    description: >
+      For POSTGRES instances, verifies the log_checkpoints database flag is set
+      to on.
+    rationale: >
+      Enabling log_checkpoints records checkpoint activity, aiding performance
+      diagnostics and forensic investigation of database behaviour.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_checkpoints_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_checkpoints
+          - op: equals
+            path: value
+            value: on
+    failMessage: PostgreSQL instance does not have log_checkpoints set to on.
+    passMessage: PostgreSQL instance has log_checkpoints enabled.
+    remediation:
+      summary: Set the log_checkpoints flag to on.
+      steps:
+        - Add the database flag log_checkpoints=on to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.1
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-106
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance has log_connections enabled
+    description: >
+      For POSTGRES instances, verifies the log_connections database flag is set
+      to on.
+    rationale: >
+      Logging connection attempts provides an audit trail of who connected and
+      when, which is essential for detecting brute-force and unauthorized
+      access.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_connections_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_connections
+          - op: equals
+            path: value
+            value: on
+    failMessage: PostgreSQL instance does not have log_connections set to on.
+    passMessage: PostgreSQL instance has log_connections enabled.
+    remediation:
+      summary: Set the log_connections flag to on.
+      steps:
+        - Add the database flag log_connections=on to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.2
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-107
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance does not enable log_min_messages at DEBUG
+    description: >
+      For POSTGRES instances, verifies that if the log_min_messages flag is set,
+      it is not a DEBUG level (DEBUG1..DEBUG5), which would be excessively
+      verbose.
+    rationale: >
+      Setting log_min_messages to a DEBUG level floods logs with internal
+      details, increasing storage cost and the chance of exposing sensitive data
+      in logs while burying meaningful events.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_min_messages_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: noneItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_min_messages
+          - op: startsWith
+            path: value
+            value: DEBUG
+    failMessage: PostgreSQL instance sets log_min_messages to a DEBUG level.
+    passMessage: PostgreSQL instance does not use a DEBUG log_min_messages level.
+    remediation:
+      summary: Avoid DEBUG log levels for log_min_messages.
+      steps:
+        - Set log_min_messages to WARNING or ERROR rather than a DEBUG level.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.6
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-108
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: SQL Server Cloud SQL instance has cross database ownership chaining
+      disabled
+    description: >
+      For SQLSERVER instances, verifies the cross db ownership chaining database
+      flag is set to off.
+    rationale: >
+      Cross database ownership chaining lets object owners grant access across
+      databases without explicit permissions, enabling privilege escalation
+      between databases.
+    severity: medium
+    categories:
+      - database
+      - hardening
+      - identity
+    source:
+      engine: prowler
+      id: cloudsql_instance_sqlserver_cross_db_ownership_chaining_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: SQLSERVER
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: cross db ownership chaining
+          - op: equals
+            path: value
+            value: off
+    failMessage: SQL Server instance does not have cross db ownership chaining set to off.
+    passMessage: SQL Server instance has cross db ownership chaining disabled.
+    remediation:
+      summary: Set the cross db ownership chaining flag to off.
+      steps:
+        - Add the database flag "cross db ownership chaining"=off to the
+          instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.3.1
+    references:
+      - https://cloud.google.com/sql/docs/sqlserver/flags
+  - id: CR-GCP-SQL-109
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: SQL Server Cloud SQL instance has contained database authentication
+      disabled
+    description: >
+      For SQLSERVER instances, verifies the contained database authentication
+      database flag is set to off.
+    rationale: >
+      Contained database authentication lets users authenticate directly to a
+      database without a server login, bypassing central login policies and
+      complicating access governance.
+    severity: medium
+    categories:
+      - database
+      - hardening
+      - identity
+    source:
+      engine: prowler
+      id: cloudsql_instance_sqlserver_contained_database_authentication_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: SQLSERVER
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: contained database authentication
+          - op: equals
+            path: value
+            value: off
+    failMessage: SQL Server instance does not have contained database authentication
+      set to off.
+    passMessage: SQL Server instance has contained database authentication disabled.
+    remediation:
+      summary: Set the contained database authentication flag to off.
+      steps:
+        - Add the database flag "contained database authentication"=off to the
+          instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.3.7
+    references:
+      - https://cloud.google.com/sql/docs/sqlserver/flags

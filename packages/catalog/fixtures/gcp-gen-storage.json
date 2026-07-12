@@ -1,0 +1,368 @@
+[
+  {
+    "controlId": "CR-GCP-STORAGE-100",
+    "cases": [
+      {
+        "name": "versioning enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "data-prod",
+                "location": "US",
+                "versioning_enabled": true,
+                "uniform_bucket_level_access": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "versioning disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "data-stage",
+                "location": "US",
+                "versioning_enabled": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "versioning field absent fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "data-legacy",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-101",
+    "cases": [
+      {
+        "name": "cmek set passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "enc-bucket",
+                "location": "US",
+                "default_kms_key": "projects/p/locations/us/keyRings/r/cryptoKeys/k"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no cmek fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "plain-bucket",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "empty cmek fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "empty-key",
+                "location": "US",
+                "default_kms_key": ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-102",
+    "cases": [
+      {
+        "name": "retention period set passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "retained",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": 2592000,
+                  "effective_time": "2026-01-01T00:00:00Z",
+                  "is_locked": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no retention policy fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-retention",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "zero retention fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "zero-retention",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-103",
+    "cases": [
+      {
+        "name": "locked retention passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "locked",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": 2592000,
+                  "is_locked": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "unlocked retention fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "unlocked",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": 2592000,
+                  "is_locked": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no retention policy not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-retention",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-104",
+    "cases": [
+      {
+        "name": "logging configured passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "audited",
+                "location": "US",
+                "logging_config": {
+                  "log_bucket": "central-logs",
+                  "log_object_prefix": "audited"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no logging config fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "unlogged",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "empty log bucket fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "empty-log",
+                "location": "US",
+                "logging_config": {
+                  "log_bucket": ""
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-105",
+    "cases": [
+      {
+        "name": "no public members passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "data-prod",
+            "exitCode": 0,
+            "output": {
+              "kind": "storage#policy",
+              "resourceId": "projects/_/buckets/data-prod",
+              "version": 1,
+              "bindings": [
+                {
+                  "role": "roles/storage.objectViewer",
+                  "members": ["group:analysts@example.com"]
+                }
+              ],
+              "etag": "CAE="
+            }
+          }
+        ]
+      },
+      {
+        "name": "allUsers member fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "public-web",
+            "exitCode": 0,
+            "output": {
+              "kind": "storage#policy",
+              "resourceId": "projects/_/buckets/public-web",
+              "version": 1,
+              "bindings": [
+                {
+                  "role": "roles/storage.objectViewer",
+                  "members": ["allUsers"]
+                }
+              ],
+              "etag": "CAE="
+            }
+          }
+        ]
+      },
+      {
+        "name": "allAuthenticatedUsers member fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.storage.bucket_iam_policy",
+            "resourceKey": "semi-public",
+            "exitCode": 0,
+            "output": {
+              "kind": "storage#policy",
+              "version": 1,
+              "bindings": [
+                {
+                  "role": "roles/storage.legacyObjectReader",
+                  "members": ["allAuthenticatedUsers"]
+                }
+              ],
+              "etag": "CAE="
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

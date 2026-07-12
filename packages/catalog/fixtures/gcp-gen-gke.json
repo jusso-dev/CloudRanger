@@ -1,0 +1,422 @@
+[
+  {
+    "controlId": "CR-GCP-GKE-100",
+    "cases": [
+      {
+        "name": "workload identity enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "workloadIdentityConfig": {
+                  "workloadPool": "my-project.svc.id.goog"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no workload identity",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "legacy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-102",
+    "cases": [
+      {
+        "name": "binauthz enforce",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "binaryAuthorization": {
+                  "evaluationMode": "PROJECT_SINGLETON_POLICY_ENFORCE"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "binauthz disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dev",
+                "binaryAuthorization": {
+                  "evaluationMode": "DISABLED"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-103",
+    "cases": [
+      {
+        "name": "logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "loggingService": "logging.googleapis.com/kubernetes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "logging none",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dark",
+                "loggingService": "none"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-104",
+    "cases": [
+      {
+        "name": "monitoring enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "monitoringService": "monitoring.googleapis.com/kubernetes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "monitoring none",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dark",
+                "monitoringService": "none"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-105",
+    "cases": [
+      {
+        "name": "secrets encrypted with kms",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "databaseEncryption": {
+                  "state": "ENCRYPTED",
+                  "keyName": "projects/p/locations/us/keyRings/gke/cryptoKeys/etcd"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "secrets decrypted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dev",
+                "databaseEncryption": {
+                  "state": "DECRYPTED"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-106",
+    "cases": [
+      {
+        "name": "legacy endpoints disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "nodeConfig": {
+                  "metadata": {
+                    "disable-legacy-endpoints": "true"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legacy endpoints enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "old",
+                "nodeConfig": {
+                  "metadata": {
+                    "disable-legacy-endpoints": "false"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no nodeConfig (autopilot list entry)",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "autopilot"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-107",
+    "cases": [
+      {
+        "name": "integrity monitoring on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "nodeConfig": {
+                  "shieldedInstanceConfig": {
+                    "enableIntegrityMonitoring": true,
+                    "enableSecureBoot": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "integrity monitoring off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dev",
+                "nodeConfig": {
+                  "shieldedInstanceConfig": {
+                    "enableIntegrityMonitoring": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no shielded config",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "bare",
+                "nodeConfig": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-108",
+    "cases": [
+      {
+        "name": "secure boot on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "nodeConfig": {
+                  "shieldedInstanceConfig": {
+                    "enableSecureBoot": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "secure boot off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dev",
+                "nodeConfig": {
+                  "shieldedInstanceConfig": {
+                    "enableSecureBoot": false,
+                    "enableIntegrityMonitoring": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no shielded config",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "bare",
+                "nodeConfig": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-109",
+    "cases": [
+      {
+        "name": "on regular channel",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod",
+                "releaseChannel": {
+                  "channel": "REGULAR"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no channel (static)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "static",
+                "releaseChannel": {
+                  "channel": "UNSPECIFIED"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

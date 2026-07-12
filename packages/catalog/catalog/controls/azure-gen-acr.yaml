@@ -1,0 +1,255 @@
+controls:
+  - id: CR-AZURE-ACR-100
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry disables anonymous pull
+    description: >
+      Verifies that anonymous (unauthenticated) pull access is disabled on the
+      container registry.
+    rationale: >
+      Anonymous pull lets anyone on the network retrieve every image and tag in
+      the registry without credentials, exposing proprietary code, embedded
+      secrets, and supply-chain details to anyone who can reach the endpoint.
+    severity: high
+    categories:
+      - containers
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: acr_anonymous_pull_disabled
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: not
+      expr:
+        op: equals
+        path: anonymousPullEnabled
+        value: true
+    failMessage: Anonymous pull is enabled on the container registry.
+    passMessage: Anonymous pull is disabled on the container registry.
+    remediation:
+      summary: Disable anonymous pull so all pulls require authentication.
+      steps:
+        - Ensure all consumers authenticate with Entra ID identities or tokens.
+        - Disable anonymous pull on the registry (operator action).
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/anonymous-pull-access
+  - id: CR-AZURE-ACR-101
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry restricts public network access
+    description: >
+      Verifies that public network access is disabled on the container registry
+      so it is only reachable over private endpoints.
+    rationale: >
+      A publicly reachable registry endpoint expands the attack surface for
+      credential brute forcing and exploitation; restricting to private
+      networking keeps image push/pull traffic off the public internet.
+    severity: high
+    categories:
+      - containers
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: acr_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: Container registry allows public network access.
+    passMessage: Container registry public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Provision a private endpoint for the registry (Premium SKU required).
+        - Set public network access to Disabled (operator action).
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-private-link
+  - id: CR-AZURE-ACR-102
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry network rules default to deny
+    description: >
+      Verifies the registry network rule set defaults to Deny so only explicitly
+      allowed networks can reach it when public access is used.
+    rationale: >
+      A default action of Allow means every source IP can reach the registry
+      regardless of configured rules, negating the firewall and leaving the
+      registry exposed on the public internet.
+    severity: medium
+    categories:
+      - containers
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: acr_network_rule_set_default_deny
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: exists
+      path: networkRuleSet
+    passWhen:
+      op: equals
+      path: networkRuleSet.defaultAction
+      value: Deny
+    failMessage: Container registry network rule set default action is Allow.
+    passMessage: Container registry network rule set defaults to Deny.
+    remediation:
+      summary: Set the network rule set default action to Deny.
+      steps:
+        - Add explicit allow rules for required networks or private endpoints.
+        - Set the network rule set default action to Deny (operator action).
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-access-selected-networks
+  - id: CR-AZURE-ACR-103
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry enables image quarantine policy
+    description: >
+      Verifies the registry quarantine policy is enabled so newly pushed images
+      are held until they pass scanning before becoming pullable.
+    rationale: >
+      Without quarantine, unscanned or vulnerable images become immediately
+      available to consumers, allowing known-bad images to be deployed into
+      production before any security gate runs.
+    severity: medium
+    categories:
+      - containers
+      - resilience
+    source:
+      engine: prowler
+      id: acr_quarantine_policy_enabled
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: sku.tier
+      value: Premium
+    passWhen:
+      op: equals
+      path: policies.quarantinePolicy.status
+      value: enabled
+    failMessage: Container registry quarantine policy is not enabled.
+    passMessage: Container registry quarantine policy is enabled.
+    remediation:
+      summary: Enable the quarantine policy on the Premium registry.
+      steps:
+        - Integrate an image scanner that lifts the quarantine after passing.
+        - Enable the quarantine policy on the registry (operator action).
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-faq
+  - id: CR-AZURE-ACR-104
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry enables customer-managed key encryption
+    description: >
+      Verifies that registry encryption with a customer-managed key (CMK) is
+      enabled.
+    rationale: >
+      Relying solely on platform-managed keys removes tenant control over key
+      rotation and revocation; a customer-managed key lets the organization
+      cryptographically revoke access to all stored images independently.
+    severity: medium
+    categories:
+      - containers
+      - encryption
+    source:
+      engine: prowler
+      id: acr_uses_customer_managed_keys
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: sku.tier
+      value: Premium
+    passWhen:
+      op: equals
+      path: encryption.status
+      value: enabled
+    failMessage: Container registry is not encrypted with a customer-managed key.
+    passMessage: Container registry uses customer-managed key encryption.
+    remediation:
+      summary: Enable customer-managed key encryption on the registry.
+      steps:
+        - Grant the registry managed identity access to a Key Vault key.
+        - Enable encryption with the customer-managed key (operator action).
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-customer-managed-keys
+  - id: CR-AZURE-ACR-105
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry enables zone redundancy
+    description: >
+      Verifies the container registry is deployed with zone redundancy for
+      availability-zone resilience.
+    rationale: >
+      A non-zone-redundant registry fails when its single availability zone has
+      an outage, blocking every image pull and stalling deployments and
+      autoscaling across the estate.
+    severity: low
+    categories:
+      - containers
+      - resilience
+    source:
+      engine: prowler
+      id: acr_zone_redundancy_enabled
+      license: Apache-2.0
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: sku.tier
+      value: Premium
+    passWhen:
+      op: equals
+      path: zoneRedundancy
+      value: Enabled
+    failMessage: Container registry zone redundancy is disabled.
+    passMessage: Container registry zone redundancy is enabled.
+    remediation:
+      summary: Recreate or replicate the registry with zone redundancy enabled.
+      steps:
+        - Provision a zone-redundant replication or registry (Premium SKU).
+        - Migrate image references to the zone-redundant registry.
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/zone-redundancy

@@ -1,0 +1,354 @@
+controls:
+  - id: CR-AZURE-KEYVAULT-100
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault uses RBAC authorization model
+    description: >
+      Verifies each key vault uses Azure RBAC (enableRbacAuthorization=true)
+      rather than the legacy vault access-policy model.
+    rationale: >
+      The legacy access-policy model grants coarse, standing permissions that
+      are hard to audit and cannot use PIM or conditional access. RBAC
+      centralises data-plane authorization and enables least-privilege,
+      time-bound access.
+    severity: medium
+    categories:
+      - keys
+      - identity
+    source:
+      engine: prowler
+      id: keyvault_rbac_enabled
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.enableRbacAuthorization
+      value: true
+    failMessage: Key vault uses the legacy access-policy model instead of Azure RBAC.
+    passMessage: Key vault uses the Azure RBAC authorization model.
+    remediation:
+      summary: Migrate the vault to the Azure RBAC permission model.
+      steps:
+        - Inventory existing access policies and map them to Azure RBAC role
+          assignments.
+        - Enable the RBAC authorization model on the vault (operator action).
+        - Assign least-privilege data-plane roles (e.g. Key Vault Secrets User)
+          to consumers.
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.5"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/rbac-guide
+  - id: CR-AZURE-KEYVAULT-101
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault disables public network access
+    description: >
+      Verifies each key vault has publicNetworkAccess set to Disabled so the
+      vault is reachable only over private endpoints.
+    rationale: >
+      A publicly reachable vault expands the attack surface to the entire
+      internet; disabling public network access forces access through private
+      networking and reduces exposure to credential-theft and exfiltration.
+    severity: high
+    categories:
+      - keys
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: keyvault_public_access_disabled
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Key vault allows public network access.
+    passMessage: Key vault has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the vault in the consuming VNet.
+        - Set publicNetworkAccess=Disabled on the vault (operator action).
+        - Validate that legitimate consumers still resolve the vault privately.
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.6"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/network-security
+  - id: CR-AZURE-KEYVAULT-102
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault firewall does not bypass all Azure services
+    description: >
+      Verifies the vault network ACL bypass is not the broad AzureServices value
+      when a default-deny firewall is in place.
+    rationale: >
+      A defaultAction of Deny is undermined if bypass is set to AzureServices,
+      which permits any trusted Microsoft service (across any tenant) to reach
+      the vault, weakening the intended network isolation.
+    severity: medium
+    categories:
+      - keys
+      - network
+    source:
+      engine: prowler
+      id: keyvault_specify_network_acl
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: properties.networkAcls.defaultAction
+      value: Deny
+    passWhen:
+      op: notEquals
+      path: properties.networkAcls.bypass
+      value: AzureServices
+    failMessage: Key vault firewall bypasses all Azure services despite a default-deny rule.
+    passMessage: Key vault firewall does not broadly bypass Azure services.
+    remediation:
+      summary: Set networkAcls.bypass to None and allowlist only required consumers.
+      steps:
+        - Identify which trusted services legitimately require access.
+        - Set networkAcls.bypass=None and add explicit
+          ipRules/virtualNetworkRules (operator action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.6"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/network-security
+  - id: CR-AZURE-KEYVAULT-103
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault soft-delete retention is at least 7 days
+    description: >
+      Verifies each key vault has soft delete enabled with a retention period of
+      at least the 7-day minimum.
+    rationale: >
+      A retention window that is too short (or soft delete disabled entirely)
+      leaves little time to detect and recover from accidental or malicious
+      deletion of keys and secrets before they are gone permanently.
+    severity: medium
+    categories:
+      - keys
+      - resilience
+    source:
+      engine: prowler
+      id: keyvault_recoverability_enabled
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: properties.enableSoftDelete
+          value: true
+        - op: gte
+          path: properties.softDeleteRetentionInDays
+          value: 7
+    failMessage: Key vault soft delete is disabled or retention is under 7 days.
+    passMessage: Key vault has soft delete with at least 7 days retention.
+    remediation:
+      summary: Enable soft delete with a retention period of 7 days or more.
+      steps:
+        - Enable soft delete on the vault if not already enabled.
+        - Set softDeleteRetentionInDays to at least 7 (up to 90) days (operator
+          action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.4"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/soft-delete-overview
+  - id: CR-AZURE-KEYVAULT-104
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault is not enabled for template deployment retrieval
+    description: >
+      Verifies enabledForTemplateDeployment is not true, so ARM templates cannot
+      retrieve secrets from the vault.
+    rationale: >
+      Allowing ARM template deployment to read secrets widens the set of
+      principals that can extract secret values and can leak them into
+      deployment history and logs.
+    severity: low
+    categories:
+      - keys
+      - identity
+    source:
+      engine: prowler
+      id: keyvault_not_enabled_for_template_deployment
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: notEquals
+      path: properties.enabledForTemplateDeployment
+      value: true
+    failMessage: Key vault is enabled for ARM template deployment secret retrieval.
+    passMessage: Key vault is not enabled for template deployment retrieval.
+    remediation:
+      summary: Disable enabledForTemplateDeployment unless explicitly required.
+      steps:
+        - Confirm no deployment pipeline depends on template access to this
+          vault.
+        - Set enabledForTemplateDeployment=false (operator action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/security-features
+  - id: CR-AZURE-KEYVAULT-105
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault is not enabled for VM deployment secret retrieval
+    description: >
+      Verifies enabledForDeployment is not true, so Azure VMs cannot retrieve
+      certificates stored as secrets from the vault.
+    rationale: >
+      Enabling deployment access lets any VM in the subscription pull
+      certificates from the vault, broadening exposure of sensitive material
+      beyond intended consumers.
+    severity: low
+    categories:
+      - keys
+      - identity
+    source:
+      engine: prowler
+      id: keyvault_not_enabled_for_deployment
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: notEquals
+      path: properties.enabledForDeployment
+      value: true
+    failMessage: Key vault is enabled for VM deployment secret retrieval.
+    passMessage: Key vault is not enabled for VM deployment retrieval.
+    remediation:
+      summary: Disable enabledForDeployment unless VMs specifically require it.
+      steps:
+        - Confirm no VM provisioning workflow relies on deployment access.
+        - Set enabledForDeployment=false (operator action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/security-features
+  - id: CR-AZURE-KEYVAULT-106
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault firewall has explicit network allow rules
+    description: >
+      Verifies that a default-deny key vault also defines at least one explicit
+      IP or virtual-network allow rule.
+    rationale: >
+      A default-deny vault with no allow rules signals either a misconfiguration
+      or reliance solely on bypass/private endpoints; explicit rules make the
+      intended access surface auditable and prevent accidental lockout via broad
+      bypass settings.
+    severity: low
+    categories:
+      - keys
+      - network
+    source:
+      engine: prowler
+      id: keyvault_specify_network_acl
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: properties.networkAcls.defaultAction
+      value: Deny
+    passWhen:
+      op: or
+      exprs:
+        - op: lengthGt
+          path: properties.networkAcls.ipRules
+          value: 0
+        - op: lengthGt
+          path: properties.networkAcls.virtualNetworkRules
+          value: 0
+    failMessage: Key vault denies by default but defines no explicit IP or VNet allow rules.
+    passMessage: Key vault defines explicit network allow rules.
+    remediation:
+      summary: Add explicit ipRules or virtualNetworkRules for legitimate consumers.
+      steps:
+        - Enumerate the networks that legitimately need vault access.
+        - Add corresponding ipRules and/or virtualNetworkRules (operator action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.6"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/network-security
+  - id: CR-AZURE-KEYVAULT-107
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault uses the Premium (HSM-backed) SKU
+    description: >
+      Verifies each key vault is provisioned with the premium SKU, enabling FIPS
+      140-2 Level 2 HSM-protected keys.
+    rationale: >
+      The standard SKU protects keys in software only. Premium enables
+      HSM-backed keys, giving stronger assurance for cryptographic material
+      protecting sensitive data and meeting stricter compliance requirements.
+    severity: low
+    categories:
+      - keys
+      - encryption
+    source:
+      engine: prowler
+      id: keyvault_key_protection_hsm
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.sku.name
+      value: premium
+    failMessage: Key vault uses the standard (software-only) SKU.
+    passMessage: Key vault uses the premium HSM-backed SKU.
+    remediation:
+      summary: Provision or upgrade the vault to the premium SKU for HSM-backed keys.
+      steps:
+        - Assess whether workloads require HSM-protected keys.
+        - Upgrade the vault SKU to premium (operator action).
+        - Recreate keys as HSM-protected where required.
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/skus

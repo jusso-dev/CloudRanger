@@ -1,0 +1,351 @@
+controls:
+  - id: CR-AZURE-DEFENDER-100
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Servers plan set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for VirtualMachines (Defender
+      for Servers) is Standard.
+    rationale: >
+      Without Defender for Servers, VMs lack threat detection, vulnerability
+      assessment and just-in-time access, leaving compromised hosts undetected.
+    severity: high
+    categories:
+      - logging
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_server_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: VirtualMachines
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Servers (VirtualMachines) is not set to the Standard tier.
+    passMessage: Defender for Servers is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Servers plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Servers plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.2
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-servers-introduction
+  - id: CR-AZURE-DEFENDER-101
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Storage plan set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for StorageAccounts is
+      Standard.
+    rationale: >
+      Defender for Storage detects malware uploads, anomalous access and
+      exfiltration attempts against blob and file data; without it these threats
+      go unmonitored.
+    severity: high
+    categories:
+      - storage
+      - logging
+      - public-exposure
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_storage_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: StorageAccounts
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Storage (StorageAccounts) is not set to the Standard tier.
+    passMessage: Defender for Storage is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Storage plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Storage plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.3
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-storage-introduction
+  - id: CR-AZURE-DEFENDER-102
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for SQL servers plan set to Standard
+    description: |
+      Verifies the Defender for Cloud pricing tier for SqlServers is Standard.
+    rationale: >
+      Defender for SQL surfaces SQL injection, anomalous logins and
+      vulnerability findings on Azure SQL databases; absent it, database attacks
+      are not detected.
+    severity: high
+    categories:
+      - database
+      - logging
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_sql_servers_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: SqlServers
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for SQL (SqlServers) is not set to the Standard tier.
+    passMessage: Defender for SQL is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for SQL plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the SQL databases plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.5
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-sql-introduction
+  - id: CR-AZURE-DEFENDER-103
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Key Vault plan set to Standard
+    description: |
+      Verifies the Defender for Cloud pricing tier for KeyVaults is Standard.
+    rationale: >
+      Defender for Key Vault detects unusual and potentially malicious access to
+      secrets, keys and certificates; without it, credential theft from vaults
+      goes unmonitored.
+    severity: high
+    categories:
+      - encryption
+      - identity
+      - logging
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_keyvault_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: KeyVaults
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Key Vault (KeyVaults) is not set to the Standard tier.
+    passMessage: Defender for Key Vault is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Key Vault plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Key Vault plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.9
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-key-vault-introduction
+  - id: CR-AZURE-DEFENDER-104
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Containers plan set to Standard
+    description: |
+      Verifies the Defender for Cloud pricing tier for Containers is Standard.
+    rationale: >
+      Defender for Containers provides runtime threat detection, image
+      vulnerability scanning and Kubernetes hardening; without it, container
+      workloads lack these protections.
+    severity: high
+    categories:
+      - logging
+      - resilience
+      - public-exposure
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_containers_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: Containers
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Containers is not set to the Standard tier.
+    passMessage: Defender for Containers is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Containers plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Containers plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.7
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-containers-introduction
+  - id: CR-AZURE-DEFENDER-105
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for App Service plan set to Standard
+    description: |
+      Verifies the Defender for Cloud pricing tier for AppServices is Standard.
+    rationale: >
+      Defender for App Service detects attacks targeting web apps such as
+      exploitation attempts and dangling DNS; without it, App Service attacks
+      are not surfaced.
+    severity: medium
+    categories:
+      - logging
+      - public-exposure
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_app_services_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: AppServices
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for App Service (AppServices) is not set to the Standard tier.
+    passMessage: Defender for App Service is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for App Service plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the App Service plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.4
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-app-service-introduction
+  - id: CR-AZURE-DEFENDER-106
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Defender for Cloud auto-provisioning of the monitoring agent is On
+    description: >
+      Verifies the subscription's default auto-provisioning setting is On so the
+      Log Analytics / monitoring agent is deployed automatically to hosts.
+    rationale: >
+      Without auto-provisioning, new and existing machines may lack the agent
+      Defender relies on, creating blind spots in threat detection and posture
+      coverage.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: defender_auto_provisioning_log_analytics_agent_vms_on
+      license: Apache-2.0
+    collector: azure.security.auto_provisioning
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: default
+          - op: equals
+            path: autoProvision
+            value: On
+    failMessage: Defender for Cloud auto-provisioning is not set to On.
+    passMessage: Defender for Cloud auto-provisioning is On.
+    remediation:
+      summary: Turn on auto-provisioning of the monitoring agent.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription > Auto
+          provisioning, set the monitoring agent to On.
+      verifyCommand: az security auto-provisioning-setting list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.14
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/monitoring-components

@@ -1,0 +1,294 @@
+[
+  {
+    "controlId": "CR-AZURE-COSMOSDB-100",
+    "cases": [
+      {
+        "name": "public access disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-prod",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod",
+                "location": "eastus",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "isVirtualNetworkFilterEnabled": true,
+                "ipRules": [],
+                "minimalTlsVersion": "Tls12",
+                "disableKeyBasedMetadataWriteAccess": true,
+                "backupPolicy": {
+                  "type": "Continuous"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public access enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-open",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-open",
+                "location": "eastus",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "isVirtualNetworkFilterEnabled": false,
+                "ipRules": [],
+                "minimalTlsVersion": "Tls",
+                "disableKeyBasedMetadataWriteAccess": false,
+                "backupPolicy": {
+                  "type": "Periodic"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-101",
+    "cases": [
+      {
+        "name": "local auth disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-rbac",
+                "location": "eastus",
+                "disableLocalAuth": true,
+                "publicNetworkAccess": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "local auth enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-keys",
+                "location": "eastus",
+                "disableLocalAuth": false,
+                "publicNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-102",
+    "cases": [
+      {
+        "name": "ip rules present passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-fw",
+                "location": "eastus",
+                "isVirtualNetworkFilterEnabled": false,
+                "ipRules": [
+                  {
+                    "ipAddressOrRange": "13.88.56.148"
+                  },
+                  {
+                    "ipAddressOrRange": "40.91.218.243"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "vnet filter enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-vnet",
+                "location": "eastus",
+                "isVirtualNetworkFilterEnabled": true,
+                "ipRules": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no firewall and no vnet fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-any",
+                "location": "eastus",
+                "isVirtualNetworkFilterEnabled": false,
+                "ipRules": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-103",
+    "cases": [
+      {
+        "name": "tls12 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-tls",
+                "location": "eastus",
+                "minimalTlsVersion": "Tls12"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legacy tls fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-oldtls",
+                "location": "eastus",
+                "minimalTlsVersion": "Tls"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-104",
+    "cases": [
+      {
+        "name": "metadata write disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-md",
+                "location": "eastus",
+                "disableKeyBasedMetadataWriteAccess": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "metadata write enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-mdopen",
+                "location": "eastus",
+                "disableKeyBasedMetadataWriteAccess": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-105",
+    "cases": [
+      {
+        "name": "continuous backup passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-cont",
+                "location": "eastus",
+                "backupPolicy": {
+                  "type": "Continuous",
+                  "continuousModeProperties": {
+                    "tier": "Continuous30Days"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "periodic backup fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-per",
+                "location": "eastus",
+                "backupPolicy": {
+                  "type": "Periodic",
+                  "periodicModeProperties": {
+                    "backupIntervalInMinutes": 240,
+                    "backupRetentionIntervalInHours": 8
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.logs.describe_log_groups
+    provider: aws
+    service: logs
+    description: All CloudWatch Logs log groups in a region, including retention and
+      KMS settings.
+    kind: single
+    command: aws logs describe-log-groups --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: >
+      Returns logGroups[]; each item has logGroupName, arn, storedBytes,
+      metricFilterCount. retentionInDays is absent when the group never expires.
+      kmsKeyId is absent when the group is not encrypted with a customer KMS
+      key. Requires logs:DescribeLogGroups.

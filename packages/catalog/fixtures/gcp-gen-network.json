@@ -1,0 +1,381 @@
+[
+  {
+    "controlId": "CR-GCP-NETWORK-100",
+    "cases": [
+      {
+        "name": "modern subnet-mode network passes",
+        "expected": "pass",
+        "resourceId": "prod-vpc",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod-vpc",
+                "autoCreateSubnetworks": false,
+                "routingConfig": {
+                  "routingMode": "REGIONAL"
+                },
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "creationTimestamp": "2024-01-10T09:00:00.000-08:00"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legacy network with IPv4Range fails",
+        "expected": "fail",
+        "resourceId": "legacy-net",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "legacy-net",
+                "IPv4Range": "10.240.0.0/16",
+                "gatewayIPv4": "10.240.0.1",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/p/global/networks/legacy-net",
+                "creationTimestamp": "2016-03-02T09:00:00.000-08:00"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-101",
+    "cases": [
+      {
+        "name": "non-default network passes",
+        "expected": "pass",
+        "resourceId": "prod-vpc",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod-vpc",
+                "autoCreateSubnetworks": false,
+                "routingConfig": {
+                  "routingMode": "REGIONAL"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "default network fails",
+        "expected": "fail",
+        "resourceId": "default",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "default",
+                "autoCreateSubnetworks": true,
+                "routingConfig": {
+                  "routingMode": "REGIONAL"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-102",
+    "cases": [
+      {
+        "name": "custom-mode network passes",
+        "expected": "pass",
+        "resourceId": "custom-vpc",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "custom-vpc",
+                "autoCreateSubnetworks": false,
+                "routingConfig": {
+                  "routingMode": "GLOBAL"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "auto-mode network fails",
+        "expected": "fail",
+        "resourceId": "auto-vpc",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "auto-vpc",
+                "autoCreateSubnetworks": true,
+                "routingConfig": {
+                  "routingMode": "REGIONAL"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legacy network not applicable",
+        "expected": "not_applicable",
+        "resourceId": "legacy-net",
+        "records": [
+          {
+            "collectorId": "gcp.compute.networks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "legacy-net",
+                "IPv4Range": "10.240.0.0/16",
+                "gatewayIPv4": "10.240.0.1"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-103",
+    "cases": [
+      {
+        "name": "flow logs enabled via logConfig passes",
+        "expected": "pass",
+        "resourceId": "subnet-a",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-a",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.0.0.0/24",
+                "privateIpGoogleAccess": true,
+                "purpose": "PRIVATE",
+                "stackType": "IPV4_ONLY",
+                "enableFlowLogs": true,
+                "logConfig": {
+                  "enable": true,
+                  "aggregationInterval": "INTERVAL_5_SEC",
+                  "flowSampling": 1,
+                  "metadata": "INCLUDE_ALL_METADATA"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "flow logs disabled fails",
+        "expected": "fail",
+        "resourceId": "subnet-b",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-b",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-east1",
+                "ipCidrRange": "10.0.1.0/24",
+                "privateIpGoogleAccess": false,
+                "purpose": "PRIVATE",
+                "stackType": "IPV4_ONLY"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "managed proxy subnet not applicable",
+        "expected": "not_applicable",
+        "resourceId": "proxy-subnet",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "proxy-subnet",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.129.0.0/23",
+                "purpose": "REGIONAL_MANAGED_PROXY",
+                "role": "ACTIVE"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-104",
+    "cases": [
+      {
+        "name": "full sampling and metadata passes",
+        "expected": "pass",
+        "resourceId": "subnet-a",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-a",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.0.0.0/24",
+                "purpose": "PRIVATE",
+                "logConfig": {
+                  "enable": true,
+                  "aggregationInterval": "INTERVAL_5_SEC",
+                  "flowSampling": 1,
+                  "metadata": "INCLUDE_ALL_METADATA"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "reduced sampling fails",
+        "expected": "fail",
+        "resourceId": "subnet-c",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-c",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.0.2.0/24",
+                "purpose": "PRIVATE",
+                "logConfig": {
+                  "enable": true,
+                  "aggregationInterval": "INTERVAL_10_MIN",
+                  "flowSampling": 0.5,
+                  "metadata": "EXCLUDE_ALL_METADATA"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "flow logs disabled not applicable",
+        "expected": "not_applicable",
+        "resourceId": "subnet-b",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-b",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-east1",
+                "ipCidrRange": "10.0.1.0/24",
+                "purpose": "PRIVATE"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-105",
+    "cases": [
+      {
+        "name": "private google access enabled passes",
+        "expected": "pass",
+        "resourceId": "subnet-a",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-a",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.0.0.0/24",
+                "privateIpGoogleAccess": true,
+                "purpose": "PRIVATE",
+                "stackType": "IPV4_ONLY"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "private google access disabled fails",
+        "expected": "fail",
+        "resourceId": "subnet-b",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "subnet-b",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-east1",
+                "ipCidrRange": "10.0.1.0/24",
+                "privateIpGoogleAccess": false,
+                "purpose": "PRIVATE",
+                "stackType": "IPV4_ONLY"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "managed proxy subnet not applicable",
+        "expected": "not_applicable",
+        "resourceId": "proxy-subnet",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "proxy-subnet",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/prod-vpc",
+                "region": "https://www.googleapis.com/compute/v1/projects/p/regions/us-central1",
+                "ipCidrRange": "10.129.0.0/23",
+                "purpose": "REGIONAL_MANAGED_PROXY",
+                "role": "ACTIVE"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

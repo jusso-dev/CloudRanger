@@ -1,0 +1,266 @@
+[
+  {
+    "controlId": "CR-GCP-DNS-100",
+    "cases": [
+      {
+        "name": "passes KSK using rsasha256",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "example-zone",
+                "dnsName": "example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails KSK using rsasha1",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "weak-ksk-zone",
+                "dnsName": "weak.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha1",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable when DNSSEC off",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-dnssec-zone",
+                "dnsName": "plain.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-101",
+    "cases": [
+      {
+        "name": "passes ZSK using rsasha256",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "example-zone",
+                "dnsName": "example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails ZSK using rsasha1",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "weak-zsk-zone",
+                "dnsName": "weak.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha1",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable when DNSSEC off",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-dnssec-zone",
+                "dnsName": "plain.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-102",
+    "cases": [
+      {
+        "name": "passes public zone with logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "logged-zone",
+                "dnsName": "example.com.",
+                "visibility": "public",
+                "cloudLoggingConfig": {
+                  "enableLogging": true,
+                  "kind": "dns#managedZoneCloudLoggingConfig"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails public zone with logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "unlogged-zone",
+                "dnsName": "quiet.example.com.",
+                "visibility": "public",
+                "cloudLoggingConfig": {
+                  "enableLogging": false,
+                  "kind": "dns#managedZoneCloudLoggingConfig"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for private zones",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "internal-zone",
+                "dnsName": "internal.example.",
+                "visibility": "private",
+                "cloudLoggingConfig": {
+                  "enableLogging": false,
+                  "kind": "dns#managedZoneCloudLoggingConfig"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

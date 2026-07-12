@@ -1,0 +1,311 @@
+controls:
+  - id: CR-AZURE-AKS-100
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has a network policy configured
+    description: >
+      Verifies each AKS cluster enforces a Kubernetes network policy
+      (networkProfile.networkPolicy is azure, calico, or cilium).
+    rationale: >
+      Without a network policy engine every pod can reach every other pod and
+      service, so a single compromised pod can move laterally across the whole
+      cluster unimpeded.
+    severity: medium
+    categories:
+      - kubernetes
+      - network
+    source:
+      engine: prowler
+      id: aks_network_policy_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: networkProfile.networkPolicy
+      values:
+        - azure
+        - calico
+        - cilium
+    failMessage: AKS cluster has no network policy engine configured.
+    passMessage: AKS cluster enforces a network policy.
+    remediation:
+      summary: Configure a network policy engine on the cluster.
+      steps:
+        - For new clusters set --network-policy azure|calico|cilium at creation.
+        - Existing clusters generally require a rebuild to add a network policy
+          engine.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/use-network-policies
+  - id: CR-AZURE-AKS-101
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS API server has authorized IP ranges configured
+    description: >
+      Verifies that clusters exposing a public API server restrict access with
+      authorized IP ranges (apiServerAccessProfile.authorizedIpRanges).
+    rationale: >
+      A public API server without an IP allow-list exposes Kubernetes
+      authentication and any control-plane CVE to the entire internet.
+    severity: high
+    categories:
+      - kubernetes
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: aks_cluster_authorized_ip_ranges_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: notEquals
+      path: apiServerAccessProfile.enablePrivateCluster
+      value: true
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: apiServerAccessProfile.authorizedIpRanges
+        - op: not
+          expr:
+            op: isEmpty
+            path: apiServerAccessProfile.authorizedIpRanges
+    failMessage: Public AKS API server has no authorized IP ranges configured.
+    passMessage: AKS API server access is restricted to authorized IP ranges.
+    remediation:
+      summary: Restrict API server access to known IP ranges (or use a private cluster).
+      steps:
+        - Set --api-server-authorized-ip-ranges to your trusted CIDRs.
+        - Prefer private clusters for new workloads.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/api-server-authorized-ip-ranges
+  - id: CR-AZURE-AKS-102
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has the Azure Policy add-on enabled
+    description: >
+      Verifies the Azure Policy add-on (addonProfiles.azurepolicy.enabled) is
+      enabled so Gatekeeper policies are enforced on the cluster.
+    rationale: >
+      Without the Azure Policy add-on there is no admission-time enforcement of
+      security guardrails, allowing privileged or non-compliant workloads to be
+      scheduled unchecked.
+    severity: medium
+    categories:
+      - kubernetes
+      - governance
+    source:
+      engine: prowler
+      id: aks_cluster_azure_policy_addon_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: addonProfiles.azurepolicy.enabled
+      value: true
+    failMessage: AKS cluster does not have the Azure Policy add-on enabled.
+    passMessage: AKS cluster has the Azure Policy add-on enabled.
+    remediation:
+      summary: Enable the azure-policy add-on on the cluster.
+      steps:
+        - Run az aks enable-addons --addons azure-policy for the cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://learn.microsoft.com/azure/governance/policy/concepts/policy-for-kubernetes
+  - id: CR-AZURE-AKS-103
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster ships logs to Log Analytics (monitoring add-on)
+    description: >
+      Verifies the Container Insights monitoring add-on
+      (addonProfiles.omsagent.enabled) is enabled for the cluster.
+    rationale: >
+      Without the monitoring add-on there is no centralized collection of
+      control-plane and container logs, leaving no reliable audit trail for
+      detecting or investigating cluster compromise.
+    severity: medium
+    categories:
+      - kubernetes
+      - logging
+    source:
+      engine: prowler
+      id: aks_cluster_monitoring_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: addonProfiles.omsagent.enabled
+      value: true
+    failMessage: AKS cluster does not have the monitoring (omsagent) add-on enabled.
+    passMessage: AKS cluster ships logs to Log Analytics.
+    remediation:
+      summary: Enable the monitoring add-on and point it at a Log Analytics workspace.
+      steps:
+        - Run az aks enable-addons --addons monitoring --workspace-resource-id
+          <workspace> for the cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - DE.CM
+    references:
+      - https://learn.microsoft.com/azure/aks/monitor-aks
+  - id: CR-AZURE-AKS-104
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has local accounts disabled
+    description: >
+      Verifies static local (client-certificate) admin accounts are disabled
+      (disableLocalAccounts is true) so all access flows through Azure AD.
+    rationale: >
+      Local accounts bypass Azure AD authentication and conditional access, and
+      their long-lived kubeconfig credentials cannot be centrally revoked if
+      leaked.
+    severity: high
+    categories:
+      - kubernetes
+      - identity
+    source:
+      engine: prowler
+      id: aks_cluster_local_accounts_disabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: disableLocalAccounts
+      value: true
+    failMessage: AKS cluster allows static local admin accounts.
+    passMessage: AKS cluster has local accounts disabled.
+    remediation:
+      summary: Disable local accounts so access is Azure AD only.
+      steps:
+        - Run az aks update --disable-local-accounts for the cluster.
+        - Ensure Azure AD integration is configured first so admins retain
+          access.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/manage-local-accounts-managed-azure-ad
+  - id: CR-AZURE-AKS-105
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster uses managed Azure AD integration
+    description: >
+      Verifies the cluster uses AKS-managed Azure AD (aadProfile.managed is
+      true) for authentication.
+    rationale: >
+      Managed Azure AD integration centralizes cluster authentication under
+      Azure AD identities and conditional access, replacing unmanaged or legacy
+      auth that cannot be centrally governed.
+    severity: high
+    categories:
+      - kubernetes
+      - identity
+    source:
+      engine: prowler
+      id: aks_cluster_rbac_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: aadProfile.managed
+      value: true
+    failMessage: AKS cluster does not use managed Azure AD integration.
+    passMessage: AKS cluster uses managed Azure AD integration.
+    remediation:
+      summary: Enable AKS-managed Azure AD integration on the cluster.
+      steps:
+        - Run az aks update --enable-aad --aad-admin-group-object-ids <groups>
+          for the cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/managed-azure-ad
+  - id: CR-AZURE-AKS-106
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster enforces Azure RBAC for Kubernetes authorization
+    description: >
+      Verifies Azure RBAC for Kubernetes is enabled (aadProfile.enableAzureRbac
+      is true) so authorization is managed with Azure role assignments.
+    rationale: >
+      Azure RBAC for Kubernetes lets you manage cluster authorization with Azure
+      role assignments and conditional access, giving centralized, auditable,
+      and revocable permission management instead of in-cluster-only bindings.
+    severity: medium
+    categories:
+      - kubernetes
+      - identity
+    source:
+      engine: prowler
+      id: aks_cluster_azure_rbac_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: aadProfile.managed
+      value: true
+    passWhen:
+      op: equals
+      path: aadProfile.enableAzureRbac
+      value: true
+    failMessage: AKS cluster does not enforce Azure RBAC for Kubernetes.
+    passMessage: AKS cluster enforces Azure RBAC for Kubernetes authorization.
+    remediation:
+      summary: Enable Azure RBAC for Kubernetes authorization on the cluster.
+      steps:
+        - Run az aks update --enable-azure-rbac for the cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/manage-azure-rbac

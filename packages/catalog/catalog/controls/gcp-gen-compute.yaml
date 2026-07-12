@@ -1,0 +1,627 @@
+controls:
+  - id: CR-GCP-COMPUTE-100
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has no public IP address
+    description: >
+      Verifies that no network interface on the instance has an external access
+      config (which assigns a public/ephemeral or static external IP).
+    rationale: >
+      A public IP makes the instance directly reachable and scannable from the
+      internet, expanding the attack surface for any exposed service.
+    severity: high
+    categories:
+      - compute
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_public_ip_shodan
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: networkInterfaces
+      condition:
+        op: exists
+        path: accessConfigs
+    failMessage: Instance has a network interface with an external IP.
+    passMessage: Instance has no external IP (private only).
+    remediation:
+      summary: Remove external access configs and use Cloud NAT / IAP for egress and
+        access.
+      steps:
+        - Delete the external accessConfig from each network interface (operator
+          action).
+        - Use Identity-Aware Proxy or a bastion for administrative access.
+        - Use Cloud NAT for outbound internet if required.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address
+  - id: CR-GCP-COMPUTE-101
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance enforces OS Login via metadata
+    description: >
+      Verifies enable-oslogin is set true in the instance's own metadata so SSH
+      access is bound to IAM identities.
+    rationale: >
+      OS Login centralises SSH access control and audit under IAM; without it,
+      access relies on scattered SSH keys with no central lifecycle.
+    severity: medium
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_instance_oslogin_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: anyItem
+      path: metadata.items
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: key
+            value: enable-oslogin
+          - op: in
+            path: value
+            values:
+              - "TRUE"
+              - "true"
+              - "True"
+              - "1"
+              - true
+    failMessage: Instance does not enable OS Login in its metadata.
+    passMessage: Instance enforces OS Login.
+    remediation:
+      summary: Set enable-oslogin=TRUE in instance metadata (or enforce project-wide).
+      steps:
+        - Add enable-oslogin TRUE to the instance metadata (operator action).
+        - Prefer enforcing OS Login at the project level for consistency.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.4"
+    references:
+      - https://cloud.google.com/compute/docs/oslogin
+  - id: CR-GCP-COMPUTE-102
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has Shielded VM Secure Boot enabled
+    description: Verifies shieldedInstanceConfig.enableSecureBoot is true on the instance.
+    rationale: >
+      Secure Boot ensures only signed, trusted boot components load, blocking
+      boot-level malware and unsigned kernel drivers.
+    severity: medium
+    categories:
+      - compute
+      - integrity
+    source:
+      engine: prowler
+      id: compute_instance_shielded_vm_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: equals
+      path: shieldedInstanceConfig.enableSecureBoot
+      value: true
+    failMessage: Instance does not have Shielded VM Secure Boot enabled.
+    passMessage: Shielded VM Secure Boot is enabled.
+    remediation:
+      summary: Enable Secure Boot (requires instance stop; image must support it).
+      steps:
+        - Stop the instance and enable Secure Boot in Shielded VM options
+          (operator action).
+        - Ensure the boot image supports Secure Boot (UEFI-compatible).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.8"
+    references:
+      - https://cloud.google.com/security/shielded-cloud/shielded-vm
+  - id: CR-GCP-COMPUTE-103
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance service account is not granted full cloud-platform scope
+    description: >
+      Verifies no attached service account is granted the broad
+      https://www.googleapis.com/auth/cloud-platform access scope.
+    rationale: >
+      The cloud-platform scope permits the instance to call every Google Cloud
+      API the service account is authorised for, so a compromise inherits the
+      full IAM surface rather than a scoped set of APIs.
+    severity: high
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_instance_default_service_account_in_use
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: serviceAccounts
+      condition:
+        op: contains
+        path: scopes
+        value: https://www.googleapis.com/auth/cloud-platform
+    failMessage: Instance service account has full cloud-platform API scope.
+    passMessage: Instance uses restricted service account scopes.
+    remediation:
+      summary: Replace cloud-platform with narrow scopes matched to the workload.
+      steps:
+        - Determine the minimum API scopes the workload needs.
+        - Stop the instance and set specific scopes instead of cloud-platform
+          (operator action).
+        - Prefer IAM roles on a dedicated service account over broad scopes.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.2"
+    references:
+      - https://cloud.google.com/compute/docs/access/service-accounts#scopes_best_practice
+  - id: CR-GCP-COMPUTE-104
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Confidential Computing is enabled on the instance
+    description: >
+      Verifies confidentialInstanceConfig.enableConfidentialCompute is true so
+      memory is encrypted in use.
+    rationale: >
+      Confidential VMs encrypt data in use, protecting sensitive workloads from
+      inspection by the hypervisor or a compromised host.
+    severity: low
+    categories:
+      - compute
+      - encryption
+    source:
+      engine: prowler
+      id: compute_instance_confidential_computing_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: equals
+      path: confidentialInstanceConfig.enableConfidentialCompute
+      value: true
+    failMessage: Instance does not have Confidential Computing enabled.
+    passMessage: Confidential Computing is enabled.
+    remediation:
+      summary: Recreate the instance as a Confidential VM on a supported machine type.
+      steps:
+        - Choose a Confidential Computing supported machine type (e.g. N2D/C2D).
+        - Recreate the instance with Confidential Computing enabled (operator
+          action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview
+  - id: CR-GCP-COMPUTE-105
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance metadata does not contain plaintext SSH keys
+    description: >
+      Verifies the instance metadata has no ssh-keys (or legacy sshKeys) entry,
+      which would define per-instance keys outside OS Login.
+    rationale: >
+      Instance-level SSH keys in metadata bypass IAM-based OS Login and are hard
+      to rotate or audit, becoming stale standing credentials.
+    severity: medium
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_instance_oslogin_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: metadata.items
+      condition:
+        op: in
+        path: key
+        values:
+          - ssh-keys
+          - sshKeys
+    failMessage: Instance metadata defines plaintext SSH keys.
+    passMessage: Instance metadata has no plaintext SSH keys.
+    remediation:
+      summary: Remove ssh-keys/sshKeys metadata and use OS Login instead.
+      steps:
+        - Delete the ssh-keys and sshKeys metadata entries (operator action).
+        - Enable OS Login to manage SSH access via IAM.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.3"
+    references:
+      - https://cloud.google.com/compute/docs/connect/add-ssh-keys
+  - id: CR-GCP-COMPUTE-106
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Project blocks serial port access by default
+    description: >
+      Verifies serial-port-enable is not set true in project-wide compute
+      metadata.
+    rationale: >
+      Enabling serial port access at the project level exposes interactive
+      console access on every instance, bypassing network-based controls.
+    severity: medium
+    categories:
+      - compute
+      - network
+    source:
+      engine: prowler
+      id: compute_project_serial_ports_disabled
+      license: Apache-2.0
+    collector: gcp.compute.project_info
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: commonInstanceMetadata.items
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: key
+            value: serial-port-enable
+          - op: in
+            path: value
+            values:
+              - "true"
+              - "TRUE"
+              - "True"
+              - "1"
+              - true
+    failMessage: Project enables interactive serial port access by default.
+    passMessage: Project does not enable serial port access by default.
+    remediation:
+      summary: Remove or set serial-port-enable=false in project metadata.
+      steps:
+        - Update project-wide metadata to disable serial port access (operator
+          action).
+      verifyCommand: gcloud compute project-info describe --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.5"
+    references:
+      - https://cloud.google.com/compute/docs/instances/interacting-with-serial-console
+  - id: CR-GCP-COMPUTE-107
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance disks use customer-managed encryption keys
+    description: >
+      Verifies every attached disk declares a diskEncryptionKey (CSEK or CMEK
+      via Cloud KMS) rather than only Google-managed default encryption.
+    rationale: >
+      Customer-managed keys give control over key rotation and revocation, so
+      access to disk data can be centrally cut off during an incident.
+    severity: low
+    categories:
+      - compute
+      - encryption
+    source:
+      engine: prowler
+      id: compute_instance_encryption_with_csek_disabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: allItems
+      path: disks
+      condition:
+        op: exists
+        path: diskEncryptionKey
+    failMessage: One or more disks rely on default Google-managed encryption only.
+    passMessage: All disks use customer-managed encryption keys.
+    remediation:
+      summary: Recreate disks with a Cloud KMS (CMEK) or customer-supplied (CSEK) key.
+      steps:
+        - Create disks encrypted with a KMS key or customer-supplied key
+          (operator action).
+        - Migrate data from default-encrypted disks and detach them.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.7"
+    references:
+      - https://cloud.google.com/compute/docs/disks/customer-managed-encryption
+  - id: CR-GCP-COMPUTE-108
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance does not enable serial port access
+    description: >
+      Verifies serial-port-enable is not true in the instance's own metadata,
+      complementing the project-level default check.
+    rationale: >
+      An instance can re-enable serial console access even when the project
+      default disables it, restoring an out-of-band access path.
+    severity: medium
+    categories:
+      - compute
+      - network
+    source:
+      engine: prowler
+      id: compute_instance_serial_ports_in_use
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: metadata.items
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: key
+            value: serial-port-enable
+          - op: in
+            path: value
+            values:
+              - "true"
+              - "TRUE"
+              - "True"
+              - "1"
+              - true
+    failMessage: Instance re-enables interactive serial port access.
+    passMessage: Instance does not enable serial port access.
+    remediation:
+      summary: Remove or set serial-port-enable=false in instance metadata.
+      steps:
+        - Update the instance metadata to disable serial port access (operator
+          action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.5"
+    references:
+      - https://cloud.google.com/compute/docs/instances/interacting-with-serial-console
+  - id: CR-GCP-COMPUTE-109
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has all Shielded VM protections enabled
+    description: >
+      Verifies Secure Boot, vTPM, and integrity monitoring are all enabled,
+      giving the full Shielded VM protection set.
+    rationale: >
+      Only the complete Shielded VM set (Secure Boot + vTPM + integrity
+      monitoring) provides measured, verified boot with tamper detection.
+    severity: medium
+    categories:
+      - compute
+      - integrity
+    source:
+      engine: prowler
+      id: compute_instance_shielded_vm_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: shieldedInstanceConfig.enableSecureBoot
+          value: true
+        - op: equals
+          path: shieldedInstanceConfig.enableVtpm
+          value: true
+        - op: equals
+          path: shieldedInstanceConfig.enableIntegrityMonitoring
+          value: true
+    failMessage: Instance is missing one or more Shielded VM protections.
+    passMessage: All Shielded VM protections are enabled.
+    remediation:
+      summary: Enable Secure Boot, vTPM and integrity monitoring (requires instance
+        stop).
+      steps:
+        - Stop the instance and enable all three Shielded VM options (operator
+          action).
+        - Ensure the boot image supports Secure Boot.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.8"
+    references:
+      - https://cloud.google.com/security/shielded-cloud/shielded-vm
+  - id: CR-GCP-COMPUTE-110
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance service account does not use deprecated broad scopes
+    description: >
+      Verifies no attached service account is granted legacy broad scopes such
+      as the read/write compute or full storage scopes.
+    rationale: >
+      Legacy aliases like compute-rw and full storage scopes grant far more API
+      access than most workloads need, widening blast radius on compromise.
+    severity: medium
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_instance_default_service_account_in_use
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: serviceAccounts
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: scopes
+            value: https://www.googleapis.com/auth/compute
+          - op: contains
+            path: scopes
+            value: https://www.googleapis.com/auth/devstorage.full_control
+    failMessage: Instance service account uses overly broad legacy scopes.
+    passMessage: Instance service account avoids broad legacy scopes.
+    remediation:
+      summary: Replace broad scopes with narrow read-only or task-specific scopes.
+      steps:
+        - Identify the minimum scopes the workload needs.
+        - Stop the instance and set narrow scopes (operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.2"
+    references:
+      - https://cloud.google.com/compute/docs/access/service-accounts#scopes_best_practice
+  - id: CR-GCP-COMPUTE-111
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Running instance has deletion protection enabled
+    description: >
+      Verifies deletionProtection is true on running instances to guard against
+      accidental or malicious termination.
+    rationale: >
+      Without deletion protection a single API call can destroy a production
+      instance, causing outage and potential data loss.
+    severity: low
+    categories:
+      - compute
+      - resilience
+    source:
+      engine: prowler
+      id: compute_instance_default_service_account_in_use
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: startsWith
+            path: name
+            value: gke-
+        - op: equals
+          path: status
+          value: RUNNING
+    passWhen:
+      op: equals
+      path: deletionProtection
+      value: true
+    failMessage: Running instance does not have deletion protection enabled.
+    passMessage: Instance has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the instance.
+      steps:
+        - Set deletion protection on the instance (operator action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/compute/docs/instances/preventing-accidental-vm-deletion

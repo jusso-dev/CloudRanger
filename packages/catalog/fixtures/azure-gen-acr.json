@@ -1,0 +1,443 @@
+[
+  {
+    "controlId": "CR-AZURE-ACR-100",
+    "cases": [
+      {
+        "name": "anonymous pull disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "adminUserEnabled": false,
+                "anonymousPullEnabled": false,
+                "publicNetworkAccess": "Disabled",
+                "loginServer": "reg1.azurecr.io",
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "anonymous pull enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "adminUserEnabled": false,
+                "anonymousPullEnabled": true,
+                "publicNetworkAccess": "Enabled",
+                "loginServer": "reg2.azurecr.io",
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-101",
+    "cases": [
+      {
+        "name": "public network disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "publicNetworkAccess": "Disabled",
+                "adminUserEnabled": false,
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "publicNetworkAccess": "Enabled",
+                "adminUserEnabled": false,
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-102",
+    "cases": [
+      {
+        "name": "default deny passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "ipRules": [
+                    {
+                      "action": "Allow",
+                      "ipAddressOrRange": "203.0.113.10"
+                    }
+                  ]
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "default allow fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Allow",
+                  "ipRules": []
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no network rule set (basic sku) not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg3",
+                "name": "reg3",
+                "location": "eastus",
+                "sku": {
+                  "name": "Basic",
+                  "tier": "Basic"
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-103",
+    "cases": [
+      {
+        "name": "quarantine enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "policies": {
+                  "quarantinePolicy": {
+                    "status": "enabled"
+                  },
+                  "trustPolicy": {
+                    "type": "Notary",
+                    "status": "disabled"
+                  },
+                  "retentionPolicy": {
+                    "days": 7,
+                    "status": "disabled"
+                  }
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "quarantine disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "policies": {
+                  "quarantinePolicy": {
+                    "status": "disabled"
+                  },
+                  "trustPolicy": {
+                    "type": "Notary",
+                    "status": "disabled"
+                  }
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "non-premium not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg3",
+                "name": "reg3",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-104",
+    "cases": [
+      {
+        "name": "cmk encryption enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "encryption": {
+                  "status": "enabled",
+                  "keyVaultProperties": {
+                    "keyIdentifier": "https://kv.vault.azure.net/keys/acrkey",
+                    "identity": "/subscriptions/s1/.../userAssignedIdentities/mi"
+                  }
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "cmk encryption disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "encryption": {
+                  "status": "disabled"
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "non-premium not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg3",
+                "name": "reg3",
+                "location": "eastus",
+                "sku": {
+                  "name": "Basic",
+                  "tier": "Basic"
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-105",
+    "cases": [
+      {
+        "name": "zone redundancy enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg1",
+                "name": "reg1",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "zoneRedundancy": "Enabled",
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "zone redundancy disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg2",
+                "name": "reg2",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium"
+                },
+                "zoneRedundancy": "Disabled",
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "non-premium not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/reg3",
+                "name": "reg3",
+                "location": "eastus",
+                "sku": {
+                  "name": "Basic",
+                  "tier": "Basic"
+                },
+                "provisioningState": "Succeeded"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

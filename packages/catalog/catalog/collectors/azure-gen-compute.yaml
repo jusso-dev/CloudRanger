@@ -1,0 +1,29 @@
+collectors:
+  - id: azure.disk.list
+    provider: azure
+    service: compute
+    description: All managed disks in the subscription (encryption type, disk state).
+    kind: single
+    command: az disk list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Read-only. Returns a JSON array at the root. Each disk has encryption.type
+      (EncryptionAtRestWithPlatformKey / EncryptionAtRestWithCustomerKey /
+      EncryptionAtRestWithPlatformAndCustomerKeys) and networkAccessPolicy /
+      publicNetworkAccess fields.
+  - id: azure.vm.list_ip_addresses
+    provider: azure
+    service: compute
+    description: |
+      Per-VM network profile with resolved public and private IP addresses.
+    kind: single
+    command: az vm list-ip-addresses --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Read-only. Returns a JSON array; each element is { virtualMachine: { name,
+      network: { publicIpAddresses: [...], privateIpAddresses: [...] } } }.
+      publicIpAddresses is empty/absent when no public IP is attached to any
+      NIC. This is the authoritative way to detect a directly-attached public IP
+      because `az vm list` only stores unresolved NIC id references.

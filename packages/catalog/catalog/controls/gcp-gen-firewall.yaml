@@ -1,0 +1,426 @@
+controls:
+  - id: CR-GCP-FIREWALL-100
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: No firewall rule allows SSH (22/tcp) from the internet
+    description: >
+      No enabled ingress firewall rule permits TCP port 22 from a public source
+      range such as 0.0.0.0/0.
+    rationale: >
+      World-open SSH across a VPC exposes every matching instance to brute force
+      and remote exploitation and is a standard initial-access vector.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_firewall_ssh_access_from_the_internet_allowed
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: equals
+            path: disabled
+            value: true
+        - op: equals
+          path: direction
+          value: INGRESS
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: anyItem
+            path: sourceRanges
+            condition:
+              op: isPublicCidr
+              path: $
+          - op: anyItem
+            path: allowed
+            condition:
+              op: and
+              exprs:
+                - op: in
+                  path: IPProtocol
+                  values:
+                    - tcp
+                    - all
+                - op: or
+                  exprs:
+                    - op: notExists
+                      path: ports
+                    - op: portStringIncludes
+                      path: ports
+                      value: 22
+    failMessage: Firewall rule allows SSH (22/tcp) from the internet.
+    passMessage: Firewall rule does not open SSH to the internet.
+    remediation:
+      summary: Restrict SSH sources or use IAP TCP forwarding.
+      steps:
+        - Prefer Identity-Aware Proxy TCP forwarding for administrative access.
+        - Replace 0.0.0.0/0 in sourceRanges with specific trusted CIDRs
+          (operator action).
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.6"
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+      - https://cloud.google.com/vpc/docs/firewall-rules-logging
+  - id: CR-GCP-FIREWALL-101
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: No firewall rule allows RDP (3389/tcp) from the internet
+    description: >
+      No enabled ingress firewall rule permits TCP port 3389 from a public
+      source range such as 0.0.0.0/0.
+    rationale: >
+      Internet-exposed RDP is a leading ransomware and credential-stuffing entry
+      point into Windows workloads.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_firewall_rdp_access_from_the_internet_allowed
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: equals
+            path: disabled
+            value: true
+        - op: equals
+          path: direction
+          value: INGRESS
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: anyItem
+            path: sourceRanges
+            condition:
+              op: isPublicCidr
+              path: $
+          - op: anyItem
+            path: allowed
+            condition:
+              op: and
+              exprs:
+                - op: in
+                  path: IPProtocol
+                  values:
+                    - tcp
+                    - all
+                - op: or
+                  exprs:
+                    - op: notExists
+                      path: ports
+                    - op: portStringIncludes
+                      path: ports
+                      value: 3389
+    failMessage: Firewall rule allows RDP (3389/tcp) from the internet.
+    passMessage: Firewall rule does not open RDP to the internet.
+    remediation:
+      summary: Restrict RDP sources or use IAP TCP forwarding.
+      steps:
+        - Prefer Identity-Aware Proxy TCP forwarding for administrative access.
+        - Replace 0.0.0.0/0 in sourceRanges with specific trusted CIDRs
+          (operator action).
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.7"
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+      - https://cloud.google.com/vpc/docs/firewall-rules-logging
+  - id: CR-GCP-FIREWALL-102
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: No firewall rule allows unrestricted ingress to all ports from the internet
+    description: >
+      No enabled ingress firewall rule permits every protocol/port (IPProtocol
+      "all", or a protocol with no ports restriction) from a public source range
+      such as 0.0.0.0/0.
+    rationale: >
+      An allow-all ingress rule from the internet fully exposes matching
+      instances, negating any per-service hardening and enabling lateral
+      movement and data exfiltration.
+    severity: critical
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_firewall_rule_open_to_the_internet
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: equals
+            path: disabled
+            value: true
+        - op: equals
+          path: direction
+          value: INGRESS
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: anyItem
+            path: sourceRanges
+            condition:
+              op: isPublicCidr
+              path: $
+          - op: anyItem
+            path: allowed
+            condition:
+              op: or
+              exprs:
+                - op: equals
+                  path: IPProtocol
+                  value: all
+                - op: and
+                  exprs:
+                    - op: in
+                      path: IPProtocol
+                      values:
+                        - tcp
+                        - udp
+                    - op: notExists
+                      path: ports
+    failMessage: Firewall rule allows unrestricted ingress (all ports) from the internet.
+    passMessage: No firewall rule opens all ports to the internet.
+    remediation:
+      summary: Replace allow-all rules with least-privilege, port-scoped rules.
+      steps:
+        - Delete or scope any rule allowing IPProtocol "all" from 0.0.0.0/0
+          (operator action).
+        - Specify explicit protocols and ports for the services that must be
+          reachable.
+        - Restrict sourceRanges to known trusted CIDRs.
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.6"
+          - "3.7"
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+      - https://cloud.google.com/vpc/docs/using-firewalls
+  - id: CR-GCP-FIREWALL-103
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: Firewall rule logging is enabled
+    description: >
+      Every enabled firewall rule has firewall rules logging turned on via
+      logConfig.enable so connection metadata is recorded.
+    rationale: >
+      Without firewall rules logging there is no record of allowed/denied
+      connections, crippling incident investigation and traffic auditing.
+    severity: low
+    categories:
+      - logging
+      - network
+    source:
+      engine: prowler
+      id: compute_firewall_rule_logging_enabled
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: equals
+        path: disabled
+        value: true
+    passWhen:
+      op: equals
+      path: logConfig.enable
+      value: true
+    failMessage: Firewall rule does not have logging (logConfig.enable) turned on.
+    passMessage: Firewall rule logging is enabled.
+    remediation:
+      summary: Enable logConfig on the firewall rule.
+      steps:
+        - Enable logging on the rule (operator action) so connection records are
+          captured.
+        - Route firewall logs to a sink retained per your logging policy.
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/vpc/docs/firewall-rules-logging
+      - https://cloud.google.com/firewall/docs/firewalls
+  - id: CR-GCP-FIREWALL-104
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: No firewall rule allows database ports from the internet
+    description: >
+      No enabled ingress firewall rule permits common database ports (MySQL
+      3306, PostgreSQL 5432, MSSQL 1433, MongoDB 27017, Redis 6379) from a
+      public source range such as 0.0.0.0/0.
+    rationale: >
+      Internet-reachable database ports expose credentials and data directly to
+      opportunistic scanning and are a frequent cause of data breaches.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+      - storage
+    source:
+      engine: prowler
+      id: compute_firewall_rule_open_to_the_internet
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: equals
+            path: disabled
+            value: true
+        - op: equals
+          path: direction
+          value: INGRESS
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: anyItem
+            path: sourceRanges
+            condition:
+              op: isPublicCidr
+              path: $
+          - op: anyItem
+            path: allowed
+            condition:
+              op: and
+              exprs:
+                - op: in
+                  path: IPProtocol
+                  values:
+                    - tcp
+                    - all
+                - op: or
+                  exprs:
+                    - op: notExists
+                      path: ports
+                    - op: portStringIncludes
+                      path: ports
+                      value: 3306
+                    - op: portStringIncludes
+                      path: ports
+                      value: 5432
+                    - op: portStringIncludes
+                      path: ports
+                      value: 1433
+                    - op: portStringIncludes
+                      path: ports
+                      value: 27017
+                    - op: portStringIncludes
+                      path: ports
+                      value: 6379
+    failMessage: Firewall rule allows a database port from the internet.
+    passMessage: Firewall rule does not open database ports to the internet.
+    remediation:
+      summary: Never expose database ports to 0.0.0.0/0.
+      steps:
+        - Restrict sourceRanges to application-tier CIDRs only (operator action).
+        - Use Private Service Connect or private IP for managed databases.
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.6"
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+      - https://cloud.google.com/sql/docs/mysql/private-ip
+  - id: CR-GCP-FIREWALL-105
+    version: 1.0.0
+    provider: gcp
+    service: firewall
+    title: No enabled firewall rule uses legacy source tags for ingress control
+    description: >
+      No enabled ingress firewall rule relies on sourceTags for access control;
+      secure-tag or service-account based targeting is preferred.
+    rationale: >
+      sourceTags are network tags that any project editor can attach to an
+      instance, so tag-scoped ingress can be trivially widened, undermining the
+      intended trust boundary.
+    severity: medium
+    categories:
+      - network
+      - identity
+    source:
+      engine: prowler
+      id: compute_firewall_rule_source_tags_used
+      license: Apache-2.0
+    collector: gcp.compute.firewall_rules_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: not
+          expr:
+            op: equals
+            path: disabled
+            value: true
+        - op: equals
+          path: direction
+          value: INGRESS
+    passWhen:
+      op: or
+      exprs:
+        - op: notExists
+          path: sourceTags
+        - op: isEmpty
+          path: sourceTags
+    failMessage: Firewall rule uses legacy sourceTags for ingress control.
+    passMessage: Firewall rule does not rely on legacy sourceTags.
+    remediation:
+      summary: Replace network sourceTags with service accounts or secure tags.
+      steps:
+        - Rewrite the rule to use sourceServiceAccounts or IAM-governed secure
+          tags (operator action).
+        - Remove sourceTags from the rule once replacement targeting is verified.
+      verifyCommand: gcloud compute firewall-rules list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/firewall/docs/firewalls
+      - https://cloud.google.com/vpc/docs/tags-firewalls-overview

@@ -1,0 +1,322 @@
+[
+  {
+    "controlId": "CR-AWS-SAGEMAKER-001",
+    "cases": [
+      {
+        "name": "pass direct internet access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-secure",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-secure",
+              "NotebookInstanceName": "nb-secure",
+              "NotebookInstanceStatus": "InService",
+              "Url": "nb-secure.notebook.us-east-1.sagemaker.aws",
+              "InstanceType": "ml.t3.medium",
+              "SubnetId": "subnet-0a1b2c3d",
+              "SecurityGroups": ["sg-0123456789abcdef0"],
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 20,
+              "RootAccess": "Disabled",
+              "InstanceMetadataServiceConfiguration": {
+                "MinimumInstanceMetadataServiceVersion": "2"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-11T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail direct internet access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-open",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-open",
+              "NotebookInstanceName": "nb-open",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Enabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Enabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not_applicable deleted instance",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-gone",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ValidationException) when calling the DescribeNotebookInstance operation: RecordNotFound: Cannot find notebook instance nb-gone."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-002",
+    "cases": [
+      {
+        "name": "pass kms key present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-secure",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-secure",
+              "NotebookInstanceName": "nb-secure",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 20,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-11T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no kms key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-plain",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-plain",
+              "NotebookInstanceName": "nb-plain",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-003",
+    "cases": [
+      {
+        "name": "pass subnet present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-vpc",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-vpc",
+              "NotebookInstanceName": "nb-vpc",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "SubnetId": "subnet-0a1b2c3d",
+              "SecurityGroups": ["sg-0123456789abcdef0"],
+              "NetworkInterfaceId": "eni-0abc1234",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 20,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-11T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no subnet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-novpc",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-novpc",
+              "NotebookInstanceName": "nb-novpc",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Enabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-004",
+    "cases": [
+      {
+        "name": "pass root access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-secure",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-secure",
+              "NotebookInstanceName": "nb-secure",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 20,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-11T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail root access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-root",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-root",
+              "NotebookInstanceName": "nb-root",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Enabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-005",
+    "cases": [
+      {
+        "name": "pass imdsv2 required",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-secure",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-secure",
+              "NotebookInstanceName": "nb-secure",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 20,
+              "RootAccess": "Disabled",
+              "InstanceMetadataServiceConfiguration": {
+                "MinimumInstanceMetadataServiceVersion": "2"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-11T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail imdsv1 allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-imds1",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-imds1",
+              "NotebookInstanceName": "nb-imds1",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Disabled",
+              "InstanceMetadataServiceConfiguration": {
+                "MinimumInstanceMetadataServiceVersion": "1"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail imds config absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_notebook_instance",
+            "region": "us-east-1",
+            "resourceKey": "nb-noimds",
+            "exitCode": 0,
+            "output": {
+              "NotebookInstanceArn": "arn:aws:sagemaker:us-east-1:111122223333:notebook-instance/nb-noimds",
+              "NotebookInstanceName": "nb-noimds",
+              "NotebookInstanceStatus": "InService",
+              "InstanceType": "ml.t3.medium",
+              "RoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "DirectInternetAccess": "Disabled",
+              "VolumeSizeInGB": 5,
+              "RootAccess": "Disabled",
+              "CreationTime": "2026-01-10T12:00:00Z",
+              "LastModifiedTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

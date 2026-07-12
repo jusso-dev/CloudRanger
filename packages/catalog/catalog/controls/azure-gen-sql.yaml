@@ -1,0 +1,467 @@
+controls:
+  - id: CR-AZURE-SQL-100
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server public network access is disabled
+    description: Verifies each Azure SQL logical server has publicNetworkAccess set
+      to Disabled.
+    rationale: >
+      Publicly reachable SQL endpoints expose the authentication surface to the
+      entire internet; disabling public network access forces private
+      connectivity and removes broad exposure to credential-stuffing and
+      vulnerability scanning.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: sqlserver_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: SQL server allows public network access.
+    passMessage: SQL server public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Create private endpoints for consuming applications.
+        - Set the server's public network access to Disabled (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+  - id: CR-AZURE-SQL-101
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server enforces TLS 1.2 or higher
+    description: Verifies the minimalTlsVersion on each SQL logical server is at least 1.2.
+    rationale: >
+      Legacy TLS versions are vulnerable to downgrade and interception attacks;
+      enforcing TLS 1.2+ protects database sessions in transit.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: sqlserver_tls_version_is_encrypted
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: in
+      path: minimalTlsVersion
+      values:
+        - "1.2"
+        - "1.3"
+    failMessage: SQL server allows TLS below 1.2.
+    passMessage: SQL server requires TLS 1.2 or higher.
+    remediation:
+      summary: Set the minimal TLS version to 1.2.
+      steps:
+        - Update the server's minimal TLS version to 1.2 (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.3
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+  - id: CR-AZURE-SQL-102
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server restricts outbound network access
+    description: Verifies each SQL logical server has restrictOutboundNetworkAccess
+      set to Enabled.
+    rationale: >
+      Unrestricted outbound access lets a compromised server exfiltrate data to
+      arbitrary destinations; restricting outbound access limits
+      data-exfiltration paths.
+    severity: medium
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sqlserver_outbound_networking_access_restricted
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: restrictOutboundNetworkAccess
+      value: Enabled
+    failMessage: SQL server does not restrict outbound network access.
+    passMessage: SQL server restricts outbound network access.
+    remediation:
+      summary: Enable outbound network access restriction and define outbound firewall
+        rules.
+      steps:
+        - Define outbound firewall rules for required destinations.
+        - Enable restrict outbound network access on the server (operator
+          action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/outbound-firewall-rule-overview
+  - id: CR-AZURE-SQL-103
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server has an Azure AD administrator configured
+    description: Verifies each SQL logical server has an Azure Active Directory
+      administrator set.
+    rationale: >
+      Without an Azure AD administrator the server relies solely on SQL
+      authentication, forgoing centralized identity, MFA and conditional access.
+    severity: high
+    categories:
+      - database
+      - identity
+    source:
+      engine: prowler
+      id: sqlserver_azuread_administrator_enabled
+      license: Apache-2.0
+    collector: azure.sql.ad_admin_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: equals
+        path: administratorType
+        value: ActiveDirectory
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server has no Azure AD administrator configured.
+    passMessage: SQL server has an Azure AD administrator configured.
+    remediation:
+      summary: Assign an Azure AD administrator to the SQL server.
+      steps:
+        - Assign an Azure AD user or group as the server administrator (operator
+          action).
+      verifyCommand: az sql server ad-admin list --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.4
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/authentication-aad-configure
+  - id: CR-AZURE-SQL-104
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server enforces Azure AD-only authentication
+    description: Verifies each SQL logical server has Azure AD-only authentication
+      enabled (administrators.azureADOnlyAuthentication true).
+    rationale: >
+      Allowing SQL authentication alongside Azure AD keeps password-based logins
+      that bypass MFA and conditional access; AD-only authentication removes
+      them.
+    severity: high
+    categories:
+      - database
+      - identity
+    source:
+      engine: prowler
+      id: sqlserver_microsoft_entra_id_only_authentication_enabled
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: administrators.azureADOnlyAuthentication
+      value: true
+    failMessage: SQL server allows SQL authentication in addition to Azure AD.
+    passMessage: SQL server enforces Azure AD-only authentication.
+    remediation:
+      summary: Enable Azure AD-only authentication on the server.
+      steps:
+        - Ensure an Azure AD administrator is set on the server.
+        - Enable Azure AD-only authentication (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.4
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/authentication-azure-ad-only-authentication
+  - id: CR-AZURE-SQL-105
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server auditing is enabled
+    description: Verifies the server blob-auditing policy state is Enabled for each
+      SQL logical server.
+    rationale: >
+      Without auditing there is no record of database access and administrative
+      actions, hampering breach detection and forensic investigation.
+    severity: medium
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: sqlserver_auditing_enabled
+      license: Apache-2.0
+    collector: azure.sql.audit_policy_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: state
+      value: Enabled
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server auditing is not enabled.
+    passMessage: SQL server auditing is enabled.
+    remediation:
+      summary: Enable server-level blob auditing.
+      steps:
+        - Enable auditing at the server level with a log destination (operator
+          action).
+      verifyCommand: az sql server audit-policy show --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/auditing-overview
+  - id: CR-AZURE-SQL-106
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server auditing retention is at least 90 days
+    description: Verifies auditing is enabled and the retention period is 90 days or
+      more (0 means unlimited).
+    rationale: >
+      Short audit retention causes evidence to be purged before incidents are
+      detected and investigated; 90+ days supports compliance and forensics.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: sqlserver_auditing_retention_90_days
+      license: Apache-2.0
+    collector: azure.sql.audit_policy_show
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: equals
+      path: state
+      value: Enabled
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: retentionDays
+          value: 0
+        - op: gte
+          path: retentionDays
+          value: 90
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server audit retention is less than 90 days.
+    passMessage: SQL server audit retention is at least 90 days.
+    remediation:
+      summary: Set audit log retention to 90 days or more.
+      steps:
+        - Set the auditing retention period to at least 90 days, or 0 for
+          unlimited (operator action).
+      verifyCommand: az sql server audit-policy show --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.2
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/auditing-overview
+  - id: CR-AZURE-SQL-107
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server firewall does not allow all Azure services
+    description: Verifies no firewall rule opens the server to all Azure services
+      (0.0.0.0-0.0.0.0).
+    rationale: >
+      The AllowAllWindowsAzureIps rule (0.0.0.0-0.0.0.0) permits any Azure
+      resource in any tenant to reach the server, a broad and unnecessary
+      exposure.
+    severity: high
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sqlserver_firewall_rule_allow_azure_services
+      license: Apache-2.0
+    collector: azure.sql.firewall_rule_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: startIpAddress
+            value: 0.0.0.0
+          - op: equals
+            path: endIpAddress
+            value: 0.0.0.0
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server firewall allows all Azure services (0.0.0.0-0.0.0.0).
+    passMessage: SQL server firewall does not allow all Azure services.
+    remediation:
+      summary: Remove the Allow Azure services firewall rule.
+      steps:
+        - Delete the firewall rule with start and end IP 0.0.0.0 (operator
+          action).
+        - Use private endpoints or explicit IP ranges instead.
+      verifyCommand: az sql server firewall-rule list --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/firewall-configure
+  - id: CR-AZURE-SQL-108
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server firewall does not allow the entire internet
+    description: Verifies no firewall rule spans 0.0.0.0 to 255.255.255.255, opening
+      the server to all IPv4 addresses.
+    rationale: >
+      A firewall rule covering the full IPv4 range exposes the SQL endpoint to
+      the entire internet, negating network isolation.
+    severity: critical
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sqlserver_firewall_rule_allow_internet_ips
+      license: Apache-2.0
+    collector: azure.sql.firewall_rule_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: startIpAddress
+            value: 0.0.0.0
+          - op: equals
+            path: endIpAddress
+            value: 255.255.255.255
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server firewall allows the entire internet (0.0.0.0-255.255.255.255).
+    passMessage: SQL server firewall does not allow the entire internet.
+    remediation:
+      summary: Remove firewall rules spanning the full IPv4 range.
+      steps:
+        - Delete any rule with start 0.0.0.0 and end 255.255.255.255 (operator
+          action).
+        - Replace with narrow IP ranges or private endpoints.
+      verifyCommand: az sql server firewall-rule list --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/firewall-configure
+  - id: CR-AZURE-SQL-109
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server auditing sends logs to a destination
+    description: Verifies an auditing-enabled server has at least one log
+      destination (storage endpoint or Azure Monitor).
+    rationale: >
+      Auditing that is enabled but has no destination produces no retained
+      records, giving a false sense of coverage during incident response.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: sqlserver_auditing_enabled
+      license: Apache-2.0
+    collector: azure.sql.audit_policy_show
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: equals
+      path: state
+      value: Enabled
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: isAzureMonitorTargetEnabled
+          value: true
+        - op: and
+          exprs:
+            - op: exists
+              path: storageEndpoint
+            - op: not
+              expr:
+                op: isEmpty
+                path: storageEndpoint
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server auditing is enabled but has no log destination.
+    passMessage: SQL server auditing sends logs to a destination.
+    remediation:
+      summary: Configure a storage account or Azure Monitor as the audit destination.
+      steps:
+        - Set a storage account endpoint or enable Log Analytics/Azure Monitor
+          for auditing (operator action).
+      verifyCommand: az sql server audit-policy show --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/auditing-overview

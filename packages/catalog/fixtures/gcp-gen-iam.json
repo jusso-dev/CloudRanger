@@ -1,0 +1,454 @@
+[
+  {
+    "controlId": "CR-GCP-IAM-100",
+    "cases": [
+      {
+        "name": "fails when allServices audit config missing",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/owner",
+                  "members": ["user:admin@example.com"]
+                }
+              ],
+              "etag": "BwXyz==",
+              "version": 1
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when allServices present but DATA_WRITE missing",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "auditConfigs": [
+                {
+                  "service": "allServices",
+                  "auditLogConfigs": [
+                    {
+                      "logType": "ADMIN_READ"
+                    },
+                    {
+                      "logType": "DATA_READ"
+                    }
+                  ]
+                }
+              ],
+              "etag": "BwXyz==",
+              "version": 1
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when allServices enables all three log types",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "auditConfigs": [
+                {
+                  "service": "allServices",
+                  "auditLogConfigs": [
+                    {
+                      "logType": "ADMIN_READ"
+                    },
+                    {
+                      "logType": "DATA_READ"
+                    },
+                    {
+                      "logType": "DATA_WRITE"
+                    }
+                  ]
+                }
+              ],
+              "etag": "BwXyz==",
+              "version": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-101",
+    "cases": [
+      {
+        "name": "fails when an audit config exempts a member",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "auditConfigs": [
+                {
+                  "service": "allServices",
+                  "auditLogConfigs": [
+                    {
+                      "logType": "DATA_READ",
+                      "exemptedMembers": ["serviceAccount:etl@proj.iam.gserviceaccount.com"]
+                    },
+                    {
+                      "logType": "DATA_WRITE"
+                    }
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when no exempted members present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "auditConfigs": [
+                {
+                  "service": "allServices",
+                  "auditLogConfigs": [
+                    {
+                      "logType": "DATA_READ"
+                    },
+                    {
+                      "logType": "DATA_WRITE"
+                    }
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when no audit configs exist",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/viewer",
+                  "members": ["user:a@example.com"]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-102",
+    "cases": [
+      {
+        "name": "fails when a user holds Owner",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/owner",
+                  "members": [
+                    "user:bob@example.com",
+                    "serviceAccount:svc@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when a group holds Owner",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/owner",
+                  "members": ["group:admins@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when Owner held only by a service account",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/owner",
+                  "members": ["serviceAccount:svc@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/viewer",
+                  "members": ["user:bob@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-103",
+    "cases": [
+      {
+        "name": "fails when a user holds Editor",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/editor",
+                  "members": ["user:dev@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when Editor absent for users and groups",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/editor",
+                  "members": ["serviceAccount:ci@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/run.developer",
+                  "members": ["user:dev@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-104",
+    "cases": [
+      {
+        "name": "fails when serviceAccountTokenCreator granted at project level",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/iam.serviceAccountTokenCreator",
+                  "members": ["user:dev@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when serviceAccountUser granted at project level",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/iam.serviceAccountUser",
+                  "members": ["group:deployers@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when neither impersonation role is granted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/viewer",
+                  "members": ["user:dev@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-107",
+    "cases": [
+      {
+        "name": "fails when a user-managed key exists",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "app@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com/keys/aa11",
+                "keyType": "USER_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "validAfterTime": "2026-06-01T00:00:00Z",
+                "validBeforeTime": "9999-12-31T23:59:59Z"
+              },
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com/keys/bb22",
+                "keyType": "SYSTEM_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "validAfterTime": "2026-06-01T00:00:00Z",
+                "validBeforeTime": "2026-06-30T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when only system-managed keys exist",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "clean@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/clean@proj.iam.gserviceaccount.com/keys/cc33",
+                "keyType": "SYSTEM_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "validAfterTime": "2026-07-01T00:00:00Z",
+                "validBeforeTime": "2026-07-31T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-108",
+    "cases": [
+      {
+        "name": "fails when default compute SA is enabled",
+        "expected": "fail",
+        "resourceId": "123456789012-compute@developer.gserviceaccount.com",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/123456789012-compute@developer.gserviceaccount.com",
+                "projectId": "proj",
+                "uniqueId": "111111111111111111111",
+                "email": "123456789012-compute@developer.gserviceaccount.com",
+                "displayName": "Compute Engine default service account",
+                "disabled": false,
+                "oauth2ClientId": "111111111111111111111"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when default compute SA is disabled",
+        "expected": "pass",
+        "resourceId": "123456789012-compute@developer.gserviceaccount.com",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/123456789012-compute@developer.gserviceaccount.com",
+                "projectId": "proj",
+                "uniqueId": "111111111111111111111",
+                "email": "123456789012-compute@developer.gserviceaccount.com",
+                "displayName": "Compute Engine default service account",
+                "disabled": true,
+                "oauth2ClientId": "111111111111111111111"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for a custom service account",
+        "expected": "not_applicable",
+        "resourceId": "app@proj.iam.gserviceaccount.com",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com",
+                "projectId": "proj",
+                "uniqueId": "222222222222222222222",
+                "email": "app@proj.iam.gserviceaccount.com",
+                "displayName": "app",
+                "disabled": false,
+                "oauth2ClientId": "222222222222222222222"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

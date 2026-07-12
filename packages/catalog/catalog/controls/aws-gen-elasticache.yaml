@@ -1,0 +1,247 @@
+controls:
+  - id: CR-AWS-ELASTICACHE-001
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group has encryption at rest enabled
+    description: Every ElastiCache replication group has AtRestEncryptionEnabled set
+      to true.
+    rationale: Without at-rest encryption, cached data (which frequently mirrors
+      sensitive database records or session tokens) is written to disk and
+      snapshots in cleartext, exposing it if the underlying storage or a backup
+      is accessed.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_rest_encryption_enabled
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    passWhen:
+      op: equals
+      path: AtRestEncryptionEnabled
+      value: true
+    failMessage: ElastiCache replication group does not have encryption at rest enabled.
+    passMessage: ElastiCache replication group has encryption at rest enabled.
+    remediation:
+      summary: Enable at-rest encryption on the replication group.
+      steps:
+        - At-rest encryption can only be set at creation time; create a new
+          replication group with --at-rest-encryption-enabled.
+        - Migrate data by restoring from a backup into the new encrypted
+          replication group and repoint clients.
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/at-rest-encryption.html
+  - id: CR-AWS-ELASTICACHE-002
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group has in-transit encryption enabled
+    description: Every ElastiCache replication group has TransitEncryptionEnabled
+      set to true.
+    rationale: Without in-transit encryption, cache traffic (including auth tokens
+      and cached data) crosses the network in cleartext and can be intercepted
+      by an on-path attacker within the VPC.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_in_transit_encryption_enabled
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    passWhen:
+      op: equals
+      path: TransitEncryptionEnabled
+      value: true
+    failMessage: ElastiCache replication group does not have in-transit encryption enabled.
+    passMessage: ElastiCache replication group has in-transit encryption enabled.
+    remediation:
+      summary: Enable in-transit (TLS) encryption on the replication group.
+      steps:
+        - Modify the replication group with --transit-encryption-enabled and set
+          --transit-encryption-mode to preferred, then to required once all
+          clients use TLS.
+        - For older groups where in-transit encryption cannot be modified,
+          recreate the replication group with in-transit encryption enabled.
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/in-transit-encryption.html
+  - id: CR-AWS-ELASTICACHE-003
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group has automatic failover enabled
+    description: Every ElastiCache replication group has AutomaticFailover set to "enabled".
+    rationale: Without automatic failover a primary node failure requires manual
+      intervention, causing extended cache downtime and cascading load on
+      backing datastores.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_auto_minor_version_upgrades
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    passWhen:
+      op: in
+      path: AutomaticFailover
+      values:
+        - enabled
+        - enabling
+    failMessage: ElastiCache replication group does not have automatic failover enabled.
+    passMessage: ElastiCache replication group has automatic failover enabled.
+    remediation:
+      summary: Enable automatic failover on the replication group.
+      steps:
+        - Ensure the replication group has at least one read replica so a
+          failover target exists.
+        - Modify the replication group with --automatic-failover-enabled.
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html
+  - id: CR-AWS-ELASTICACHE-004
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group has Multi-AZ enabled
+    description: Every ElastiCache replication group has MultiAZ set to "enabled".
+    rationale: A single-AZ replication group loses cache availability entirely if
+      that Availability Zone degrades; Multi-AZ places replicas across zones so
+      failover survives an AZ outage.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_multi_az_enabled
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    passWhen:
+      op: in
+      path: MultiAZ
+      values:
+        - enabled
+        - enabling
+    failMessage: ElastiCache replication group does not have Multi-AZ enabled.
+    passMessage: ElastiCache replication group has Multi-AZ enabled.
+    remediation:
+      summary: Enable Multi-AZ on the replication group.
+      steps:
+        - Ensure replicas exist in more than one Availability Zone.
+        - Modify the replication group with --multi-az-enabled (automatic
+          failover must also be enabled).
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html
+  - id: CR-AWS-ELASTICACHE-005
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group has an auth token enabled
+    description: Replication groups that use in-transit encryption also have
+      AuthTokenEnabled set to true.
+    rationale: In-transit encryption alone secures the channel but does not
+      authenticate clients; without an auth token (Redis AUTH) any host that can
+      reach the endpoint can issue commands against the cache.
+    severity: medium
+    categories:
+      - identity
+      - encryption
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_auth_enabled
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    applicableWhen:
+      op: equals
+      path: TransitEncryptionEnabled
+      value: true
+    passWhen:
+      op: equals
+      path: AuthTokenEnabled
+      value: true
+    failMessage: ElastiCache replication group does not have an auth token (Redis
+      AUTH) enabled.
+    passMessage: ElastiCache replication group has an auth token enabled.
+    remediation:
+      summary: Enable a Redis AUTH token on the replication group.
+      steps:
+        - In-transit encryption must be enabled first (auth tokens require TLS).
+        - Modify the replication group with --auth-token and
+          --auth-token-update-strategy SET (or ROTATE) to add or rotate the
+          token.
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth.html
+  - id: CR-AWS-ELASTICACHE-006
+    version: 1.0.0
+    provider: aws
+    service: elasticache
+    title: ElastiCache replication group retains automatic backups
+    description: Every ElastiCache replication group has a SnapshotRetentionLimit
+      greater than 0.
+    rationale: With a snapshot retention limit of 0, automatic backups are disabled,
+      so cached data that must survive a failure or corruption event cannot be
+      recovered.
+    severity: low
+    categories:
+      - resilience
+      - storage
+    source:
+      engine: prowler
+      id: elasticache_redis_cluster_backup_enabled
+      license: Apache-2.0
+    collector: aws.elasticache.describe_replication_groups
+    resourcesPath: ReplicationGroups
+    resourceIdField: ReplicationGroupId
+    resourceNameField: Description
+    passWhen:
+      op: gt
+      path: SnapshotRetentionLimit
+      value: 0
+    failMessage: ElastiCache replication group has automatic backups disabled
+      (SnapshotRetentionLimit is 0).
+    passMessage: ElastiCache replication group retains automatic backups.
+    remediation:
+      summary: Set a non-zero snapshot retention limit.
+      steps:
+        - Modify the replication group with --snapshot-retention-limit set to
+          the desired number of days (for example 7).
+        - Optionally set --snapshot-window to control when daily backups are
+          taken.
+      verifyCommand: aws elasticache describe-replication-groups --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/backups-automatic.html

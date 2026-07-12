@@ -1,0 +1,500 @@
+[
+  {
+    "controlId": "CR-AZURE-NETWORK-100",
+    "cases": [
+      {
+        "name": "fails all ports open to internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-open",
+                "name": "nsg-open",
+                "securityRules": [
+                  {
+                    "name": "AllowAll",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "*",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes scoped rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-ok",
+                "name": "nsg-ok",
+                "securityRules": [
+                  {
+                    "name": "AllowWebFromLb",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/8",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-101",
+    "cases": [
+      {
+        "name": "fails winrm https from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-winrm",
+                "name": "nsg-winrm",
+                "securityRules": [
+                  {
+                    "name": "AllowWinRM",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "5986",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "0.0.0.0/0",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes winrm from mgmt subnet",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-winrm2",
+                "name": "nsg-winrm2",
+                "securityRules": [
+                  {
+                    "name": "AllowWinRM",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "5985",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.10.0.0/16",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-102",
+    "cases": [
+      {
+        "name": "fails telnet from any",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-telnet",
+                "name": "nsg-telnet",
+                "securityRules": [
+                  {
+                    "name": "AllowTelnet",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "*",
+                    "destinationPortRange": "23",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "*",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes no telnet rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-clean",
+                "name": "nsg-clean",
+                "securityRules": [
+                  {
+                    "name": "AllowHttps",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-103",
+    "cases": [
+      {
+        "name": "fails smb 445 from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-smb",
+                "name": "nsg-smb",
+                "securityRules": [
+                  {
+                    "name": "AllowSMB",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": null,
+                    "destinationPortRanges": ["445"],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes smb from private range",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-smb2",
+                "name": "nsg-smb2",
+                "securityRules": [
+                  {
+                    "name": "AllowSMB",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "445",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/8",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-104",
+    "cases": [
+      {
+        "name": "fails ftp range from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-ftp",
+                "name": "nsg-ftp",
+                "securityRules": [
+                  {
+                    "name": "AllowFTP",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "20-21",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes no ftp exposure",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-noftp",
+                "name": "nsg-noftp",
+                "securityRules": [
+                  {
+                    "name": "AllowFTP",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "21",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "192.168.1.0/24",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-105",
+    "cases": [
+      {
+        "name": "fails mongodb from internet via prefixes",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-mongo",
+                "name": "nsg-mongo",
+                "securityRules": [
+                  {
+                    "name": "AllowMongo",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "27017",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": null,
+                    "sourceAddressPrefixes": ["0.0.0.0/0"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes redis from app subnet",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-redis",
+                "name": "nsg-redis",
+                "securityRules": [
+                  {
+                    "name": "AllowRedis",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "6379",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.20.0.0/16",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-106",
+    "cases": [
+      {
+        "name": "fails any protocol any port from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-anyany",
+                "name": "nsg-anyany",
+                "securityRules": [
+                  {
+                    "name": "AllowAny",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "*",
+                    "destinationPortRange": "*",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Any",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes tcp-only all-ports (protocol not any)",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-tcpall",
+                "name": "nsg-tcpall",
+                "securityRules": [
+                  {
+                    "name": "AllowTcpAll",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "*",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/8",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-107",
+    "cases": [
+      {
+        "name": "fails k8s api from internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-k8s",
+                "name": "nsg-k8s",
+                "securityRules": [
+                  {
+                    "name": "AllowApi",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "6443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "0.0.0.0/0",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes api restricted plus denied internet rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-k8s2",
+                "name": "nsg-k8s2",
+                "securityRules": [
+                  {
+                    "name": "DenyApi",
+                    "access": "Deny",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "6443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  },
+                  {
+                    "name": "AllowApiMgmt",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "6443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/24",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

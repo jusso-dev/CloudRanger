@@ -1,0 +1,158 @@
+controls:
+  - id: CR-GCP-DNS-100
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: RSASHA1 not used for key signing in DNS managed zones
+    description: >
+      No key-signing key (KSK) in a Cloud DNS managed zone's DNSSEC key specs
+      uses the weak RSASHA1 signing algorithm.
+    rationale: >
+      RSASHA1 is cryptographically weak and deprecated for DNSSEC. Using it for
+      the key-signing key undermines the DNSSEC chain of trust and can allow
+      forged DNS responses that redirect traffic to attacker infrastructure.
+    severity: medium
+    categories:
+      - network
+      - encryption
+      - integrity
+    source:
+      engine: prowler
+      id: dns_rsasha1_in_use_to_key_sign_in_managed_zones
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: dnssecConfig.state
+      value: on
+    passWhen:
+      op: noneItem
+      path: dnssecConfig.defaultKeySpecs
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: keyType
+            value: keySigning
+          - op: equals
+            path: algorithm
+            value: rsasha1
+    failMessage: Managed zone uses RSASHA1 for its DNSSEC key-signing key.
+    passMessage: Managed zone does not use RSASHA1 for key signing.
+    remediation:
+      summary: Recreate the zone's DNSSEC key specs using a stronger algorithm than
+        RSASHA1.
+      steps:
+        - Disable DNSSEC on the managed zone, set the key-signing key algorithm
+          to rsasha256 or ecdsap256sha256, re-enable DNSSEC, and republish the
+          DS record with your registrar.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.4"
+    references:
+      - https://cloud.google.com/dns/docs/dnssec-config-advanced
+      - https://cloud.google.com/dns/docs/dnssec
+  - id: CR-GCP-DNS-101
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: RSASHA1 not used for zone signing in DNS managed zones
+    description: >
+      No zone-signing key (ZSK) in a Cloud DNS managed zone's DNSSEC key specs
+      uses the weak RSASHA1 signing algorithm.
+    rationale: >
+      RSASHA1 is a deprecated, collision-prone algorithm. Signing zone data with
+      it weakens DNSSEC protections and can permit spoofed DNS records that
+      redirect users and services.
+    severity: medium
+    categories:
+      - network
+      - encryption
+      - integrity
+    source:
+      engine: prowler
+      id: dns_rsasha1_in_use_to_zone_sign_in_managed_zones
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: dnssecConfig.state
+      value: on
+    passWhen:
+      op: noneItem
+      path: dnssecConfig.defaultKeySpecs
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: keyType
+            value: zoneSigning
+          - op: equals
+            path: algorithm
+            value: rsasha1
+    failMessage: Managed zone uses RSASHA1 for its DNSSEC zone-signing key.
+    passMessage: Managed zone does not use RSASHA1 for zone signing.
+    remediation:
+      summary: Recreate the zone's DNSSEC key specs using a stronger algorithm than
+        RSASHA1.
+      steps:
+        - Disable DNSSEC on the managed zone, set the zone-signing key algorithm
+          to rsasha256 or ecdsap256sha256, then re-enable DNSSEC.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.5"
+    references:
+      - https://cloud.google.com/dns/docs/dnssec-config-advanced
+      - https://cloud.google.com/dns/docs/dnssec
+  - id: CR-GCP-DNS-102
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: DNS query logging enabled on public managed zones
+    description: >
+      Public Cloud DNS managed zones have Cloud Logging enabled so that DNS
+      queries against the zone are recorded.
+    rationale: >
+      Without DNS query logging you lose visibility into resolution activity,
+      hampering detection of data exfiltration over DNS, malware C2 lookups, and
+      forensic investigation of incidents.
+    severity: low
+    categories:
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: dns_managed_zones_logging_enabled
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: visibility
+      value: public
+    passWhen:
+      op: equals
+      path: cloudLoggingConfig.enableLogging
+      value: true
+    failMessage: Public managed zone does not have DNS query logging enabled.
+    passMessage: Public managed zone has DNS query logging enabled.
+    remediation:
+      summary: Enable Cloud Logging on the managed zone.
+      steps:
+        - Update the managed zone to enable Cloud DNS query logging so queries
+          are exported to Cloud Logging.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/dns/docs/monitoring

@@ -1,0 +1,495 @@
+[
+  {
+    "controlId": "CR-AWS-REDSHIFT-001",
+    "cases": [
+      {
+        "name": "fails when publicly accessible",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "public-dw",
+                  "NodeType": "ra3.xlplus",
+                  "ClusterStatus": "available",
+                  "MasterUsername": "adminuser",
+                  "PubliclyAccessible": true,
+                  "Encrypted": true,
+                  "EnhancedVpcRouting": true,
+                  "AutomatedSnapshotRetentionPeriod": 7,
+                  "AllowVersionUpgrade": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when private",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "private-dw",
+                  "NodeType": "ra3.xlplus",
+                  "ClusterStatus": "available",
+                  "MasterUsername": "adminuser",
+                  "PubliclyAccessible": false,
+                  "Encrypted": true,
+                  "EnhancedVpcRouting": true,
+                  "AutomatedSnapshotRetentionPeriod": 7,
+                  "AllowVersionUpgrade": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-002",
+    "cases": [
+      {
+        "name": "fails when unencrypted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "plain-dw",
+                  "MasterUsername": "adminuser",
+                  "PubliclyAccessible": false,
+                  "Encrypted": false,
+                  "EnhancedVpcRouting": false,
+                  "AutomatedSnapshotRetentionPeriod": 1,
+                  "AllowVersionUpgrade": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when encrypted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "enc-dw",
+                  "MasterUsername": "adminuser",
+                  "PubliclyAccessible": false,
+                  "Encrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234",
+                  "EnhancedVpcRouting": true,
+                  "AutomatedSnapshotRetentionPeriod": 7,
+                  "AllowVersionUpgrade": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-003",
+    "cases": [
+      {
+        "name": "passes when encrypted with kms key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "cmk-dw",
+                  "Encrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234",
+                  "PubliclyAccessible": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when encrypted without kms key id",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "hsm-dw",
+                  "Encrypted": true,
+                  "PubliclyAccessible": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when unencrypted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "plain-dw",
+                  "Encrypted": false,
+                  "PubliclyAccessible": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-004",
+    "cases": [
+      {
+        "name": "fails when enhanced vpc routing disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "novpc-dw",
+                  "EnhancedVpcRouting": false,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when enhanced vpc routing enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "vpc-dw",
+                  "EnhancedVpcRouting": true,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-005",
+    "cases": [
+      {
+        "name": "fails when retention is zero",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "nobackup-dw",
+                  "AutomatedSnapshotRetentionPeriod": 0,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when retention positive",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "backup-dw",
+                  "AutomatedSnapshotRetentionPeriod": 7,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-006",
+    "cases": [
+      {
+        "name": "fails when default awsuser",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "default-dw",
+                  "MasterUsername": "awsuser",
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with custom username",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "custom-dw",
+                  "MasterUsername": "dwadmin",
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-007",
+    "cases": [
+      {
+        "name": "fails when version upgrade disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "noupgrade-dw",
+                  "AllowVersionUpgrade": false,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when version upgrade allowed",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "ClusterIdentifier": "upgrade-dw",
+                  "AllowVersionUpgrade": true,
+                  "PubliclyAccessible": false,
+                  "Encrypted": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-008",
+    "cases": [
+      {
+        "name": "fails when logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_logging_status",
+            "region": "us-east-1",
+            "resourceKey": "nolog-dw",
+            "exitCode": 0,
+            "output": {
+              "LoggingEnabled": false
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when logging enabled to s3",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_logging_status",
+            "region": "us-east-1",
+            "resourceKey": "log-dw",
+            "exitCode": 0,
+            "output": {
+              "LoggingEnabled": true,
+              "BucketName": "my-redshift-audit-logs",
+              "S3KeyPrefix": "redshift/",
+              "LogDestinationType": "s3",
+              "LastSuccessfulDeliveryTime": "2026-07-10T02:15:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when cluster deleted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_logging_status",
+            "region": "us-east-1",
+            "resourceKey": "gone-dw",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ClusterNotFound) when calling the DescribeLoggingStatus operation: Cluster gone-dw not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-REDSHIFT-009",
+    "cases": [
+      {
+        "name": "fails when require_ssl false",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_cluster_parameters",
+            "region": "us-east-1",
+            "resourceKey": "default.redshift-1.0",
+            "exitCode": 0,
+            "output": {
+              "Parameters": [
+                {
+                  "ParameterName": "auto_analyze",
+                  "ParameterValue": "true",
+                  "DataType": "boolean",
+                  "Source": "engine-default"
+                },
+                {
+                  "ParameterName": "require_ssl",
+                  "ParameterValue": "false",
+                  "DataType": "boolean",
+                  "Source": "engine-default"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when require_ssl true",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_cluster_parameters",
+            "region": "us-east-1",
+            "resourceKey": "ssl-pg",
+            "exitCode": 0,
+            "output": {
+              "Parameters": [
+                {
+                  "ParameterName": "require_ssl",
+                  "ParameterValue": "true",
+                  "DataType": "boolean",
+                  "Source": "user"
+                },
+                {
+                  "ParameterName": "enable_user_activity_logging",
+                  "ParameterValue": "true",
+                  "DataType": "boolean",
+                  "Source": "user"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when parameter group missing",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.redshift.describe_cluster_parameters",
+            "region": "us-east-1",
+            "resourceKey": "missing-pg",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ClusterParameterGroupNotFound) when calling the DescribeClusterParameters operation: ParameterGroup missing-pg not found."
+          }
+        ]
+      }
+    ]
+  }
+]

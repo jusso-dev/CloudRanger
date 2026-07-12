@@ -1,0 +1,35 @@
+collectors:
+  - id: aws.sagemaker.list_notebook_instances
+    provider: aws
+    service: sagemaker
+    description: Lists SageMaker notebook instances in a region with summary
+      attributes (name, ARN, status, instance type).
+    kind: single
+    command: aws sagemaker list-notebook-instances --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a NotebookInstances array. The summary does not include VPC,
+      encryption, internet-access or root-access settings, so per-instance
+      configuration must be fetched with describe-notebook-instance. Empty
+      NotebookInstances array means no notebook instances exist in the region.
+  - id: aws.sagemaker.describe_notebook_instance
+    provider: aws
+    service: sagemaker
+    description: Full configuration for one SageMaker notebook instance including
+      DirectInternetAccess, KmsKeyId, SubnetId, RootAccess and IMDS
+      configuration.
+    kind: per_resource
+    command: aws sagemaker describe-notebook-instance --notebook-instance-name
+      {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.sagemaker.list_notebook_instances
+      itemsPath: NotebookInstances
+      resourceField: NotebookInstanceName
+    outputFormat: json
+    notes: The response root is the notebook instance object (no wrapper). KmsKeyId
+      and SubnetId are only present when configured. DirectInternetAccess and
+      RootAccess are enums Enabled|Disabled.
+      InstanceMetadataServiceConfiguration
+      .MinimumInstanceMetadataServiceVersion is "1" or "2"; "2" requires IMDSv2.
+      A deleted/nonexistent instance returns a ValidationException.

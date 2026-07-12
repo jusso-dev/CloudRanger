@@ -1,0 +1,15 @@
+collectors:
+  - id: azure.cosmosdb.list
+    provider: azure
+    service: cosmosdb
+    description: All Azure Cosmos DB database accounts in the subscription.
+    kind: single
+    command: az cosmosdb list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. The az cosmosdb command group
+      flattens the ARM Microsoft.DocumentDB/databaseAccounts properties bag to
+      top-level fields (publicNetworkAccess, disableLocalAuth, ipRules,
+      isVirtualNetworkFilterEnabled, disableKeyBasedMetadataWriteAccess,
+      minimalTlsVersion, backupPolicy) on each account object.

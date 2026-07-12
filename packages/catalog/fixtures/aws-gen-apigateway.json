@@ -1,0 +1,327 @@
+[
+  {
+    "controlId": "CR-AWS-APIGATEWAY-002",
+    "cases": [
+      {
+        "name": "all stages have access log destination",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "abc123",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "accessLogSettings": {
+                    "format": "$context.requestId",
+                    "destinationArn": "arn:aws:logs:us-east-1:111122223333:log-group:api-access"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "stage missing access log settings",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "def456",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-APIGATEWAY-003",
+    "cases": [
+      {
+        "name": "all stages have webAclArn",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "abc123",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "webAclArn": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/my-acl/abc"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "stage without WAF association",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "def456",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "webAclArn": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/my-acl/abc"
+                },
+                {
+                  "stageName": "dev",
+                  "deploymentId": "d2"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-APIGATEWAY-004",
+    "cases": [
+      {
+        "name": "all stages have client certificate",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "abc123",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "clientCertificateId": "cert-abc"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "stage without client certificate",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "def456",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-APIGATEWAY-005",
+    "cases": [
+      {
+        "name": "all stages have tracing enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "abc123",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "tracingEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "stage with tracing disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "def456",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "deploymentId": "d1",
+                  "tracingEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-APIGATEWAY-001",
+    "cases": [
+      {
+        "name": "all stages log at INFO",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "api-a",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "methodSettings": {
+                    "*/*": {
+                      "loggingLevel": "INFO",
+                      "dataTraceEnabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "a stage has logging OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "api-b",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "methodSettings": {
+                    "*/*": {
+                      "loggingLevel": "OFF"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-APIGATEWAY-006",
+    "cases": [
+      {
+        "name": "cache enabled and encrypted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "api-c",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "cacheClusterEnabled": true,
+                  "methodSettings": {
+                    "*/*": {
+                      "cacheDataEncrypted": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cache enabled but not encrypted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "api-d",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "cacheClusterEnabled": true,
+                  "methodSettings": {
+                    "*/*": {
+                      "cacheDataEncrypted": false
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no cache cluster is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.apigateway.get_stages",
+            "region": "us-east-1",
+            "resourceKey": "api-e",
+            "exitCode": 0,
+            "output": {
+              "item": [
+                {
+                  "stageName": "prod",
+                  "cacheClusterEnabled": false,
+                  "methodSettings": {
+                    "*/*": {}
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

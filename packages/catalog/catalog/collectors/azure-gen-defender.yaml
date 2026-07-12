@@ -1,0 +1,28 @@
+collectors:
+  - id: azure.security.pricings_list
+    provider: azure
+    service: defender
+    description: Microsoft Defender for Cloud pricing tiers (plans) per resource
+      type in the subscription.
+    kind: single
+    command: az security pricing list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Security Reader or Reader on the subscription. Returns an object
+      with a value[] array; each item has name (resource type e.g.
+      VirtualMachines, StorageAccounts, SqlServers, KeyVaults, Containers,
+      AppServices, Arm) and pricingTier (Standard or Free).
+  - id: azure.security.auto_provisioning
+    provider: azure
+    service: defender
+    description: Microsoft Defender for Cloud auto-provisioning settings for the
+      subscription.
+    kind: single
+    command: az security auto-provisioning-setting list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Security Reader or Reader on the subscription. Returns an object
+      with a value[] array; the item named 'default' has autoProvision set to
+      'On' or 'Off'.

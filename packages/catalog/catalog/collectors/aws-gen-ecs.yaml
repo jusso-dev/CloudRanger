@@ -1,0 +1,30 @@
+collectors:
+  - id: aws.ecs.list_task_definitions
+    provider: aws
+    service: ecs
+    description: ARNs of all registered ECS task definitions in one region.
+    kind: single
+    command: aws ecs list-task-definitions --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires ecs:ListTaskDefinitions. Returns a taskDefinitionArns array of
+      strings (may include multiple revisions per family). Empty array when no
+      task definitions exist.
+  - id: aws.ecs.describe_task_definition
+    provider: aws
+    service: ecs
+    description: Full definition of one ECS task definition revision, including
+      container definitions, network mode and IAM roles.
+    kind: per_resource
+    command: aws ecs describe-task-definition --task-definition {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.ecs.list_task_definitions
+      itemsPath: taskDefinitionArns
+      resourceField: $
+    outputFormat: json
+    notes: Requires ecs:DescribeTaskDefinition. The response nests everything under
+      a taskDefinition object. Container-level fields such as privileged and
+      readonlyRootFilesystem are OMITTED entirely when false, so absence must be
+      treated as the insecure/default value.

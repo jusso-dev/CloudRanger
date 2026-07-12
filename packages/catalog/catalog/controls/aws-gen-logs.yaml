@@ -1,0 +1,84 @@
+controls:
+  - id: CR-AWS-LOGS-001
+    version: 1.0.0
+    provider: aws
+    service: logs
+    title: CloudWatch log group has a retention period set
+    description: Verifies each CloudWatch Logs log group defines a retentionInDays
+      value rather than retaining logs indefinitely.
+    rationale: >
+      Log groups with no retention setting keep every event forever, driving
+      unbounded storage cost and retaining sensitive data far beyond any
+      compliance need; the absence of an explicit policy also signals the group
+      was never governed.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudwatch_log_group_retention_policy_specific_days_enabled
+      license: Apache-2.0
+    collector: aws.logs.describe_log_groups
+    resourcesPath: logGroups
+    resourceIdField: arn
+    resourceNameField: logGroupName
+    passWhen:
+      op: exists
+      path: retentionInDays
+    failMessage: Log group has no retention period set (logs are kept indefinitely).
+    passMessage: Log group has an explicit retention period.
+    remediation:
+      summary: Set a retention policy on the log group.
+      steps:
+        - Choose a retention period that meets your compliance and cost needs.
+        - Apply it to the log group (mutating; operator action).
+      verifyCommand: aws logs describe-log-groups --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html
+  - id: CR-AWS-LOGS-003
+    version: 1.0.0
+    provider: aws
+    service: logs
+    title: CloudWatch log group is encrypted with a KMS key
+    description: Verifies each CloudWatch Logs log group has a KMS key id associated
+      for encryption at rest.
+    rationale: >
+      Without a customer KMS key, log data is protected only by service-default
+      encryption and cannot be access-scoped or revoked via a key policy; log
+      groups routinely contain request parameters, identifiers and error detail
+      that are valuable to an attacker who gains read access.
+    severity: medium
+    categories:
+      - logging
+      - encryption
+    source:
+      engine: prowler
+      id: cloudwatch_log_group_kms_encryption_enabled
+      license: Apache-2.0
+    collector: aws.logs.describe_log_groups
+    resourcesPath: logGroups
+    resourceIdField: arn
+    resourceNameField: logGroupName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: kmsKeyId
+        - op: not
+          expr:
+            op: isEmpty
+            path: kmsKeyId
+    failMessage: Log group is not encrypted with a KMS key.
+    passMessage: Log group is encrypted with a KMS key.
+    remediation:
+      summary: Associate a KMS key with the log group.
+      steps:
+        - Create or select a KMS key whose policy allows the CloudWatch Logs
+          service to use it.
+        - Associate the key with the log group (mutating; operator action).
+      verifyCommand: aws logs describe-log-groups --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html

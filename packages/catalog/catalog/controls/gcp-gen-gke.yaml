@@ -1,0 +1,408 @@
+controls:
+  - id: CR-GCP-GKE-100
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster has Workload Identity enabled
+    description: Verifies workloadIdentityConfig binds the cluster to a workload
+      identity pool.
+    rationale: >
+      Without Workload Identity, pods authenticate to Google APIs via the node
+      service account (or exported SA keys), so any pod inherits the node's
+      broad permissions and a single pod compromise reaches every GCP API the
+      node can call.
+    severity: high
+    categories:
+      - kubernetes
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: gke_cluster_workload_identity_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: exists
+      path: workloadIdentityConfig.workloadPool
+    failMessage: GKE cluster does not have Workload Identity enabled.
+    passMessage: GKE cluster has Workload Identity enabled.
+    remediation:
+      summary: Enable Workload Identity and migrate node pools.
+      steps:
+        - Enable Workload Identity on the cluster (operator action).
+        - Enable GKE metadata server on each node pool so pods use IAM-bound
+          KSAs.
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.16"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
+  - id: CR-GCP-GKE-102
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster enforces Binary Authorization
+    description: Verifies binaryAuthorization enforces a deploy-time image admission policy.
+    rationale: >
+      Without Binary Authorization, any image reference can be deployed,
+      allowing untrusted or tampered container images to run in the cluster.
+    severity: medium
+    categories:
+      - kubernetes
+      - integrity
+      - supply-chain
+    source:
+      engine: prowler
+      id: gke_cluster_binary_authorization_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: binaryAuthorization.enabled
+          value: true
+        - op: equals
+          path: binaryAuthorization.evaluationMode
+          value: PROJECT_SINGLETON_POLICY_ENFORCE
+    failMessage: GKE cluster does not enforce Binary Authorization.
+    passMessage: GKE cluster enforces Binary Authorization.
+    remediation:
+      summary: Enable Binary Authorization in enforcement mode.
+      steps:
+        - Set the cluster Binary Authorization evaluation mode to project
+          singleton policy enforce (operator action).
+        - Define an admission policy requiring attestations before deploy.
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.11"
+    references:
+      - https://cloud.google.com/binary-authorization/docs
+  - id: CR-GCP-GKE-103
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster has Cloud Logging enabled
+    description: Verifies loggingService (or loggingConfig) ships cluster logs to
+      Cloud Logging.
+    rationale: >
+      Without cluster logging there is no durable record of control-plane and
+      workload activity, crippling incident investigation and detection.
+    severity: medium
+    categories:
+      - kubernetes
+      - logging
+    source:
+      engine: prowler
+      id: gke_cluster_logging_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: notEquals
+          path: loggingService
+          value: none
+        - op: exists
+          path: loggingService
+    failMessage: GKE cluster does not have Cloud Logging enabled.
+    passMessage: GKE cluster has Cloud Logging enabled.
+    remediation:
+      summary: Enable Cloud Logging for system and workload logs.
+      steps:
+        - Set the cluster logging service to logging.googleapis.com/kubernetes
+          (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.1"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/view-logs
+  - id: CR-GCP-GKE-104
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster has Cloud Monitoring enabled
+    description: Verifies monitoringService (or monitoringConfig) reports metrics to
+      Cloud Monitoring.
+    rationale: >
+      Without monitoring, operators lose visibility into cluster health and
+      anomalous resource use, delaying detection of abuse such as cryptomining.
+    severity: medium
+    categories:
+      - kubernetes
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: gke_cluster_monitoring_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: notEquals
+          path: monitoringService
+          value: none
+        - op: exists
+          path: monitoringService
+    failMessage: GKE cluster does not have Cloud Monitoring enabled.
+    passMessage: GKE cluster has Cloud Monitoring enabled.
+    remediation:
+      summary: Enable Cloud Monitoring for system metrics.
+      steps:
+        - Set the cluster monitoring service to
+          monitoring.googleapis.com/kubernetes (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.1"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/configure-metrics
+  - id: CR-GCP-GKE-105
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster encrypts secrets at the application layer
+    description: Verifies databaseEncryption.state is ENCRYPTED (envelope-encrypted
+      with a KMS key).
+    rationale: >
+      By default etcd stores Kubernetes Secrets only at Google-managed rest
+      encryption; application-layer encryption with a customer KMS key adds a
+      distinct control so etcd access alone does not yield plaintext secrets.
+    severity: high
+    categories:
+      - kubernetes
+      - encryption
+    source:
+      engine: prowler
+      id: gke_cluster_secrets_encrypted_with_kms
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: databaseEncryption.state
+          value: ENCRYPTED
+        - op: exists
+          path: databaseEncryption.keyName
+    failMessage: GKE cluster does not use application-layer secrets encryption.
+    passMessage: GKE cluster encrypts secrets at the application layer with KMS.
+    remediation:
+      summary: Enable application-layer secrets encryption with a Cloud KMS key.
+      steps:
+        - Create a Cloud KMS key and grant the GKE service agent encrypt/decrypt.
+        - Enable database encryption on the cluster referencing that key
+          (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.12"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/encrypting-secrets
+  - id: CR-GCP-GKE-106
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE nodes disable the legacy (v0.1/v1beta1) metadata endpoints
+    description: >
+      Verifies node metadata does not expose the legacy Compute metadata
+      endpoints (nodeConfig.metadata disable-legacy-endpoints is true).
+    rationale: >
+      Legacy metadata endpoints do not require the Metadata-Flavor header, so a
+      SSRF or compromised pod can read node credentials and bootstrap data,
+      escalating to node/cluster compromise.
+    severity: high
+    categories:
+      - kubernetes
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: gke_cluster_disable_legacy_metadata_endpoints
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: exists
+      path: nodeConfig
+    passWhen:
+      op: in
+      path: nodeConfig.metadata.disable-legacy-endpoints
+      values:
+        - "true"
+        - "TRUE"
+        - "True"
+        - "1"
+        - true
+    failMessage: GKE nodes do not disable legacy metadata endpoints.
+    passMessage: GKE nodes disable legacy metadata endpoints.
+    remediation:
+      summary: Set disable-legacy-endpoints=true on node pools.
+      steps:
+        - Recreate node pools with disable-legacy-endpoints set to true
+          (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.7"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/protecting-cluster-metadata
+  - id: CR-GCP-GKE-107
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE nodes enable Integrity Monitoring
+    description: Verifies shieldedInstanceConfig.enableIntegrityMonitoring is true on nodes.
+    rationale: >
+      Integrity monitoring compares boot measurements against a known-good
+      baseline; without it, rootkits or bootkit tampering on a node can go
+      undetected.
+    severity: medium
+    categories:
+      - kubernetes
+      - integrity
+    source:
+      engine: prowler
+      id: gke_cluster_node_integrity_monitoring_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: exists
+      path: nodeConfig.shieldedInstanceConfig
+    passWhen:
+      op: equals
+      path: nodeConfig.shieldedInstanceConfig.enableIntegrityMonitoring
+      value: true
+    failMessage: GKE nodes do not enable integrity monitoring.
+    passMessage: GKE nodes enable integrity monitoring.
+    remediation:
+      summary: Enable integrity monitoring in the node shielded instance config.
+      steps:
+        - Recreate node pools with integrity monitoring enabled (operator
+          action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.9"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/shielded-gke-nodes
+  - id: CR-GCP-GKE-108
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE nodes enable Secure Boot
+    description: Verifies shieldedInstanceConfig.enableSecureBoot is true on nodes.
+    rationale: >
+      Secure Boot ensures only signed boot components load; without it a node
+      can boot tampered firmware or kernel modules, undermining node integrity.
+    severity: medium
+    categories:
+      - kubernetes
+      - integrity
+    source:
+      engine: prowler
+      id: gke_cluster_node_secure_boot_enabled
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: exists
+      path: nodeConfig.shieldedInstanceConfig
+    passWhen:
+      op: equals
+      path: nodeConfig.shieldedInstanceConfig.enableSecureBoot
+      value: true
+    failMessage: GKE nodes do not enable Secure Boot.
+    passMessage: GKE nodes enable Secure Boot.
+    remediation:
+      summary: Enable Secure Boot in the node shielded instance config.
+      steps:
+        - Recreate node pools with Secure Boot enabled (operator action).
+        - Verify custom kernel modules are signed before enabling.
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.10"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/shielded-gke-nodes
+  - id: CR-GCP-GKE-109
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster is subscribed to a release channel
+    description: Verifies releaseChannel.channel is a managed channel (not
+      UNSPECIFIED/none).
+    rationale: >
+      Clusters not on a release channel rely on manual upgrades and often run
+      unpatched control planes, leaving known CVEs unaddressed over time.
+    severity: low
+    categories:
+      - kubernetes
+      - resilience
+    source:
+      engine: prowler
+      id: gke_cluster_release_channel_in_use
+      license: Apache-2.0
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: releaseChannel.channel
+        - op: notIn
+          path: releaseChannel.channel
+          values:
+            - UNSPECIFIED
+            - none
+            - NONE
+    failMessage: GKE cluster is not subscribed to a release channel.
+    passMessage: GKE cluster is subscribed to a release channel.
+    remediation:
+      summary: Enroll the cluster in a release channel (regular or stable).
+      steps:
+        - Set the cluster release channel to REGULAR or STABLE for managed
+          upgrades (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "7.14"
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/concepts/release-channels

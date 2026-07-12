@@ -170,6 +170,23 @@ OUTPUT: return collectorsYaml (a YAML doc with a 'collectors:' list of ONLY new 
 const EXISTING_AWS_COLLECTORS = `Existing AWS collectors (reference by id, DO NOT redefine):
 aws.cloudtrail.describe_trails (single), aws.cloudtrail.get_trail_status (per_resource of describe_trails via TrailARN), aws.config.describe_configuration_recorder_status (single regional), aws.dynamodb.list_tables (single regional), aws.dynamodb.describe_continuous_backups (per_resource), aws.ec2.describe_instances (single regional; Reservations[].Instances), aws.ec2.describe_security_groups (single regional; SecurityGroups), aws.ec2.describe_snapshots_self (single regional; Snapshots), aws.ec2.describe_volumes (single regional; Volumes), aws.ec2.get_ebs_encryption_by_default (single regional), aws.efs.describe_file_systems (single regional; FileSystems), aws.guardduty.list_detectors (single regional; DetectorIds), aws.iam.get_account_password_policy (single; PasswordPolicy), aws.iam.get_account_summary (single; SummaryMap), aws.iam.list_access_keys (per_resource of list_users), aws.iam.list_mfa_devices (per_resource of list_users), aws.iam.list_users (single; Users), aws.kms.list_keys (single regional; Keys), aws.kms.get_key_rotation_status (per_resource), aws.rds.describe_db_instances (single regional; DBInstances), aws.s3.list_buckets (single; Buckets), aws.s3.get_public_access_block/get_bucket_encryption/get_bucket_versioning (per_resource of list_buckets via Name), aws.s3control.get_account_public_access_block (single; needs {account}), aws.secretsmanager.list_secrets (single regional; SecretList), aws.sns.list_topics (single regional; Topics), aws.sns.get_topic_attributes (per_resource), aws.sqs.list_queues (single regional; QueueUrls), aws.sqs.get_queue_attributes (per_resource).`;
 
+const EXISTING_AZURE_COLLECTORS = `Existing Azure collectors (reference by id, DO NOT redefine):
+azure.storage.list_accounts (single; output root IS the array of storage accounts), azure.network.list_nsgs (single; array of NSGs each with securityRules[]), azure.keyvault.list (single; array of vault summaries), azure.keyvault.show (per_resource of azure.keyvault.list via name; full vault with properties), azure.sql.list_servers (single; array of SQL logical servers), azure.vm.list (single; array of VMs), azure.webapp.list (single; array of web apps), azure.webapp.config_show (per_resource of azure.webapp.list via id; site config with minTlsVersion/ftpsState), azure.aks.list (single; array of AKS clusters), azure.acr.list (single; array of container registries).
+Azure CLI note: 'az ... list --output json' returns a JSON ARRAY at the root — use resourcesPath "$". Account/subscription-level single checks use resourceIdField "$scope". Fields are camelCase (e.g. properties.supportsHttpsTrafficOnly, properties.minimumTlsVersion).`;
+
+const EXISTING_GCP_COLLECTORS = `Existing GCP collectors (reference by id, DO NOT redefine):
+gcp.storage.buckets_list (single; array of buckets), gcp.storage.bucket_iam_policy (per_resource of buckets_list via name), gcp.compute.instances_list (single; array of instances), gcp.compute.firewall_rules_list (single; array of firewall rules), gcp.compute.networks_list (single; array of VPC networks), gcp.compute.subnets_list (single; array of subnets), gcp.compute.project_info (single; project compute metadata incl commonInstanceMetadata.items for OS Login), gcp.sql.instances_list (single; array of Cloud SQL instances), gcp.iam.service_accounts_list (single; array of service accounts), gcp.iam.service_account_keys_list (per_resource of service_accounts_list via email), gcp.project.iam_policy (single; project IAM policy with bindings[] and auditConfigs[]), gcp.container.clusters_list (single; array of GKE clusters), gcp.dns.managed_zones_list (single; array of managed zones).
+gcloud note: 'gcloud ... list --format json' returns a JSON ARRAY at the root — use resourcesPath "$". Project-level single checks use resourceIdField "$scope". New collectors must include {project} in the command.`;
+
+const EXISTING_COLLECTORS =
+  provider === "aws"
+    ? EXISTING_AWS_COLLECTORS
+    : provider === "azure"
+      ? EXISTING_AZURE_COLLECTORS
+      : provider === "gcp"
+        ? EXISTING_GCP_COLLECTORS
+        : "";
+
 const SLICE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -200,7 +217,7 @@ const results = await pipeline(
   slices,
   (slice) =>
     agent(
-      `${CONTRACT}\n\n${provider === "aws" ? EXISTING_AWS_COLLECTORS : ""}\n\nYOUR ASSIGNMENT:\nProvider: ${provider}\nService: ${slice.service}\nPort approximately ${slice.target} of the highest-value, most groundable Prowler/CIS checks for ${provider} ${slice.service}. Focus: ${slice.focus}\nAssign control ids CR-${provider.toUpperCase()}-${slice.idService || slice.service.toUpperCase().replace(/[^A-Z0-9]/g, "")}-NNN starting at NNN=${String(slice.start).padStart(3, "0")} and incrementing. Prefer high/critical exposure, identity, encryption, logging and resilience checks. Exclude anything not groundable from a single read-only CLI call (note why in excludedChecks). Produce controls + any new collectors + fixtures per the contract.`,
+      `${CONTRACT}\n\n${EXISTING_COLLECTORS}\n\nYOUR ASSIGNMENT:\nProvider: ${provider}\nService: ${slice.service}\nPort approximately ${slice.target} of the highest-value, most groundable Prowler/CIS checks for ${provider} ${slice.service}. Focus: ${slice.focus}\nAssign control ids CR-${provider.toUpperCase()}-${slice.idService || slice.service.toUpperCase().replace(/[^A-Z0-9]/g, "")}-NNN starting at NNN=${String(slice.start).padStart(3, "0")} and incrementing. Prefer high/critical exposure, identity, encryption, logging and resilience checks. Exclude anything not groundable from a single read-only CLI call (note why in excludedChecks). Produce controls + any new collectors + fixtures per the contract.`,
       { label: `gen:${provider}:${slice.service}`, phase: "Generate", schema: SLICE_SCHEMA },
     ),
   (gen, slice) => {

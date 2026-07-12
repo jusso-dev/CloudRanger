@@ -1,0 +1,463 @@
+[
+  {
+    "controlId": "CR-GCP-FIREWALL-100",
+    "cases": [
+      {
+        "name": "fails open ssh from internet",
+        "expected": "fail",
+        "resourceId": "allow-ssh-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-ssh-world",
+                "network": "https://www.googleapis.com/compute/v1/projects/p/global/networks/default",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["22"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes restricted ssh",
+        "expected": "pass",
+        "resourceId": "allow-ssh-corp",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-ssh-corp",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["10.0.0.0/8"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["22"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable egress rule",
+        "expected": "not_applicable",
+        "resourceId": "egress-allow-all",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "egress-allow-all",
+                "direction": "EGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "destinationRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "all"
+                  }
+                ],
+                "logConfig": {
+                  "enable": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-101",
+    "cases": [
+      {
+        "name": "fails open rdp from internet",
+        "expected": "fail",
+        "resourceId": "allow-rdp-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-rdp-world",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["3389"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes rdp not exposed",
+        "expected": "pass",
+        "resourceId": "allow-http-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-http-world",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["80", "443"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-102",
+    "cases": [
+      {
+        "name": "fails allow-all protocol from internet",
+        "expected": "fail",
+        "resourceId": "allow-all-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-all-world",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "all"
+                  }
+                ],
+                "logConfig": {
+                  "enable": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails tcp with no ports from internet",
+        "expected": "fail",
+        "resourceId": "allow-tcp-all-ports",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-tcp-all-ports",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp"
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes scoped ports from internet",
+        "expected": "pass",
+        "resourceId": "allow-https-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-https-world",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["443"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-103",
+    "cases": [
+      {
+        "name": "fails logging disabled",
+        "expected": "fail",
+        "resourceId": "allow-internal",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-internal",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["10.0.0.0/8"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["0-65535"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails logConfig missing",
+        "expected": "fail",
+        "resourceId": "allow-icmp",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-icmp",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["10.0.0.0/8"],
+                "allowed": [
+                  {
+                    "IPProtocol": "icmp"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes logging enabled",
+        "expected": "pass",
+        "resourceId": "allow-web",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-web",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["10.0.0.0/8"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["443"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-104",
+    "cases": [
+      {
+        "name": "fails postgres open to internet",
+        "expected": "fail",
+        "resourceId": "allow-pg-world",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-pg-world",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["0.0.0.0/0"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["5432"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes db restricted to app tier",
+        "expected": "pass",
+        "resourceId": "allow-pg-apptier",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-pg-apptier",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceRanges": ["10.20.0.0/16"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["5432"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FIREWALL-105",
+    "cases": [
+      {
+        "name": "fails legacy sourceTags used",
+        "expected": "fail",
+        "resourceId": "allow-from-web-tag",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-from-web-tag",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceTags": ["web"],
+                "targetTags": ["db"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["5432"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes service-account targeting",
+        "expected": "pass",
+        "resourceId": "allow-from-web-sa",
+        "records": [
+          {
+            "collectorId": "gcp.compute.firewall_rules_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allow-from-web-sa",
+                "direction": "INGRESS",
+                "priority": 1000,
+                "disabled": false,
+                "sourceServiceAccounts": ["web-sa@p.iam.gserviceaccount.com"],
+                "targetServiceAccounts": ["db-sa@p.iam.gserviceaccount.com"],
+                "allowed": [
+                  {
+                    "IPProtocol": "tcp",
+                    "ports": ["5432"]
+                  }
+                ],
+                "logConfig": {
+                  "enable": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

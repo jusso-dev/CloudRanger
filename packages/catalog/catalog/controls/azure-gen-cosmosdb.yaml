@@ -1,0 +1,229 @@
+controls:
+  - id: CR-AZURE-COSMOSDB-100
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account disables public network access
+    description: Verifies publicNetworkAccess is Disabled so the account is
+      reachable only via private endpoints.
+    rationale: >
+      A Cosmos DB account with public network access enabled is reachable from
+      the internet; combined with a leaked key or lax firewall this is a direct
+      data-exfiltration path.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cosmosdb_account_use_private_endpoints
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: Cosmos DB account allows public network access.
+    passMessage: Cosmos DB account has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the account.
+        - Disable public network access on the account (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/how-to-configure-private-endpoints
+  - id: CR-AZURE-COSMOSDB-101
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account disables local (key-based) authentication
+    description: Verifies disableLocalAuth is true so only Microsoft Entra ID (RBAC)
+      authentication is permitted.
+    rationale: >
+      Account keys grant full data-plane access, cannot be scoped, and are often
+      shared or leaked. Disabling local auth forces auditable Entra ID
+      identities.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cosmosdb_account_disable_local_authentication
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: disableLocalAuth
+      value: true
+    failMessage: Cosmos DB account allows key-based (local) authentication.
+    passMessage: Cosmos DB account requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true.
+      steps:
+        - Migrate clients to Microsoft Entra ID token authentication with RBAC.
+        - Disable local (key-based) authentication on the account (operator
+          action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/how-to-setup-rbac#disable-local-auth
+  - id: CR-AZURE-COSMOSDB-102
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account restricts access with an IP firewall or VNet filter
+    description: Verifies the account has explicit IP firewall rules or virtual
+      network filtering enabled rather than being open to all networks.
+    rationale: >
+      With no IP firewall and no VNet filter, any host that obtains a key or
+      token can reach the account; a network allowlist adds a second control.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: cosmosdb_account_firewall_use_selected_networks
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: isVirtualNetworkFilterEnabled
+          value: true
+        - op: and
+          exprs:
+            - op: exists
+              path: ipRules
+            - op: not
+              expr:
+                op: isEmpty
+                path: ipRules
+    failMessage: Cosmos DB account has no IP firewall rules and no VNet filter (open
+      to all networks).
+    passMessage: Cosmos DB account restricts access via IP firewall or VNet filter.
+    remediation:
+      summary: Configure IP firewall rules or enable virtual network filtering.
+      steps:
+        - Enumerate the source IP ranges or VNets that must reach the account.
+        - Add ipRules or enable isVirtualNetworkFilterEnabled with VNet rules
+          (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/how-to-configure-firewall
+  - id: CR-AZURE-COSMOSDB-103
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account requires TLS 1.2 or higher
+    description: Verifies minimalTlsVersion is Tls12 (TLS 1.2) rather than a legacy value.
+    rationale: >
+      TLS 1.0/1.1 have known weaknesses; permitting them lets clients negotiate
+      breakable transport encryption and fails modern compliance baselines.
+    severity: medium
+    categories:
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: cosmosdb_account_use_tls_12_version
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: minimalTlsVersion
+      value: Tls12
+    failMessage: Cosmos DB account permits TLS below 1.2.
+    passMessage: Cosmos DB account requires TLS 1.2.
+    remediation:
+      summary: Set the account's minimal TLS version to Tls12.
+      steps:
+        - Confirm no legacy client depends on TLS 1.0/1.1.
+        - Set minimalTlsVersion to Tls12 on the account (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/self-serve-minimum-tls-enforcement
+  - id: CR-AZURE-COSMOSDB-104
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account disables key-based metadata write access
+    description: Verifies disableKeyBasedMetadataWriteAccess is true so keys cannot
+      alter account metadata (containers, throughput, users).
+    rationale: >
+      When metadata writes via keys are allowed, a leaked key can create or
+      delete containers and change throughput, not just read data, widening
+      blast radius.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cosmosdb_account_disable_metadata_write_access
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: disableKeyBasedMetadataWriteAccess
+      value: true
+    failMessage: Cosmos DB account allows key-based metadata write access.
+    passMessage: Cosmos DB account disables key-based metadata write access.
+    remediation:
+      summary: Set disableKeyBasedMetadataWriteAccess to true.
+      steps:
+        - Move metadata management (container/throughput changes) to ARM/Entra
+          ID paths.
+        - Disable key-based metadata write access on the account (operator
+          action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/role-based-access-control
+  - id: CR-AZURE-COSMOSDB-105
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account uses continuous (point-in-time) backup
+    description: Verifies backupPolicy.type is Continuous, enabling point-in-time restore.
+    rationale: >
+      Periodic backups only allow restore to the latest snapshot; continuous
+      backup enables point-in-time restore, limiting data loss from accidental
+      or malicious writes.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cosmosdb_account_continuous_backup_enabled
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: backupPolicy.type
+      value: Continuous
+    failMessage: Cosmos DB account does not use continuous backup.
+    passMessage: Cosmos DB account uses continuous (point-in-time) backup.
+    remediation:
+      summary: Switch the account backup policy to Continuous.
+      steps:
+        - Confirm the account is eligible for continuous backup migration.
+        - Migrate the backup policy to Continuous (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/continuous-backup-restore-introduction

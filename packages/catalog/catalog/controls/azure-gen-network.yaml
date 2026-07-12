@@ -1,0 +1,631 @@
+controls:
+  - id: CR-AZURE-NETWORK-100
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows all ports from the internet
+    description: >
+      Verifies no network security group has an inbound allow rule that opens
+      every destination port ("*" or 0-65535) to Any/Internet/0.0.0.0/0.
+    rationale: >
+      An allow-all inbound rule from the internet exposes every listening
+      service on attached resources and is a catastrophic misconfiguration.
+    severity: critical
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_security_group_allow_all_ports_from_internet
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: or
+            exprs:
+              - op: equals
+                path: destinationPortRange
+                value: "*"
+              - op: equals
+                path: destinationPortRange
+                value: 0-65535
+              - op: anyItem
+                path: destinationPortRanges
+                condition:
+                  op: equals
+                  path: $
+                  value: "*"
+              - op: anyItem
+                path: destinationPortRanges
+                condition:
+                  op: equals
+                  path: $
+                  value: 0-65535
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows all ports from the internet.
+    passMessage: No internet-open all-ports rule.
+    remediation:
+      summary: Remove allow-all inbound rules and scope to required ports and sources.
+      steps:
+        - Delete or narrow the allow-all inbound rule (operator action).
+        - Define explicit rules only for required ports from specific source
+          ranges.
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.5"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-101
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows WinRM from the internet
+    description: >
+      Verifies no inbound allow rule exposes Windows Remote Management ports
+      5985 (HTTP) or 5986 (HTTPS) to Any/Internet sources.
+    rationale: >
+      Internet-exposed WinRM provides remote command execution on Windows hosts
+      and is a frequent lateral-movement and initial-access target.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_winrm_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 5985
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 5985
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 5986
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 5986
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows WinRM (5985/5986/tcp) from the internet.
+    passMessage: No internet-open WinRM rule.
+    remediation:
+      summary: Restrict WinRM sources or use Azure Bastion / private access.
+      steps:
+        - Prefer Azure Bastion or a management jump host for Windows
+          administration.
+        - Replace Any/Internet sources with specific management ranges (operator
+          action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.2"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-102
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows Telnet from the internet
+    description: >
+      Verifies no inbound allow rule exposes Telnet (TCP 23) to
+      Any/Internet/0.0.0.0/0.
+    rationale: >
+      Telnet transmits credentials and commands in cleartext; exposing it to the
+      internet enables trivial interception and takeover.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: network_telnet_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 23
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 23
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows Telnet (23/tcp) from the internet.
+    passMessage: No internet-open Telnet rule.
+    remediation:
+      summary: Remove internet Telnet exposure and use SSH instead.
+      steps:
+        - Disable Telnet and use SSH for remote shell access.
+        - Replace Any/Internet sources with specific ranges (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.1"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-103
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows SMB / CIFS from the internet
+    description: >
+      Verifies no inbound allow rule exposes SMB file sharing (TCP 445, or the
+      legacy NetBIOS ports 137-139) to Any/Internet sources.
+    rationale: >
+      Internet-exposed SMB is a proven worm and ransomware vector (EternalBlue)
+      and leaks credential hashes.
+    severity: critical
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_smb_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 445
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 445
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 139
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 139
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows SMB/CIFS (445 or 137-139) from the internet.
+    passMessage: No internet-open SMB rule.
+    remediation:
+      summary: Never expose SMB to the internet; use private connectivity or VPN.
+      steps:
+        - Remove Any/Internet SMB rules (operator action).
+        - Reach file shares over VPN, ExpressRoute, or private endpoints.
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.5"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-104
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows FTP from the internet
+    description: >
+      Verifies no inbound allow rule exposes FTP control/data ports (TCP 20-21)
+      to Any/Internet sources.
+    rationale: >
+      FTP sends credentials in cleartext and is commonly abused for anonymous
+      access and malware staging when internet-exposed.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: network_ftp_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 21
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 21
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 20
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 20
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows FTP (20-21/tcp) from the internet.
+    passMessage: No internet-open FTP rule.
+    remediation:
+      summary: Replace internet FTP with SFTP/FTPS and restrict sources.
+      steps:
+        - Use SFTP or FTPS instead of plain FTP.
+        - Replace Any/Internet sources with specific ranges (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.1"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-105
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows NoSQL / cache ports from the internet
+    description: >
+      Verifies no inbound allow rule exposes MongoDB (27017), Redis (6379),
+      Cassandra (9042) or Elasticsearch (9200) to Any/Internet sources.
+    rationale: >
+      These datastores frequently ship with weak or no authentication; internet
+      exposure has caused large-scale data theft and ransom incidents.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+      - database
+    source:
+      engine: prowler
+      id: network_nosql_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 27017
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 27017
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 6379
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 6379
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 9042
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 9042
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 9200
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 9200
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows NoSQL/cache ports (27017/6379/9042/9200) from the internet.
+    passMessage: No internet-open NoSQL/cache ports.
+    remediation:
+      summary: Keep datastores private; front them with private endpoints or VPN.
+      steps:
+        - Remove Any/Internet rules for datastore ports (operator action).
+        - Restrict access to application subnets or private endpoints.
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.3"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-106
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows any protocol on any port from the internet
+    description: >
+      Verifies no inbound allow rule combines protocol "*" (Any) with an
+      all-ports range from Any/Internet sources.
+    rationale: >
+      A protocol-any, port-any, source-any inbound rule is functionally an open
+      firewall and defeats network segmentation entirely.
+    severity: critical
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_security_group_allow_any_any_internet
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: equals
+            path: protocol
+            value: "*"
+          - op: or
+            exprs:
+              - op: equals
+                path: destinationPortRange
+                value: "*"
+              - op: equals
+                path: destinationPortRange
+                value: 0-65535
+              - op: anyItem
+                path: destinationPortRanges
+                condition:
+                  op: equals
+                  path: $
+                  value: "*"
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows any protocol on any port from the internet.
+    passMessage: No any/any/internet inbound rule.
+    remediation:
+      summary: Remove the any/any allow rule and define least-privilege rules.
+      steps:
+        - Delete the protocol-any, port-any inbound allow rule (operator action).
+        - Replace with explicit protocol/port rules from known sources.
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.5"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-107
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows Kubernetes API server from the internet
+    description: >
+      Verifies no inbound allow rule exposes the Kubernetes API server port (TCP
+      6443) to Any/Internet sources.
+    rationale: >
+      An internet-reachable Kubernetes API server broadens the attack surface
+      for control-plane exploitation and credential attacks.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_kubernetes_api_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 6443
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 6443
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows Kubernetes API (6443/tcp) from the internet.
+    passMessage: No internet-open Kubernetes API rule.
+    remediation:
+      summary: Restrict API server access to authorized ranges or use a private cluster.
+      steps:
+        - Use authorized IP ranges or a private control plane.
+        - Replace Any/Internet sources with specific management ranges (operator
+          action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.1"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview

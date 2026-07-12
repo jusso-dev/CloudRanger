@@ -1,0 +1,49 @@
+collectors:
+  - id: azure.sql.audit_policy_show
+    provider: azure
+    service: sql
+    description: Blob-auditing policy for one SQL logical server (state, retention,
+      log destinations).
+    kind: per_resource
+    command: az sql server audit-policy show --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.sql.list_servers
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns an object with state (Enabled/Disabled), retentionDays,
+      isAzureMonitorTargetEnabled, storageEndpoint, and auditActionsAndGroups.
+      Requires Microsoft.Sql/servers/auditingSettings/read.
+  - id: azure.sql.firewall_rule_list
+    provider: azure
+    service: sql
+    description: Server-level firewall rules for one SQL logical server.
+    kind: per_resource
+    command: az sql server firewall-rule list --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.sql.list_servers
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns a JSON array of firewall rules, each with name, startIpAddress,
+      endIpAddress. The special AllowAllWindowsAzureIps rule uses
+      0.0.0.0-0.0.0.0.
+  - id: azure.sql.ad_admin_list
+    provider: azure
+    service: sql
+    description: Azure AD administrators configured on one SQL logical server.
+    kind: per_resource
+    command: az sql server ad-admin list --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.sql.list_servers
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns a JSON array; each entry has login, sid, tenantId,
+      administratorType (ActiveDirectory). Empty array when no AAD admin set.

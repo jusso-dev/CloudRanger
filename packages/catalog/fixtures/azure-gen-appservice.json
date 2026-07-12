@@ -1,0 +1,419 @@
+[
+  {
+    "controlId": "CR-AZURE-APPSERVICE-100",
+    "cases": [
+      {
+        "name": "passes with system-assigned identity",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-mi",
+                "name": "app-mi",
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "11111111-1111-1111-1111-111111111111",
+                  "tenantId": "22222222-2222-2222-2222-222222222222"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with no identity",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-noid",
+                "name": "app-noid",
+                "identity": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with identity type None",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-none",
+                "name": "app-none",
+                "identity": {
+                  "type": "None"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-101",
+    "cases": [
+      {
+        "name": "passes client cert enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-cc",
+                "name": "app-cc",
+                "clientCertEnabled": true,
+                "clientCertMode": "Required"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails client cert disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-nocc",
+                "name": "app-nocc",
+                "clientCertEnabled": false,
+                "clientCertMode": "Required"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-102",
+    "cases": [
+      {
+        "name": "passes http2 enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-h2",
+            "exitCode": 0,
+            "output": {
+              "http20Enabled": true,
+              "minTlsVersion": "1.2",
+              "ftpsState": "Disabled"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails http2 disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-h1",
+            "exitCode": 0,
+            "output": {
+              "http20Enabled": false,
+              "minTlsVersion": "1.2",
+              "ftpsState": "Disabled"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-103",
+    "cases": [
+      {
+        "name": "passes remote debugging off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-rd0",
+            "exitCode": 0,
+            "output": {
+              "remoteDebuggingEnabled": false,
+              "remoteDebuggingVersion": null
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails remote debugging on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-rd1",
+            "exitCode": 0,
+            "output": {
+              "remoteDebuggingEnabled": true,
+              "remoteDebuggingVersion": "VS2022"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-104",
+    "cases": [
+      {
+        "name": "passes always on true",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-ao1",
+            "exitCode": 0,
+            "output": {
+              "alwaysOn": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails always on false",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-ao0",
+            "exitCode": 0,
+            "output": {
+              "alwaysOn": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-105",
+    "cases": [
+      {
+        "name": "passes http logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-hl1",
+            "exitCode": 0,
+            "output": {
+              "httpLoggingEnabled": true,
+              "detailedErrorLoggingEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails http logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-hl0",
+            "exitCode": 0,
+            "output": {
+              "httpLoggingEnabled": false,
+              "detailedErrorLoggingEnabled": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-106",
+    "cases": [
+      {
+        "name": "passes detailed error logging enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-de1",
+            "exitCode": 0,
+            "output": {
+              "detailedErrorLoggingEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails detailed error logging disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-de0",
+            "exitCode": 0,
+            "output": {
+              "detailedErrorLoggingEnabled": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-107",
+    "cases": [
+      {
+        "name": "passes request tracing enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-rt1",
+            "exitCode": 0,
+            "output": {
+              "requestTracingEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails request tracing disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-rt0",
+            "exitCode": 0,
+            "output": {
+              "requestTracingEnabled": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-108",
+    "cases": [
+      {
+        "name": "passes strong GCM cipher",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-c1",
+            "exitCode": 0,
+            "output": {
+              "minTlsVersion": "1.2",
+              "minTlsCipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails weak CBC cipher",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-c0",
+            "exitCode": 0,
+            "output": {
+              "minTlsVersion": "1.2",
+              "minTlsCipherSuite": "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when cipher suite absent",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-cna",
+            "exitCode": 0,
+            "output": {
+              "minTlsVersion": "1.2"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPSERVICE-109",
+    "cases": [
+      {
+        "name": "passes mode Required when enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-req",
+                "name": "app-req",
+                "clientCertEnabled": true,
+                "clientCertMode": "Required"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails mode Optional when enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-opt",
+                "name": "app-opt",
+                "clientCertEnabled": true,
+                "clientCertMode": "Optional"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable when client certs disabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.webapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-off",
+                "name": "app-off",
+                "clientCertEnabled": false,
+                "clientCertMode": "Optional"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

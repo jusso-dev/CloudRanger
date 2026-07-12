@@ -1,0 +1,315 @@
+[
+  {
+    "controlId": "CR-AWS-ECS-001",
+    "cases": [
+      {
+        "name": "no privileged containers",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+                "family": "web",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "privileged": false
+                  },
+                  {
+                    "name": "sidecar",
+                    "image": "envoy:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "privileged container present",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/priv:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/priv:1",
+                "family": "priv",
+                "networkMode": "bridge",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "app:latest",
+                    "privileged": true
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-002",
+    "cases": [
+      {
+        "name": "all containers log",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+                "family": "web",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "logConfiguration": {
+                      "logDriver": "awslogs",
+                      "options": {
+                        "awslogs-group": "/ecs/web",
+                        "awslogs-region": "us-east-1",
+                        "awslogs-stream-prefix": "app"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "container missing log configuration",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/nolog:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/nolog:1",
+                "family": "nolog",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "logConfiguration": {
+                      "logDriver": "awslogs"
+                    }
+                  },
+                  {
+                    "name": "sidecar",
+                    "image": "envoy:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-003",
+    "cases": [
+      {
+        "name": "all containers readonly root",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+                "family": "web",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "readonlyRootFilesystem": true
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "container with writable root filesystem",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/rw:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/rw:1",
+                "family": "rw",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "readonlyRootFilesystem": true
+                  },
+                  {
+                    "name": "worker",
+                    "image": "worker:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-005",
+    "cases": [
+      {
+        "name": "awsvpc network mode",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+                "family": "web",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "host network mode",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/hostnet:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/hostnet:1",
+                "family": "hostnet",
+                "networkMode": "host",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-006",
+    "cases": [
+      {
+        "name": "all containers non-root user",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/web:3",
+                "family": "web",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "user": "1000"
+                  },
+                  {
+                    "name": "sidecar",
+                    "image": "envoy:latest",
+                    "user": "appuser"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "container runs as root",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/root:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/root:1",
+                "family": "root",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "app",
+                    "image": "nginx:latest",
+                    "user": "1000"
+                  },
+                  {
+                    "name": "worker",
+                    "image": "worker:latest"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

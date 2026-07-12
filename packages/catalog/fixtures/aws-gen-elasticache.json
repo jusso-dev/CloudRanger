@@ -1,0 +1,384 @@
+[
+  {
+    "controlId": "CR-AWS-ELASTICACHE-001",
+    "cases": [
+      {
+        "name": "pass at-rest encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail at-rest encryption disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "legacy-cache",
+                  "Description": "Legacy Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "disabled",
+                  "MultiAZ": "disabled",
+                  "SnapshotRetentionLimit": 0,
+                  "AtRestEncryptionEnabled": false,
+                  "TransitEncryptionEnabled": false,
+                  "AuthTokenEnabled": false,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:legacy-cache"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ELASTICACHE-002",
+    "cases": [
+      {
+        "name": "pass in-transit encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "TransitEncryptionMode": "required",
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail in-transit encryption disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "legacy-cache",
+                  "Description": "Legacy Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "disabled",
+                  "MultiAZ": "disabled",
+                  "SnapshotRetentionLimit": 1,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": false,
+                  "AuthTokenEnabled": false,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:legacy-cache"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ELASTICACHE-003",
+    "cases": [
+      {
+        "name": "pass automatic failover enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail automatic failover disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "single-node",
+                  "Description": "Single node group",
+                  "Status": "available",
+                  "AutomaticFailover": "disabled",
+                  "MultiAZ": "disabled",
+                  "SnapshotRetentionLimit": 0,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:single-node"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ELASTICACHE-004",
+    "cases": [
+      {
+        "name": "pass multi-az enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail multi-az disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "single-az",
+                  "Description": "Single AZ group",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "disabled",
+                  "SnapshotRetentionLimit": 3,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:single-az"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ELASTICACHE-005",
+    "cases": [
+      {
+        "name": "pass auth token enabled with transit encryption",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail transit encryption on but no auth token",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "tls-noauth",
+                  "Description": "TLS without auth",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": false,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:tls-noauth"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when transit encryption disabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "no-tls",
+                  "Description": "No TLS group",
+                  "Status": "available",
+                  "AutomaticFailover": "disabled",
+                  "MultiAZ": "disabled",
+                  "SnapshotRetentionLimit": 0,
+                  "AtRestEncryptionEnabled": false,
+                  "TransitEncryptionEnabled": false,
+                  "AuthTokenEnabled": false,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:no-tls"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ELASTICACHE-006",
+    "cases": [
+      {
+        "name": "pass retention limit positive",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "prod-cache",
+                  "Description": "Production Redis",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 7,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:prod-cache"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail retention limit zero",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.elasticache.describe_replication_groups",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationGroups": [
+                {
+                  "ReplicationGroupId": "nobackup",
+                  "Description": "No backups",
+                  "Status": "available",
+                  "AutomaticFailover": "enabled",
+                  "MultiAZ": "enabled",
+                  "SnapshotRetentionLimit": 0,
+                  "AtRestEncryptionEnabled": true,
+                  "TransitEncryptionEnabled": true,
+                  "AuthTokenEnabled": true,
+                  "ARN": "arn:aws:elasticache:us-east-1:111122223333:replicationgroup:nobackup"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

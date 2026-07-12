@@ -1,0 +1,532 @@
+[
+  {
+    "controlId": "CR-AZURE-SQL-100",
+    "cases": [
+      {
+        "name": "public access disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+                "publicNetworkAccess": "Disabled",
+                "minimalTlsVersion": "1.2",
+                "restrictOutboundNetworkAccess": "Enabled",
+                "administratorLogin": "adm",
+                "administrators": {
+                  "azureADOnlyAuthentication": true,
+                  "administratorType": "ActiveDirectory"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public access enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-open",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open",
+                "publicNetworkAccess": "Enabled",
+                "minimalTlsVersion": "1.2",
+                "restrictOutboundNetworkAccess": "Disabled",
+                "administratorLogin": "adm",
+                "administrators": {
+                  "azureADOnlyAuthentication": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-101",
+    "cases": [
+      {
+        "name": "tls 1.2 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "publicNetworkAccess": "Disabled",
+                "minimalTlsVersion": "1.2",
+                "restrictOutboundNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tls 1.0 fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-legacy",
+                "publicNetworkAccess": "Disabled",
+                "minimalTlsVersion": "1.0",
+                "restrictOutboundNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-102",
+    "cases": [
+      {
+        "name": "outbound restricted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "restrictOutboundNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "outbound not restricted fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-open",
+                "restrictOutboundNetworkAccess": "Disabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-103",
+    "cases": [
+      {
+        "name": "aad admin present passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.ad_admin_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "administratorType": "ActiveDirectory",
+                "login": "dba-group",
+                "sid": "11111111-1111-1111-1111-111111111111",
+                "tenantId": "22222222-2222-2222-2222-222222222222",
+                "name": "ActiveDirectory",
+                "type": "Microsoft.Sql/servers/administrators"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no aad admin fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.ad_admin_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-noaad",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      },
+      {
+        "name": "authorization denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.sql.ad_admin_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Sql/servers/administrators/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-104",
+    "cases": [
+      {
+        "name": "aad-only enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "administrators": {
+                  "administratorType": "ActiveDirectory",
+                  "login": "dba-group",
+                  "sid": "11111111-1111-1111-1111-111111111111",
+                  "azureADOnlyAuthentication": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "aad-only disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-mixed",
+                "administrators": {
+                  "administratorType": "ActiveDirectory",
+                  "login": "dba-group",
+                  "azureADOnlyAuthentication": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no administrators block fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-sqlauth",
+                "administratorLogin": "sqladm"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-105",
+    "cases": [
+      {
+        "name": "auditing enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "retentionDays": 90,
+              "isAzureMonitorTargetEnabled": true,
+              "storageEndpoint": "",
+              "auditActionsAndGroups": [
+                "SUCCESSFUL_DATABASE_AUTHENTICATION_GROUP",
+                "FAILED_DATABASE_AUTHENTICATION_GROUP",
+                "BATCH_COMPLETED_GROUP"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "auditing disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-noaudit",
+            "exitCode": 0,
+            "output": {
+              "state": "Disabled",
+              "retentionDays": 0,
+              "isAzureMonitorTargetEnabled": false,
+              "storageEndpoint": null,
+              "auditActionsAndGroups": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-106",
+    "cases": [
+      {
+        "name": "retention 90 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-prod",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "retentionDays": 90,
+              "isAzureMonitorTargetEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "retention unlimited zero passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-unlimited",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "retentionDays": 0,
+              "isAzureMonitorTargetEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "retention 30 fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-short",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "retentionDays": 30,
+              "isAzureMonitorTargetEnabled": false,
+              "storageEndpoint": "https://audit.blob.core.windows.net/"
+            }
+          }
+        ]
+      },
+      {
+        "name": "auditing disabled not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-noaudit",
+            "exitCode": 0,
+            "output": {
+              "state": "Disabled",
+              "retentionDays": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-107",
+    "cases": [
+      {
+        "name": "no allow-azure rule passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/.../sql-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "office",
+                "startIpAddress": "203.0.113.10",
+                "endIpAddress": "203.0.113.20",
+                "type": "Microsoft.Sql/servers/firewallRules"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "allow-azure-services rule fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/.../sql-open",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "AllowAllWindowsAzureIps",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0",
+                "type": "Microsoft.Sql/servers/firewallRules"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "empty rule list passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/.../sql-locked",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-108",
+    "cases": [
+      {
+        "name": "narrow rules pass",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/.../sql-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "office",
+                "startIpAddress": "203.0.113.10",
+                "endIpAddress": "203.0.113.20"
+              },
+              {
+                "name": "AllowAllWindowsAzureIps",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "full internet range fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/.../sql-wide",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "AllowAll",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "255.255.255.255"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-109",
+    "cases": [
+      {
+        "name": "azure monitor target passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-prod",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "isAzureMonitorTargetEnabled": true,
+              "storageEndpoint": "",
+              "retentionDays": 90
+            }
+          }
+        ]
+      },
+      {
+        "name": "storage endpoint passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-store",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "isAzureMonitorTargetEnabled": false,
+              "storageEndpoint": "https://audit.blob.core.windows.net/",
+              "retentionDays": 90
+            }
+          }
+        ]
+      },
+      {
+        "name": "no destination fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-nodest",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "isAzureMonitorTargetEnabled": false,
+              "storageEndpoint": "",
+              "retentionDays": 90
+            }
+          }
+        ]
+      },
+      {
+        "name": "auditing disabled not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.sql.audit_policy_show",
+            "resourceKey": "/subscriptions/s1/.../sql-off",
+            "exitCode": 0,
+            "output": {
+              "state": "Disabled",
+              "isAzureMonitorTargetEnabled": false,
+              "storageEndpoint": null
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

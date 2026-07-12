@@ -1,0 +1,351 @@
+[
+  {
+    "controlId": "CR-AZURE-AKS-100",
+    "cases": [
+      {
+        "name": "pass azure network policy",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "networkProfile": {
+                  "networkPlugin": "azure",
+                  "networkPolicy": "azure"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no network policy",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "networkProfile": {
+                  "networkPlugin": "kubenet",
+                  "networkPolicy": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-101",
+    "cases": [
+      {
+        "name": "pass authorized ip ranges set",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": false,
+                  "authorizedIpRanges": ["203.0.113.0/24"]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public with no ip ranges",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": false,
+                  "authorizedIpRanges": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "n/a private cluster",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c3",
+                "name": "c3",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-102",
+    "cases": [
+      {
+        "name": "pass azure policy addon on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "addonProfiles": {
+                  "azurepolicy": {
+                    "enabled": true,
+                    "config": null
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail azure policy addon off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "addonProfiles": {
+                  "azurepolicy": {
+                    "enabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-103",
+    "cases": [
+      {
+        "name": "pass omsagent enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "addonProfiles": {
+                  "omsagent": {
+                    "enabled": true,
+                    "config": {
+                      "logAnalyticsWorkspaceResourceID": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.OperationalInsights/workspaces/w1"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no monitoring addon",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "addonProfiles": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-104",
+    "cases": [
+      {
+        "name": "pass local accounts disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "disableLocalAccounts": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail local accounts enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "disableLocalAccounts": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-105",
+    "cases": [
+      {
+        "name": "pass managed aad",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "aadProfile": {
+                  "managed": true,
+                  "enableAzureRbac": true,
+                  "adminGroupObjectIDs": ["11111111-1111-1111-1111-111111111111"]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no aad profile",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "aadProfile": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-106",
+    "cases": [
+      {
+        "name": "pass azure rbac enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "aadProfile": {
+                  "managed": true,
+                  "enableAzureRbac": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail azure rbac disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "aadProfile": {
+                  "managed": true,
+                  "enableAzureRbac": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "n/a unmanaged aad",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c3",
+                "name": "c3",
+                "aadProfile": {
+                  "managed": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

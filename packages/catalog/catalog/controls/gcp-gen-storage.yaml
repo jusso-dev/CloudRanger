@@ -1,0 +1,265 @@
+controls:
+  - id: CR-GCP-STORAGE-100
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has object versioning enabled
+    description: >
+      Verifies Cloud Storage object versioning is enabled so overwritten or
+      deleted objects retain a recoverable noncurrent version.
+    rationale: >
+      Without versioning, an accidental or malicious overwrite/delete is
+      unrecoverable, defeating ransomware recovery and audit needs.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_object_versioning_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: versioning_enabled
+      value: true
+    failMessage: Object versioning is not enabled on the bucket.
+    passMessage: Object versioning is enabled on the bucket.
+    remediation:
+      summary: Enable object versioning on the bucket.
+      steps:
+        - Enable versioning (operator action).
+        - Add lifecycle rules to age out noncurrent versions to control cost.
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/storage/docs/object-versioning
+  - id: CR-GCP-STORAGE-101
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket uses a customer-managed encryption key
+    description: >
+      Verifies the bucket has a default customer-managed encryption key (CMEK)
+      configured instead of relying solely on Google-managed encryption.
+    rationale: >
+      A CMEK gives the organization control over key rotation and revocation;
+      without it, keys cannot be independently disabled to cut off access.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_encryption_customer_managed_keys
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: default_kms_key
+        - op: not
+          expr:
+            op: isEmpty
+            path: default_kms_key
+    failMessage: Bucket has no default customer-managed encryption key.
+    passMessage: Bucket uses a customer-managed encryption key.
+    remediation:
+      summary: Set a default CMEK on the bucket.
+      steps:
+        - Create or select a Cloud KMS key in a compatible location.
+        - Grant the Cloud Storage service agent the CryptoKey
+          Encrypter/Decrypter role.
+        - Set the bucket default encryption key (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/storage/docs/encryption/using-customer-managed-keys
+  - id: CR-GCP-STORAGE-102
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has a retention policy configured
+    description: >
+      Verifies a bucket retention policy is set with a nonzero retention period,
+      enforcing a minimum object retention duration.
+    rationale: >
+      A retention policy provides WORM-style protection against premature
+      deletion, supporting compliance and ransomware resilience.
+    severity: low
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_retention_policy
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: retention_policy.retention_period
+        - op: gt
+          path: retention_policy.retention_period
+          value: 0
+    failMessage: Bucket has no retention policy configured.
+    passMessage: Bucket has a retention policy with a nonzero retention period.
+    remediation:
+      summary: Set a retention policy on the bucket.
+      steps:
+        - Determine the minimum retention duration required by policy.
+        - Set the bucket retention policy (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://cloud.google.com/storage/docs/bucket-lock
+  - id: CR-GCP-STORAGE-103
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket retention policy is locked
+    description: >
+      Verifies the bucket retention policy is locked so the retention period
+      cannot be reduced or removed.
+    rationale: >
+      An unlocked retention policy can be shortened or deleted by anyone with
+      admin rights, so it provides no real WORM guarantee until locked.
+    severity: low
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_retention_policy_lock
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: exists
+      path: retention_policy.retention_period
+    passWhen:
+      op: equals
+      path: retention_policy.is_locked
+      value: true
+    failMessage: Bucket retention policy is not locked.
+    passMessage: Bucket retention policy is locked.
+    remediation:
+      summary: Lock the bucket retention policy.
+      steps:
+        - Confirm the retention period is correct (locking is irreversible).
+        - Lock the retention policy (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://cloud.google.com/storage/docs/using-bucket-lock
+  - id: CR-GCP-STORAGE-104
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has usage and storage logging enabled
+    description: >
+      Verifies the bucket delivers usage and storage access logs to a log bucket
+      via its logging configuration.
+    rationale: >
+      Without access logging, unauthorized reads or writes to bucket data leave
+      no local audit trail for investigation.
+    severity: low
+    categories:
+      - storage
+      - logging
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_logging_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: logging_config.log_bucket
+        - op: not
+          expr:
+            op: isEmpty
+            path: logging_config.log_bucket
+    failMessage: Bucket has no usage and storage logging configured.
+    passMessage: Bucket delivers usage and storage logs to a log bucket.
+    remediation:
+      summary: Enable usage and storage logging to a dedicated log bucket.
+      steps:
+        - Create or select a log destination bucket.
+        - Grant the Cloud Storage log delivery group write access to it.
+        - Enable logging on the source bucket (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - DE.CM
+    references:
+      - https://cloud.google.com/storage/docs/access-logs
+  - id: CR-GCP-STORAGE-105
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket does not grant IAM access to anonymous or all authenticated users
+    description: >
+      Verifies no bucket IAM binding member is allUsers or allAuthenticatedUsers
+      for any role, evaluated on the bucket IAM policy.
+    rationale: >
+      A single public member binding on any role exposes bucket data or
+      configuration to the internet or to any Google account.
+    severity: critical
+    categories:
+      - storage
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_public_access
+      license: Apache-2.0
+    collector: gcp.storage.bucket_iam_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: anyItem
+        path: members
+        condition:
+          op: in
+          path: $
+          values:
+            - allUsers
+            - allAuthenticatedUsers
+    failMessage: Bucket IAM grants access to allUsers or allAuthenticatedUsers.
+    passMessage: Bucket IAM has no anonymous or all-authenticated members.
+    remediation:
+      summary: Remove public members from the bucket IAM policy.
+      steps:
+        - Confirm the bucket is not an intentional public dataset or static site.
+        - Remove any allUsers/allAuthenticatedUsers bindings (operator action).
+        - Enforce public access prevention to block future public grants.
+      verifyCommand: gcloud storage buckets get-iam-policy gs://<bucket> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "5.1"
+    references:
+      - https://cloud.google.com/storage/docs/access-control/making-data-public

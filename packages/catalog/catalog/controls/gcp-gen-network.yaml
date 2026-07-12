@@ -1,0 +1,298 @@
+controls:
+  - id: CR-GCP-NETWORK-100
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: No legacy VPC networks exist in the project
+    description: The project contains no legacy (pre-subnet) VPC networks, which are
+      identified by the presence of an IPv4Range field.
+    rationale: Legacy networks use a single global IP range with no subnets or
+      regional isolation, cannot use modern security controls (VPC Flow Logs,
+      Private Google Access, firewall rule granularity), and are deprecated by
+      Google. Their flat topology increases blast radius during lateral
+      movement.
+    severity: medium
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: compute_network_not_legacy
+      license: Apache-2.0
+    collector: gcp.compute.networks_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: notExists
+      path: IPv4Range
+    failMessage: This VPC network is a legacy network (has an IPv4Range); legacy
+      networks are deprecated and lack subnet-level controls.
+    passMessage: VPC network is a modern subnet-mode network, not a legacy network.
+    remediation:
+      summary: Migrate legacy networks to auto or custom subnet-mode VPC networks.
+      steps:
+        - Create a new custom-mode VPC network with appropriate subnets.
+        - Migrate workloads and firewall rules to the new network.
+        - Delete the legacy network once migration is verified.
+      verifyCommand: gcloud compute networks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "3.2"
+    references:
+      - https://cloud.google.com/vpc/docs/legacy
+      - https://cloud.google.com/vpc/docs/vpc
+  - id: CR-GCP-NETWORK-101
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: No default VPC network exists in the project
+    description: The auto-created default VPC network named "default" has been
+      removed from the project.
+    rationale: The default network is created in auto-subnet mode with permissive
+      default firewall rules (default-allow-ssh, default-allow-rdp,
+      default-allow-icmp from 0.0.0.0/0) and subnets in every region, expanding
+      the attack surface. Removing it forces deliberate, least-privilege network
+      design.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_networks_default_network_shouldnt_exist_in_project
+      license: Apache-2.0
+    collector: gcp.compute.networks_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: notEquals
+      path: name
+      value: default
+    failMessage: The default VPC network exists; it ships with overly permissive
+      firewall rules and auto-created subnets in every region.
+    passMessage: VPC network is not the auto-created default network.
+    remediation:
+      summary: Delete the default network after migrating workloads to purpose-built
+        VPCs.
+      steps:
+        - Recreate needed connectivity in a custom-mode VPC with least-privilege
+          firewall rules.
+        - Delete the default network's permissive firewall rules and then the
+          default network.
+      verifyCommand: gcloud compute networks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "3.1"
+    references:
+      - https://cloud.google.com/vpc/docs/vpc#default-network
+      - https://cloud.google.com/vpc/docs/firewalls#default_firewall_rules
+  - id: CR-GCP-NETWORK-102
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: VPC networks do not use auto subnet mode
+    description: VPC networks are custom-mode (autoCreateSubnetworks false), not
+      auto-mode, so subnets are provisioned deliberately.
+    rationale: Auto-mode VPCs automatically create a subnet with a predictable /20
+      range in every current and future GCP region, silently expanding the
+      network footprint and complicating firewall scoping. Custom mode gives
+      explicit control over which regions have subnets.
+    severity: low
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: compute_network_not_legacy
+      license: Apache-2.0
+    collector: gcp.compute.networks_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: notExists
+      path: IPv4Range
+    passWhen:
+      op: equals
+      path: autoCreateSubnetworks
+      value: false
+    failMessage: VPC network is in auto subnet mode; subnets are auto-created in
+      every region, expanding the network footprint.
+    passMessage: VPC network is in custom subnet mode.
+    remediation:
+      summary: Convert auto-mode VPCs to custom mode and remove unneeded regional
+        subnets.
+      steps:
+        - Switch the network to custom subnet mode.
+        - Delete auto-created subnets in regions you do not use.
+      verifyCommand: gcloud compute networks list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/vpc/docs/vpc#subnet-ranges
+      - https://cloud.google.com/vpc/docs/using-vpc#create-custom-network
+  - id: CR-GCP-NETWORK-103
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: VPC subnet VPC Flow Logs are enabled
+    description: Each non-proxy subnet has VPC Flow Logs enabled via
+      logConfig.enable or the enableFlowLogs field.
+    rationale: Without VPC Flow Logs there is no record of network traffic to and
+      from VM instances, crippling incident investigation, exfiltration
+      detection, and network forensics. Flow Logs are the primary network
+      telemetry source in GCP.
+    severity: medium
+    categories:
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: compute_subnet_flow_logs_enabled
+      license: Apache-2.0
+    collector: gcp.compute.subnets_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: notIn
+      path: purpose
+      values:
+        - REGIONAL_MANAGED_PROXY
+        - GLOBAL_MANAGED_PROXY
+        - INTERNAL_HTTPS_LOAD_BALANCER
+        - PRIVATE_SERVICE_CONNECT
+        - PRIVATE_NAT
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: logConfig.enable
+          value: true
+        - op: equals
+          path: enableFlowLogs
+          value: true
+    failMessage: VPC Flow Logs are not enabled on this subnet; network traffic is
+      not recorded.
+    passMessage: VPC Flow Logs are enabled on this subnet.
+    remediation:
+      summary: Enable VPC Flow Logs on the subnet.
+      steps:
+        - Update the subnet to enable flow logs with an appropriate aggregation
+          interval and sampling rate.
+      verifyCommand: gcloud compute networks subnets list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "3.8"
+    references:
+      - https://cloud.google.com/vpc/docs/flow-logs
+      - https://cloud.google.com/vpc/docs/using-flow-logs
+  - id: CR-GCP-NETWORK-104
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: VPC subnet Flow Logs use full metadata and adequate sampling
+    description: For subnets with Flow Logs enabled, flowSampling is 1.0 (100%) and
+      metadata captures full details, maximizing forensic value.
+    rationale: Flow Logs sampled below 100% or with reduced metadata can miss the
+      specific flows involved in an incident, undermining detection and
+      forensics. Full sampling and metadata ensure complete visibility.
+    severity: low
+    categories:
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: compute_subnet_flow_logs_enabled
+      license: Apache-2.0
+    collector: gcp.compute.subnets_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: logConfig.enable
+      value: true
+    passWhen:
+      op: and
+      exprs:
+        - op: gte
+          path: logConfig.flowSampling
+          value: 1
+        - op: in
+          path: logConfig.metadata
+          values:
+            - INCLUDE_ALL_METADATA
+            - CUSTOM_METADATA
+    failMessage: Flow Logs on this subnet use reduced sampling or metadata,
+      weakening forensic coverage.
+    passMessage: Flow Logs on this subnet use full sampling and complete metadata.
+    remediation:
+      summary: Set flow sampling to 1.0 and include all metadata.
+      steps:
+        - Update the subnet flow log configuration to flow-sampling 1.0 and
+          metadata INCLUDE_ALL_METADATA.
+      verifyCommand: gcloud compute networks subnets list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "3.8"
+    references:
+      - https://cloud.google.com/vpc/docs/flow-logs#log-sampling
+      - https://cloud.google.com/vpc/docs/using-flow-logs
+  - id: CR-GCP-NETWORK-105
+    version: 1.0.0
+    provider: gcp
+    service: network
+    title: VPC subnet Private Google Access is enabled
+    description: Each non-proxy subnet has privateIpGoogleAccess enabled so VMs
+      without external IPs can reach Google APIs privately.
+    rationale: Without Private Google Access, VMs must have external IP addresses to
+      reach Google APIs and services, increasing internet exposure. Enabling it
+      lets internal-only VMs reach Google services over Google's private
+      network, reducing attack surface.
+    severity: low
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_subnet_private_google_access_enabled
+      license: Apache-2.0
+    collector: gcp.compute.subnets_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: notIn
+      path: purpose
+      values:
+        - REGIONAL_MANAGED_PROXY
+        - GLOBAL_MANAGED_PROXY
+        - INTERNAL_HTTPS_LOAD_BALANCER
+        - PRIVATE_SERVICE_CONNECT
+        - PRIVATE_NAT
+    passWhen:
+      op: equals
+      path: privateIpGoogleAccess
+      value: true
+    failMessage: Private Google Access is disabled on this subnet; internal-only VMs
+      cannot reach Google APIs without external IPs.
+    passMessage: Private Google Access is enabled on this subnet.
+    remediation:
+      summary: Enable Private Google Access on the subnet.
+      steps:
+        - Update the subnet to enable Private Google Access.
+      verifyCommand: gcloud compute networks subnets list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/vpc/docs/private-google-access
+      - https://cloud.google.com/vpc/docs/configure-private-google-access

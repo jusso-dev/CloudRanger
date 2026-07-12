@@ -1,0 +1,363 @@
+controls:
+  - id: CR-AZURE-COMPUTE-100
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine uses managed disks for its OS disk
+    description: >
+      Verifies each VM's OS disk is provisioned as an Azure managed disk rather
+      than an unmanaged VHD backed by a user storage account.
+    rationale: >
+      Unmanaged VHDs live in customer storage accounts without per-disk RBAC,
+      integrated encryption management, or the availability guarantees of
+      managed disks, widening the blast radius of a compromised or misconfigured
+      account.
+    severity: medium
+    categories:
+      - compute
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_using_managed_disks
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: storageProfile.osDisk.managedDisk
+    failMessage: VM OS disk is an unmanaged VHD, not a managed disk.
+    passMessage: VM OS disk is a managed disk.
+    remediation:
+      summary: Migrate the VM to managed disks.
+      steps:
+        - Stop-deallocate the VM in a planned maintenance window.
+        - Convert the VM to managed disks (operator action).
+      verifyCommand: az vm list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "7.2"
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview
+  - id: CR-AZURE-COMPUTE-101
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has boot diagnostics enabled
+    description: >
+      Verifies each VM has the boot diagnostics agent enabled so serial console
+      and screenshot data are captured.
+    rationale: >
+      Without boot diagnostics, operators lose the primary forensic and
+      troubleshooting signal when a VM fails to boot or is suspected
+      compromised, hampering incident response.
+    severity: low
+    categories:
+      - compute
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_boot_diagnostics_enabled
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: diagnosticsProfile.bootDiagnostics.enabled
+      value: true
+    failMessage: VM does not have boot diagnostics enabled.
+    passMessage: VM has boot diagnostics enabled.
+    remediation:
+      summary: Enable boot diagnostics on the VM.
+      steps:
+        - Enable boot diagnostics (managed storage recommended) on the VM
+          (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/boot-diagnostics
+  - id: CR-AZURE-COMPUTE-102
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has no directly-attached public IP address
+    description: >
+      Verifies no NIC on the VM has a public IP address associated, so the VM is
+      not directly reachable from the internet.
+    rationale: >
+      A directly-attached public IP exposes the VM's OS and any listening
+      service to internet-wide scanning and brute forcing; ingress should
+      instead flow through a load balancer, bastion, or firewall.
+    severity: high
+    categories:
+      - compute
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: vm_ensure_using_no_public_ip
+      license: Apache-2.0
+    collector: azure.vm.list_ip_addresses
+    resourcesPath: $
+    resourceIdField: virtualMachine.name
+    resourceNameField: virtualMachine.name
+    passWhen:
+      op: or
+      exprs:
+        - op: notExists
+          path: virtualMachine.network.publicIpAddresses
+        - op: isEmpty
+          path: virtualMachine.network.publicIpAddresses
+    failMessage: VM has a directly-attached public IP address.
+    passMessage: VM has no directly-attached public IP address.
+    remediation:
+      summary: Remove the public IP association from the VM's NIC.
+      steps:
+        - Confirm inbound access is provided via bastion, load balancer, or
+          firewall.
+        - Disassociate the public IP from the NIC (operator action).
+      verifyCommand: az vm list-ip-addresses --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/ip-services/associate-public-ip-address-vm
+  - id: CR-AZURE-COMPUTE-103
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has a system-assigned managed identity
+    description: >
+      Verifies each VM uses a managed identity (system- or user-assigned)
+      instead of embedded long-lived credentials.
+    rationale: >
+      VMs without a managed identity commonly store static secrets or service
+      principal credentials on disk, which are readily harvested for lateral
+      movement; managed identities remove the standing credential.
+    severity: medium
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: vm_ensure_using_managed_identity
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: identity.type
+        - op: notEquals
+          path: identity.type
+          value: None
+    failMessage: VM has no managed identity assigned.
+    passMessage: VM uses a managed identity.
+    remediation:
+      summary: Assign a managed identity to the VM.
+      steps:
+        - Enable a system-assigned or attach a user-assigned managed identity
+          (operator action).
+        - Replace any embedded credentials with the managed identity.
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/qs-configure-cli-windows-vm
+  - id: CR-AZURE-COMPUTE-104
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine runs only approved (allow-listed) extensions
+    description: >
+      Verifies every installed VM extension comes from an approved
+      publisher/type allow-list, flagging unexpected or unmanaged extensions.
+    rationale: >
+      VM extensions run with high privilege inside the guest; an attacker or
+      rogue operator can install a custom-script or remote-access extension to
+      execute code, so only vetted extensions should be present.
+    severity: medium
+    categories:
+      - compute
+      - identity
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_only_approved_extensions_installed
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: allItems
+      path: resources
+      condition:
+        op: in
+        path: properties.publisher
+        values:
+          - Microsoft.Azure.Monitor
+          - Microsoft.Azure.Security
+          - Microsoft.Azure.Security.Monitoring
+          - Microsoft.EnterpriseCloud.Monitoring
+          - Microsoft.Azure.ActiveDirectory
+          - Microsoft.ManagedIdentity
+          - Microsoft.Azure.Diagnostics
+          - Microsoft.Azure.AzureDiskEncryption
+          - Microsoft.GuestConfiguration
+          - Microsoft.CPlat.Core
+    failMessage: VM has an installed extension outside the approved publisher allow-list.
+    passMessage: All installed VM extensions are from approved publishers.
+    remediation:
+      summary: Remove unapproved extensions and enforce an allow-list.
+      steps:
+        - Review the flagged extension's publisher and purpose.
+        - Uninstall any extension that is not approved (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/extensions/overview
+  - id: CR-AZURE-COMPUTE-105
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has encryption at host enabled
+    description: >
+      Verifies encryption at host is enabled so temp disks and OS/data disk
+      caches are encrypted on the Azure host.
+    rationale: >
+      Without encryption at host, VM temp disks and disk caches are written to
+      the host in cleartext, leaving a residual-data exposure that disk-level
+      encryption alone does not cover.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+    source:
+      engine: prowler
+      id: vm_ensure_encryption_at_host_enabled
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: securityProfile.encryptionAtHost
+      value: true
+    failMessage: VM does not have encryption at host enabled.
+    passMessage: VM has encryption at host enabled.
+    remediation:
+      summary: Enable encryption at host on the VM.
+      steps:
+        - Register the EncryptionAtHost feature on the subscription if required.
+        - Stop-deallocate the VM and enable encryption at host (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/disk-encryption#encryption-at-host---end-to-end-encryption-for-your-vm-data
+  - id: CR-AZURE-COMPUTE-106
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Managed disk is encrypted with a customer-managed key
+    description: >
+      Verifies each managed disk uses a customer-managed key (or
+      platform+customer double encryption) rather than only the default platform
+      key.
+    rationale: >
+      Relying solely on the platform-managed key removes tenant control over the
+      key lifecycle; a customer-managed key enables independent rotation, access
+      revocation, and audit of disk encryption.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+    source:
+      engine: prowler
+      id: vm_ensure_disks_encrypted_with_cmk
+      license: Apache-2.0
+    collector: azure.disk.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: encryption.type
+      values:
+        - EncryptionAtRestWithCustomerKey
+        - EncryptionAtRestWithPlatformAndCustomerKeys
+    failMessage: Managed disk uses only the platform-managed key, not a
+      customer-managed key.
+    passMessage: Managed disk is encrypted with a customer-managed key.
+    remediation:
+      summary: Attach a disk encryption set backed by a customer-managed key.
+      steps:
+        - Create a Key Vault key and a disk encryption set.
+        - Update the disk to use the customer-managed disk encryption set
+          (operator action).
+      verifyCommand: az disk list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "7.3"
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/disk-encryption#customer-managed-keys
+  - id: CR-AZURE-COMPUTE-107
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Managed disk disallows public network access
+    description: >
+      Verifies each managed disk restricts export/import to private endpoints
+      and does not permit access from all networks.
+    rationale: >
+      A disk with public network access enabled can have its data exported over
+      the internet via SAS, turning a leaked SAS token into full disk-image
+      exfiltration.
+    severity: medium
+    categories:
+      - compute
+      - storage
+      - public-exposure
+    source:
+      engine: prowler
+      id: vm_ensure_disk_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.disk.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: publicNetworkAccess
+          value: Disabled
+        - op: equals
+          path: networkAccessPolicy
+          value: DenyAll
+        - op: equals
+          path: networkAccessPolicy
+          value: AllowPrivate
+    failMessage: Managed disk allows public network access.
+    passMessage: Managed disk restricts public network access.
+    remediation:
+      summary: Set the disk public network access to Disabled and restrict network
+        policy.
+      steps:
+        - Set publicNetworkAccess to Disabled on the disk.
+        - Set the disk networkAccessPolicy to DenyAll or AllowPrivate (operator
+          action).
+      verifyCommand: az disk list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/disks-enable-private-links-for-import-export-portal

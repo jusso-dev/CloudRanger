@@ -1,0 +1,125 @@
+controls:
+  - id: CR-AWS-DMS-001
+    version: 1.0.0
+    provider: aws
+    service: dms
+    title: DMS replication instance is not publicly accessible
+    description: The DMS replication instance has PubliclyAccessible set to false so
+      it is not assigned a public IP address reachable from the internet.
+    rationale: A publicly accessible replication instance exposes the data-migration
+      control path to the internet, widening the attack surface for exfiltration
+      of the databases being migrated and for exploitation of the instance
+      itself.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: dms_instance_no_public_access
+      license: Apache-2.0
+    collector: aws.dms.describe_replication_instances
+    resourcesPath: ReplicationInstances
+    resourceIdField: ReplicationInstanceArn
+    resourceNameField: ReplicationInstanceIdentifier
+    passWhen:
+      op: equals
+      path: PubliclyAccessible
+      value: false
+    failMessage: DMS replication instance is publicly accessible (PubliclyAccessible=true).
+    passMessage: DMS replication instance is not publicly accessible.
+    remediation:
+      summary: Recreate or modify the replication instance to disable public
+        accessibility.
+      steps:
+        - Ensure the replication instance is deployed in private subnets of the
+          replication subnet group.
+        - Set PubliclyAccessible to false (this attribute can only be changed by
+          recreating the instance).
+        - Route access through the VPC / VPN / Direct Connect instead of a
+          public IP.
+      verifyCommand: aws dms describe-replication-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_ReplicationInstance.PublicPrivate.html
+      - https://docs.aws.amazon.com/cli/latest/reference/dms/describe-replication-instances.html
+  - id: CR-AWS-DMS-002
+    version: 1.0.0
+    provider: aws
+    service: dms
+    title: DMS replication instance has auto minor version upgrade enabled
+    description: The DMS replication instance has AutoMinorVersionUpgrade set to
+      true so minor engine version patches are applied automatically during
+      maintenance windows.
+    rationale: Without automatic minor version upgrades the replication instance can
+      drift onto unpatched engine versions, leaving known vulnerabilities
+      unaddressed on a component that handles production database data.
+    severity: medium
+    categories:
+      - resilience
+      - patching
+    source:
+      engine: prowler
+      id: dms_instance_minor_version_upgrade_enabled
+      license: Apache-2.0
+    collector: aws.dms.describe_replication_instances
+    resourcesPath: ReplicationInstances
+    resourceIdField: ReplicationInstanceArn
+    resourceNameField: ReplicationInstanceIdentifier
+    passWhen:
+      op: equals
+      path: AutoMinorVersionUpgrade
+      value: true
+    failMessage: DMS replication instance does not have auto minor version upgrade enabled.
+    passMessage: DMS replication instance has auto minor version upgrade enabled.
+    remediation:
+      summary: Enable AutoMinorVersionUpgrade on the replication instance.
+      steps:
+        - Modify the replication instance and enable Auto minor version upgrade.
+        - Confirm an appropriate preferred maintenance window is set for patch
+          application.
+      verifyCommand: aws dms describe-replication-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_ReplicationInstance.VersionUpgrade.html
+      - https://docs.aws.amazon.com/cli/latest/reference/dms/describe-replication-instances.html
+  - id: CR-AWS-DMS-003
+    version: 1.0.0
+    provider: aws
+    service: dms
+    title: DMS replication instance is deployed Multi-AZ
+    description: The DMS replication instance has MultiAZ set to true so a standby
+      replica is maintained in a second Availability Zone for automatic
+      failover.
+    rationale: A single-AZ replication instance is a single point of failure; an AZ
+      outage halts in-flight migrations and ongoing replication, risking data
+      loss or extended downtime for dependent systems.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: dms_instance_multi_az_enabled
+      license: Apache-2.0
+    collector: aws.dms.describe_replication_instances
+    resourcesPath: ReplicationInstances
+    resourceIdField: ReplicationInstanceArn
+    resourceNameField: ReplicationInstanceIdentifier
+    passWhen:
+      op: equals
+      path: MultiAZ
+      value: true
+    failMessage: DMS replication instance is not deployed Multi-AZ.
+    passMessage: DMS replication instance is deployed Multi-AZ.
+    remediation:
+      summary: Enable Multi-AZ on the replication instance.
+      steps:
+        - Modify the replication instance and enable the Multi-AZ deployment
+          option.
+        - Verify the replication subnet group spans at least two Availability
+          Zones.
+      verifyCommand: aws dms describe-replication-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/dms/latest/userguide/CHAP_ReplicationInstance.html
+      - https://docs.aws.amazon.com/cli/latest/reference/dms/describe-replication-instances.html

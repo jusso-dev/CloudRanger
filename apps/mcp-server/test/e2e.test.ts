@@ -235,7 +235,7 @@ describe("MCP scan loop", () => {
       scopeId: "my-project",
       pack: "kubernetes",
     });
-    expect(scan.controlCount).toBe(4);
+    expect(scan.controlCount).toBe(13);
     expect(scan.plan.steps.map((s: any) => s.collectorId)).toEqual(["gcp.container.clusters_list"]);
 
     await expect(

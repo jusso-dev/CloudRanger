@@ -1,0 +1,364 @@
+controls:
+  - id: CR-AWS-REDSHIFT-001
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster is not publicly accessible
+    description: The Redshift cluster is not assigned a public IP address and cannot
+      be reached from the internet (PubliclyAccessible is false).
+    rationale: A publicly accessible Redshift cluster exposes the data warehouse to
+      internet-wide scanning and credential attacks, a common data-exfiltration
+      vector.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: redshift_cluster_public_access
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: equals
+      path: PubliclyAccessible
+      value: false
+    failMessage: Redshift cluster is publicly accessible from the internet.
+    passMessage: Redshift cluster is not publicly accessible.
+    remediation:
+      summary: Remove public accessibility from the cluster.
+      steps:
+        - Run modify-cluster with --no-publicly-accessible.
+        - Ensure the cluster resides in private subnets with security groups
+          that restrict inbound access to trusted CIDRs only.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/managing-clusters-vpc.html
+  - id: CR-AWS-REDSHIFT-002
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster is encrypted at rest
+    description: The Redshift cluster has database encryption enabled (Encrypted is
+      true), protecting stored data with KMS or HSM keys.
+    rationale: An unencrypted cluster stores all warehouse data and its snapshots in
+      cleartext, so any access to the underlying storage or a shared snapshot
+      exposes sensitive data.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: redshift_cluster_audit_logging
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    failMessage: Redshift cluster is not encrypted at rest.
+    passMessage: Redshift cluster is encrypted at rest.
+    remediation:
+      summary: Enable at-rest encryption for the cluster.
+      steps:
+        - Run modify-cluster with --encrypted and --kms-key-id referencing a
+          customer-managed KMS key.
+        - Note that enabling encryption triggers a background migration of the
+          cluster data.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-db-encryption.html
+  - id: CR-AWS-REDSHIFT-003
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster is encrypted with a KMS key
+    description: When the cluster is encrypted, it uses a KMS key (KmsKeyId is
+      present) rather than only the default HSM configuration.
+    rationale: Using a KMS key provides auditable, centrally governed key management
+      and the ability to rotate and control access to the encryption key.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: redshift_cluster_audit_logging
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    applicableWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: KmsKeyId
+        - op: not
+          expr:
+            op: isEmpty
+            path: KmsKeyId
+    failMessage: Encrypted Redshift cluster has no KMS key configured.
+    passMessage: Redshift cluster is encrypted with a KMS key.
+    remediation:
+      summary: Encrypt the cluster with a KMS key.
+      steps:
+        - Run modify-cluster with --encrypted and --kms-key-id referencing a
+          customer-managed KMS key.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-db-encryption.html
+  - id: CR-AWS-REDSHIFT-004
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster has enhanced VPC routing enabled
+    description: The Redshift cluster forces COPY/UNLOAD traffic through the VPC
+      (EnhancedVpcRouting is true) instead of over the public internet.
+    rationale: Without enhanced VPC routing, data loaded from or unloaded to S3 can
+      traverse the public internet, bypassing VPC network controls, flow logs,
+      and endpoint policies.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: redshift_cluster_enhanced_vpc_routing
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: equals
+      path: EnhancedVpcRouting
+      value: true
+    failMessage: Redshift cluster does not have enhanced VPC routing enabled.
+    passMessage: Redshift cluster has enhanced VPC routing enabled.
+    remediation:
+      summary: Enable enhanced VPC routing.
+      steps:
+        - Run modify-cluster with --enhanced-vpc-routing.
+        - Ensure the VPC has the S3 gateway endpoint and DNS resolution required
+          for COPY/UNLOAD to reach S3 privately.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/enhanced-vpc-routing.html
+  - id: CR-AWS-REDSHIFT-005
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster retains automated snapshots
+    description: The cluster keeps automated snapshots
+      (AutomatedSnapshotRetentionPeriod is greater than 0 days).
+    rationale: An automated snapshot retention of 0 disables automated backups,
+      leaving no point-in-time recovery capability after data corruption,
+      ransomware, or accidental deletion.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: redshift_cluster_automated_snapshot
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: gt
+      path: AutomatedSnapshotRetentionPeriod
+      value: 0
+    failMessage: Redshift cluster has automated snapshots disabled (retention period is 0).
+    passMessage: Redshift cluster retains automated snapshots.
+    remediation:
+      summary: Set a positive automated snapshot retention period.
+      steps:
+        - Run modify-cluster with --automated-snapshot-retention-period set to
+          at least 1 (commonly 7 or more).
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-snapshots.html
+  - id: CR-AWS-REDSHIFT-006
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster does not use the default admin username
+    description: The cluster's master (admin) username is not the well-known default
+      "awsuser".
+    rationale: Leaving the default admin username makes credential-guessing and
+      brute-force attacks easier because the attacker already knows a valid,
+      highly privileged account name.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: redshift_cluster_non_default_username
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: MasterUsername
+        - op: notEquals
+          path: MasterUsername
+          value: awsuser
+    failMessage: Redshift cluster uses the default admin username "awsuser".
+    passMessage: Redshift cluster uses a non-default admin username.
+    remediation:
+      summary: Use a non-default admin username.
+      steps:
+        - The master username cannot be changed on an existing cluster; recreate
+          the cluster (or restore from snapshot) specifying a non-default
+          --master-username.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-clusters.html
+  - id: CR-AWS-REDSHIFT-007
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster allows automatic version upgrades
+    description: The cluster automatically applies patched engine versions during
+      its maintenance window (AllowVersionUpgrade is true).
+    rationale: Disabling automatic version upgrades leaves the cluster running on
+      engine versions with known, already-patched vulnerabilities.
+    severity: low
+    categories:
+      - patching
+      - resilience
+    source:
+      engine: prowler
+      id: redshift_cluster_automatic_upgrades
+      license: Apache-2.0
+    collector: aws.redshift.describe_clusters
+    resourcesPath: Clusters
+    resourceIdField: ClusterIdentifier
+    resourceNameField: ClusterIdentifier
+    passWhen:
+      op: equals
+      path: AllowVersionUpgrade
+      value: true
+    failMessage: Redshift cluster does not allow automatic version upgrades.
+    passMessage: Redshift cluster allows automatic version upgrades.
+    remediation:
+      summary: Enable automatic version upgrades.
+      steps:
+        - Run modify-cluster with --allow-version-upgrade.
+      verifyCommand: aws redshift describe-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/managing-cluster-considerations.html
+  - id: CR-AWS-REDSHIFT-008
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster has audit logging enabled
+    description: The cluster exports audit logs (connection, user, and user-activity
+      logs) to S3 or CloudWatch (LoggingEnabled is true).
+    rationale: Without audit logging there is no record of connections and queries,
+      so unauthorized access and data exfiltration cannot be detected or
+      investigated.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: redshift_cluster_audit_logging
+      license: Apache-2.0
+    collector: aws.redshift.describe_logging_status
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: LoggingEnabled
+      value: true
+    onError:
+      - contains: ClusterNotFound
+        status: not_applicable
+        message: Cluster no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Redshift cluster does not have audit logging enabled.
+    passMessage: Redshift cluster has audit logging enabled.
+    remediation:
+      summary: Enable audit logging for the cluster.
+      steps:
+        - Run enable-logging with --cluster-identifier and either a
+          --bucket-name (S3) or --log-destination-type cloudwatch.
+        - Ensure the target S3 bucket policy grants Redshift permission to write
+          logs.
+      verifyCommand: aws redshift describe-logging-status --cluster-identifier <id>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/db-auditing.html
+  - id: CR-AWS-REDSHIFT-009
+    version: 1.0.0
+    provider: aws
+    service: redshift
+    title: Redshift cluster parameter group requires SSL connections
+    description: The cluster's parameter group sets require_ssl to true, forcing
+      TLS-encrypted client connections.
+    rationale: Without require_ssl, clients may connect in cleartext, exposing
+      credentials and query data to network interception.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: redshift_cluster_in_transit_encryption_enabled
+      license: Apache-2.0
+    collector: aws.redshift.describe_cluster_parameters
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: Parameters
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: ParameterName
+            value: require_ssl
+          - op: equals
+            path: ParameterValue
+            value: "true"
+    onError:
+      - contains: ClusterParameterGroupNotFound
+        status: not_applicable
+        message: Parameter group no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Redshift parameter group does not require SSL connections.
+    passMessage: Redshift parameter group requires SSL connections.
+    remediation:
+      summary: Set require_ssl to true in the parameter group.
+      steps:
+        - Run modify-cluster-parameter-group with
+          ParameterName=require_ssl,ParameterValue=true.
+        - Reboot the cluster to apply the static parameter change.
+      verifyCommand: aws redshift describe-cluster-parameters --parameter-group-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/redshift/latest/mgmt/connecting-ssl-support.html

@@ -1,0 +1,544 @@
+[
+  {
+    "controlId": "CR-AZURE-STORAGE-100",
+    "cases": [
+      {
+        "name": "pass disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sapriv",
+                "publicNetworkAccess": "Disabled",
+                "minimumTlsVersion": "TLS1_2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sapub",
+                "publicNetworkAccess": "Enabled",
+                "minimumTlsVersion": "TLS1_2"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-101",
+    "cases": [
+      {
+        "name": "pass azureservices",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail broad bypass",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "bypass": "Logging, Metrics, AzureServices"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-102",
+    "cases": [
+      {
+        "name": "pass cmk",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sacmk",
+                "encryption": {
+                  "keySource": "Microsoft.Keyvault",
+                  "keyVaultProperties": {
+                    "keyName": "sakey",
+                    "keyVaultUri": "https://kv1.vault.azure.net"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail msmk",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sadefault",
+                "encryption": {
+                  "keySource": "Microsoft.Storage"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-103",
+    "cases": [
+      {
+        "name": "pass 90d",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "keyPolicy": {
+                  "keyExpirationPeriodInDays": 90
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no policy",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "keyPolicy": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-104",
+    "cases": [
+      {
+        "name": "pass aad",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "allowedCopyScope": "AAD"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail unrestricted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "allowedCopyScope": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-105",
+    "cases": [
+      {
+        "name": "pass oauth default",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "defaultToOAuthAuthentication": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail key default",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "defaultToOAuthAuthentication": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-106",
+    "cases": [
+      {
+        "name": "pass standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "dnsEndpointType": "Standard"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail azuredz",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "dnsEndpointType": "AzureDnsZone"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-107",
+    "cases": [
+      {
+        "name": "pass blob enc",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "encryption": {
+                  "keySource": "Microsoft.Storage",
+                  "services": {
+                    "blob": {
+                      "enabled": true,
+                      "keyType": "Account"
+                    },
+                    "file": {
+                      "enabled": true,
+                      "keyType": "Account"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail blob not enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "encryption": {
+                  "keySource": "Microsoft.Storage",
+                  "services": {
+                    "blob": {
+                      "enabled": false
+                    },
+                    "file": {
+                      "enabled": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-108",
+    "cases": [
+      {
+        "name": "pass file enc",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa1",
+                "encryption": {
+                  "keySource": "Microsoft.Storage",
+                  "services": {
+                    "blob": {
+                      "enabled": true
+                    },
+                    "file": {
+                      "enabled": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail file not enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sa2",
+                "encryption": {
+                  "keySource": "Microsoft.Storage",
+                  "services": {
+                    "blob": {
+                      "enabled": true
+                    },
+                    "file": {
+                      "enabled": false
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-109",
+    "cases": [
+      {
+        "name": "pass soft delete 7d",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa1",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "containerDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "isVersioningEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa2",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": false
+              },
+              "containerDeleteRetentionPolicy": {
+                "enabled": false
+              },
+              "isVersioningEnabled": false
+            }
+          }
+        ]
+      },
+      {
+        "name": "na account gone",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa3",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "The Resource 'Microsoft.Storage/storageAccounts/sa3' was not found. StorageAccountNotFound"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-110",
+    "cases": [
+      {
+        "name": "pass container soft delete",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa1",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "containerDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 14
+              },
+              "isVersioningEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail container disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa2",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "containerDeleteRetentionPolicy": {
+                "enabled": false
+              },
+              "isVersioningEnabled": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-111",
+    "cases": [
+      {
+        "name": "pass versioning on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa1",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "isVersioningEnabled": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail versioning off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.blob_service_properties_show",
+            "resourceKey": "sa2",
+            "exitCode": 0,
+            "output": {
+              "deleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "isVersioningEnabled": false
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

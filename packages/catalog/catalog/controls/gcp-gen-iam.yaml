@@ -1,0 +1,379 @@
+controls:
+  - id: CR-GCP-IAM-100
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Audit logging is configured for all services and all read/write log types
+    description: >
+      Verifies the project IAM policy has an auditConfigs entry for allServices
+      that enables ADMIN_READ, DATA_READ and DATA_WRITE log types.
+    rationale: >
+      Without Data Access audit logs enabled for all services, access to and
+      modification of resources goes unrecorded, crippling incident detection
+      and forensic investigation.
+    severity: medium
+    categories:
+      - logging
+      - monitoring
+    source:
+      engine: prowler
+      id: logging_audit_logs_enabled_all_services
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: auditConfigs
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: service
+            value: allServices
+          - op: anyItem
+            path: auditLogConfigs
+            condition:
+              op: equals
+              path: logType
+              value: ADMIN_READ
+          - op: anyItem
+            path: auditLogConfigs
+            condition:
+              op: equals
+              path: logType
+              value: DATA_READ
+          - op: anyItem
+            path: auditLogConfigs
+            condition:
+              op: equals
+              path: logType
+              value: DATA_WRITE
+    failMessage: Audit logging is not configured for allServices with ADMIN_READ,
+      DATA_READ and DATA_WRITE.
+    passMessage: Data Access audit logging is enabled for all services.
+    remediation:
+      summary: Enable Data Access audit logs for allServices.
+      steps:
+        - Edit the project IAM policy to add an auditConfigs entry with service
+          allServices.
+        - Add auditLogConfigs for ADMIN_READ, DATA_READ and DATA_WRITE, then
+          apply (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "2.1"
+    references:
+      - https://cloud.google.com/logging/docs/audit/configure-data-access
+  - id: CR-GCP-IAM-101
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No exemptions in Data Access audit log configuration
+    description: >
+      Verifies no auditLogConfigs entry in the project IAM policy contains an
+      exemptedMembers list that would suppress audit logging for specific
+      principals.
+    rationale: >
+      Exempted members are excluded from Data Access logs; an attacker or
+      privileged insider on the exemption list can act without leaving an audit
+      trail.
+    severity: medium
+    categories:
+      - logging
+      - monitoring
+    source:
+      engine: prowler
+      id: logging_audit_logs_no_exempted_members
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: auditConfigs
+      condition:
+        op: anyItem
+        path: auditLogConfigs
+        condition:
+          op: exists
+          path: exemptedMembers.0
+    failMessage: An audit log configuration exempts one or more members from logging.
+    passMessage: No members are exempted from Data Access audit logs.
+    remediation:
+      summary: Remove exemptedMembers from all auditLogConfigs entries.
+      steps:
+        - Review each auditConfigs entry for exemptedMembers.
+        - Remove the exemptions and re-apply the IAM policy (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "2.1"
+    references:
+      - https://cloud.google.com/logging/docs/audit/configure-data-access
+  - id: CR-GCP-IAM-102
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No user is granted the primitive Owner role on the project
+    description: >
+      Verifies the project IAM policy grants roles/owner to no user: or group:
+      principal (basic roles should be replaced with predefined roles).
+    rationale: >
+      Owner grants unrestricted control including the ability to change IAM
+      policy and billing; broad basic-role grants violate least privilege and
+      expand blast radius on account compromise.
+    severity: high
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_no_basic_roles_for_users
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: role
+            value: roles/owner
+          - op: anyItem
+            path: members
+            condition:
+              op: or
+              exprs:
+                - op: startsWith
+                  path: $
+                  value: "user:"
+                - op: startsWith
+                  path: $
+                  value: "group:"
+    failMessage: The primitive roles/owner is granted to a user or group.
+    passMessage: No user or group holds the primitive Owner role.
+    remediation:
+      summary: Replace roles/owner grants with least-privilege predefined roles.
+      steps:
+        - Identify what each Owner principal actually needs.
+        - Grant specific predefined roles, then remove roles/owner (operator
+          action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.5"
+    references:
+      - https://cloud.google.com/iam/docs/understanding-roles#basic
+  - id: CR-GCP-IAM-103
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No user is granted the primitive Editor role on the project
+    description: >
+      Verifies the project IAM policy grants roles/editor to no user: or group:
+      principal.
+    rationale: >
+      Editor permits create/update/delete on virtually all resources; granting
+      it broadly to users is a least-privilege violation and enables data
+      destruction or resource abuse if an account is compromised.
+    severity: high
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_no_basic_roles_for_users
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: role
+            value: roles/editor
+          - op: anyItem
+            path: members
+            condition:
+              op: or
+              exprs:
+                - op: startsWith
+                  path: $
+                  value: "user:"
+                - op: startsWith
+                  path: $
+                  value: "group:"
+    failMessage: The primitive roles/editor is granted to a user or group.
+    passMessage: No user or group holds the primitive Editor role.
+    remediation:
+      summary: Replace roles/editor grants with least-privilege predefined roles.
+      steps:
+        - Identify what each Editor principal actually needs.
+        - Grant specific predefined roles, then remove roles/editor (operator
+          action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.5"
+    references:
+      - https://cloud.google.com/iam/docs/understanding-roles#basic
+  - id: CR-GCP-IAM-104
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Service Account Token Creator is not granted at the project level
+    description: >
+      Verifies the project IAM policy grants neither
+      roles/iam.serviceAccountTokenCreator nor roles/iam.serviceAccountUser to
+      any principal at the project scope.
+    rationale: >
+      Project-wide serviceAccountTokenCreator/serviceAccountUser lets a
+      principal impersonate every service account in the project, a common
+      privilege-escalation path to more powerful identities.
+    severity: high
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_no_service_roles_assigned_at_project_level
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: in
+            path: role
+            values:
+              - roles/iam.serviceAccountTokenCreator
+              - roles/iam.serviceAccountUser
+          - op: exists
+            path: members.0
+    failMessage: Service account impersonation roles are granted at the project level.
+    passMessage: No project-wide service account impersonation roles are granted.
+    remediation:
+      summary: Grant impersonation roles on specific service accounts, not the whole
+        project.
+      steps:
+        - Remove roles/iam.serviceAccountTokenCreator and
+          roles/iam.serviceAccountUser from the project policy.
+        - Re-grant them on the individual service account resources that need
+          them (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.6"
+    references:
+      - https://cloud.google.com/iam/docs/service-account-permissions
+  - id: CR-GCP-IAM-107
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: User-managed service account keys do not exist
+    description: >
+      Verifies a service account has no user-managed keys at all; only
+      Google-managed (SYSTEM_MANAGED) keys should be present.
+    rationale: >
+      User-managed keys are long-lived downloadable credentials that are
+      frequently leaked in source control or CI logs; eliminating them removes a
+      major credential-theft vector regardless of key age.
+    severity: high
+    categories:
+      - identity
+      - credentials
+    source:
+      engine: prowler
+      id: iam_sa_no_user_managed_keys
+      license: Apache-2.0
+    collector: gcp.iam.service_account_keys_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: equals
+        path: keyType
+        value: USER_MANAGED
+    failMessage: Service account has one or more user-managed keys.
+    passMessage: No user-managed keys on this service account.
+    remediation:
+      summary: Delete user-managed keys and adopt workload identity or impersonation.
+      steps:
+        - Migrate consumers of the key to workload identity federation or
+          short-lived impersonation.
+        - Delete the user-managed key once nothing depends on it (operator
+          action).
+      verifyCommand: gcloud iam service-accounts keys list --iam-account <sa-email>
+        --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.4"
+    references:
+      - https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+  - id: CR-GCP-IAM-108
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Unused service accounts are disabled
+    description: >
+      Verifies that every default/auto-created service account is disabled, so
+      unused or legacy identities cannot be used to authenticate.
+    rationale: >
+      Enabled but unused service accounts widen the attack surface; a
+      compromised or leaked credential for an idle account still authenticates
+      unless the account is disabled.
+    severity: low
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_sa_no_user_managed_keys
+      license: Apache-2.0
+    collector: gcp.iam.service_accounts_list
+    resourceIdField: email
+    resourceNameField: displayName
+    applicableWhen:
+      op: endsWith
+      path: email
+      value: -compute@developer.gserviceaccount.com
+    passWhen:
+      op: equals
+      path: disabled
+      value: true
+    failMessage: A default (auto-created) service account is enabled.
+    passMessage: The default service account is disabled.
+    remediation:
+      summary: Disable default service accounts that are not in use.
+      steps:
+        - Confirm no workloads authenticate as the default compute service
+          account.
+        - Disable the service account (operator action).
+      verifyCommand: gcloud iam service-accounts list --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.3"
+    references:
+      - https://cloud.google.com/iam/docs/service-accounts#default

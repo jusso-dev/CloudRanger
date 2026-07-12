@@ -1,0 +1,199 @@
+[
+  {
+    "controlId": "CR-AWS-DMS-001",
+    "cases": [
+      {
+        "name": "pass private instance",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "prod-migrate-1",
+                  "ReplicationInstanceClass": "dms.c5.large",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": true,
+                  "EngineVersion": "3.5.2",
+                  "AutoMinorVersionUpgrade": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:PRODMIGRATE1",
+                  "ReplicationInstancePrivateIpAddress": "10.0.1.20",
+                  "PubliclyAccessible": false,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail public instance",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "public-migrate-1",
+                  "ReplicationInstanceClass": "dms.t3.medium",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": false,
+                  "EngineVersion": "3.5.2",
+                  "AutoMinorVersionUpgrade": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:PUBLICMIGRATE1",
+                  "ReplicationInstancePublicIpAddress": "52.10.20.30",
+                  "ReplicationInstancePrivateIpAddress": "10.0.1.30",
+                  "PubliclyAccessible": true,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no instances in region",
+        "expected": "no_results",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-west-2",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DMS-002",
+    "cases": [
+      {
+        "name": "pass auto upgrade enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "prod-migrate-1",
+                  "ReplicationInstanceClass": "dms.c5.large",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": true,
+                  "EngineVersion": "3.5.2",
+                  "AutoMinorVersionUpgrade": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:PRODMIGRATE1",
+                  "PubliclyAccessible": false,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail auto upgrade disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "stale-migrate-1",
+                  "ReplicationInstanceClass": "dms.c5.large",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": true,
+                  "EngineVersion": "3.4.7",
+                  "AutoMinorVersionUpgrade": false,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:STALEMIGRATE1",
+                  "PubliclyAccessible": false,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DMS-003",
+    "cases": [
+      {
+        "name": "pass multi-az",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "prod-migrate-1",
+                  "ReplicationInstanceClass": "dms.c5.large",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": true,
+                  "EngineVersion": "3.5.2",
+                  "AutoMinorVersionUpgrade": true,
+                  "AvailabilityZone": "us-east-1a",
+                  "SecondaryAvailabilityZone": "us-east-1b",
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:PRODMIGRATE1",
+                  "PubliclyAccessible": false,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail single-az",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dms.describe_replication_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ReplicationInstances": [
+                {
+                  "ReplicationInstanceIdentifier": "single-migrate-1",
+                  "ReplicationInstanceClass": "dms.t3.medium",
+                  "ReplicationInstanceStatus": "available",
+                  "MultiAZ": false,
+                  "EngineVersion": "3.5.2",
+                  "AutoMinorVersionUpgrade": true,
+                  "AvailabilityZone": "us-east-1a",
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "ReplicationInstanceArn": "arn:aws:dms:us-east-1:111122223333:rep:SINGLEMIGRATE1",
+                  "PubliclyAccessible": false,
+                  "NetworkType": "IPV4"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+collectors:
+  - id: aws.dms.describe_replication_instances
+    provider: aws
+    service: dms
+    description: Lists AWS DMS (Database Migration Service) replication instances in
+      a region with their network, resilience, patching and encryption
+      configuration.
+    kind: single
+    command: aws dms describe-replication-instances --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a ReplicationInstances array (root object also carries an
+      optional Marker for pagination). Each item exposes booleans
+      PubliclyAccessible, AutoMinorVersionUpgrade and MultiAZ plus KmsKeyId,
+      ReplicationInstanceArn and ReplicationInstanceIdentifier. Requires
+      dms:DescribeReplicationInstances. Returns an empty ReplicationInstances
+      list in regions with no instances.

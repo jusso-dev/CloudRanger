@@ -1,0 +1,805 @@
+[
+  {
+    "controlId": "CR-GCP-SQL-100",
+    "cases": [
+      {
+        "name": "fails world-open authorized network",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-open",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "ipConfiguration": {
+                    "ipv4Enabled": true,
+                    "authorizedNetworks": [
+                      {
+                        "name": "all",
+                        "value": "0.0.0.0/0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes specific CIDR",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-scoped",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "ipConfiguration": {
+                    "ipv4Enabled": true,
+                    "authorizedNetworks": [
+                      {
+                        "name": "office",
+                        "value": "203.0.113.0/24"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes no authorized networks",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-private",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "ipConfiguration": {
+                    "ipv4Enabled": false,
+                    "authorizedNetworks": []
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-101",
+    "cases": [
+      {
+        "name": "fails backups disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-backup",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes backups enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "with-backup",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "startTime": "03:00",
+                    "binaryLogEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-102",
+    "cases": [
+      {
+        "name": "fails PITR off on postgres",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-nopitr",
+                "databaseVersion": "POSTGRES_15",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "pointInTimeRecoveryEnabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes PITR on postgres",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-pitr",
+                "databaseVersion": "POSTGRES_15",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "pointInTimeRecoveryEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for mysql",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-inst",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "pointInTimeRecoveryEnabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-103",
+    "cases": [
+      {
+        "name": "fails binary log off on mysql",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-nobinlog",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "binaryLogEnabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes binary log on mysql",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-binlog",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true,
+                    "binaryLogEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for postgres",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-inst",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "backupConfiguration": {
+                    "enabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-104",
+    "cases": [
+      {
+        "name": "fails local_infile on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-infile-on",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "local_infile",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails flag absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-noflag",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "slow_query_log",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes local_infile off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-infile-off",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "local_infile",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for postgres",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-inst",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-105",
+    "cases": [
+      {
+        "name": "fails log_checkpoints absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-nochk",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails log_checkpoints off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-chk-off",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_checkpoints",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes log_checkpoints on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-chk-on",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_checkpoints",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for mysql",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-inst",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-106",
+    "cases": [
+      {
+        "name": "fails log_connections absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-noconn",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_checkpoints",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes log_connections on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-conn-on",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_connections",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for sqlserver",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-inst",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-107",
+    "cases": [
+      {
+        "name": "fails DEBUG level",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-debug",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_messages",
+                      "value": "DEBUG1"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes WARNING level",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-warn",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_messages",
+                      "value": "WARNING"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes flag unset",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-unset",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for mysql",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-inst",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-108",
+    "cases": [
+      {
+        "name": "fails chaining on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-chain-on",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "cross db ownership chaining",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails flag absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-noflag",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes chaining off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-chain-off",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "cross db ownership chaining",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for postgres",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg-inst",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-109",
+    "cases": [
+      {
+        "name": "fails contained auth on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-cda-on",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "contained database authentication",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails flag absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-noflag",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes contained auth off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mssql-cda-off",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "contained database authentication",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for mysql",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "mysql-inst",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

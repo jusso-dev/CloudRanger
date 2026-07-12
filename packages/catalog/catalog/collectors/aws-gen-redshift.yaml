@@ -1,0 +1,51 @@
+collectors:
+  - id: aws.redshift.describe_clusters
+    provider: aws
+    service: redshift
+    description: Lists Amazon Redshift provisioned clusters in a region with their
+      configuration attributes (public accessibility, encryption, VPC routing,
+      snapshot retention, master username, parameter groups, version upgrade
+      policy).
+    kind: single
+    command: aws redshift describe-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a Clusters array. Serverless workgroups are NOT returned here
+      (they use the redshift-serverless API). LoggingStatus and cluster
+      parameter values are NOT included in this output and require the
+      describe-logging-status / describe-cluster-parameters APIs respectively.
+  - id: aws.redshift.describe_logging_status
+    provider: aws
+    service: redshift
+    description: Audit logging configuration (S3 export) for one Redshift cluster.
+    kind: per_resource
+    command: aws redshift describe-logging-status --cluster-identifier {resource}
+      --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.redshift.describe_clusters
+      itemsPath: Clusters
+      resourceField: ClusterIdentifier
+    outputFormat: json
+    notes: Returns a flat object with LoggingEnabled (bool). When enabled it also
+      returns BucketName, S3KeyPrefix, and LogDestinationType ("s3" or
+      "cloudwatch"). When disabled only LoggingEnabled=false is present.
+      ClusterNotFound is returned if the cluster was deleted between calls.
+  - id: aws.redshift.describe_cluster_parameters
+    provider: aws
+    service: redshift
+    description: Parameter values for the parameter group attached to one Redshift
+      cluster (used to check require_ssl).
+    kind: per_resource
+    command: aws redshift describe-cluster-parameters --parameter-group-name
+      {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.redshift.describe_clusters
+      itemsPath: Clusters[].ClusterParameterGroups
+      resourceField: ParameterGroupName
+    outputFormat: json
+    notes: Returns a Parameters array; each element has ParameterName,
+      ParameterValue, DataType, Source, etc. The require_ssl parameter has
+      ParameterValue "true"/"false". ClusterParameterGroupNotFound is returned
+      for a missing group.

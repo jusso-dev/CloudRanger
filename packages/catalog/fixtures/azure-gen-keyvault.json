@@ -1,0 +1,428 @@
+[
+  {
+    "controlId": "CR-AZURE-KEYVAULT-100",
+    "cases": [
+      {
+        "name": "passes with rbac enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-prod",
+              "properties": {
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with legacy access policies",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-legacy",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-legacy",
+              "properties": {
+                "enableRbacAuthorization": false,
+                "accessPolicies": [
+                  {
+                    "objectId": "00000000-0000-0000-0000-000000000001",
+                    "permissions": {
+                      "secrets": ["get", "list"]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-101",
+    "cases": [
+      {
+        "name": "passes with public access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-private",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-private",
+              "properties": {
+                "publicNetworkAccess": "Disabled",
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with public access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-public",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-public",
+              "properties": {
+                "publicNetworkAccess": "Enabled",
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-102",
+    "cases": [
+      {
+        "name": "passes with bypass None under default deny",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-deny",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-deny",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "None",
+                  "ipRules": [
+                    {
+                      "value": "203.0.113.10"
+                    }
+                  ],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when bypass allows all azure services",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-bypass",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-bypass",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when default action is allow",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-allow",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-allow",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-103",
+    "cases": [
+      {
+        "name": "passes with 90 day retention",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-prod",
+              "properties": {
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with retention under 7 days",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-short",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-short",
+              "properties": {
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when soft delete disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-nosoftdelete",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-nosoftdelete",
+              "properties": {
+                "enableSoftDelete": false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-104",
+    "cases": [
+      {
+        "name": "passes when template deployment disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-prod",
+              "properties": {
+                "enabledForTemplateDeployment": false,
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when template deployment enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-tmpl",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-tmpl",
+              "properties": {
+                "enabledForTemplateDeployment": true,
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-105",
+    "cases": [
+      {
+        "name": "passes when deployment access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-prod",
+              "properties": {
+                "enabledForDeployment": false,
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when deployment access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-vmdeploy",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-vmdeploy",
+              "properties": {
+                "enabledForDeployment": true,
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-106",
+    "cases": [
+      {
+        "name": "passes with explicit ip rules under default deny",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-rules",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-rules",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "None",
+                  "ipRules": [
+                    {
+                      "value": "198.51.100.0/24"
+                    }
+                  ],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with default deny and no rules",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-norules",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-norules",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when default action allow",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-open",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-open",
+              "properties": {
+                "networkAcls": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-107",
+    "cases": [
+      {
+        "name": "passes with premium sku",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-hsm",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-hsm",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "premium"
+                },
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with standard sku",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-std",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-std",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "enableSoftDelete": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

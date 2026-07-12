@@ -1,0 +1,230 @@
+controls:
+  - id: CR-AWS-SAGEMAKER-001
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker notebook instance has direct internet access disabled
+    description: The notebook instance is configured with DirectInternetAccess set
+      to Disabled so it cannot reach the internet directly outside the VPC.
+    rationale: A notebook instance with direct internet access can exfiltrate data
+      or pull untrusted code straight to the internet, bypassing VPC egress
+      controls.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sagemaker_notebook_instance_without_direct_internet_access_configured
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_notebook_instance
+    resourceIdField: $resourceKey
+    resourceNameField: NotebookInstanceName
+    passWhen:
+      op: equals
+      path: DirectInternetAccess
+      value: Disabled
+    onError:
+      - contains: ValidationException
+        status: not_applicable
+        message: Notebook instance no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Notebook instance has direct internet access enabled.
+    passMessage: Notebook instance has direct internet access disabled.
+    remediation:
+      summary: Recreate the notebook instance with direct internet access disabled.
+      steps:
+        - DirectInternetAccess cannot be changed on an existing instance; create
+          a replacement notebook instance in a subnet with DirectInternetAccess
+          set to Disabled.
+        - Provide a VPC subnet and security groups so required traffic routes
+          through controlled VPC endpoints or a NAT with egress filtering.
+        - Delete the old instance once workloads are migrated.
+      verifyCommand: aws sagemaker describe-notebook-instance --notebook-instance-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/appendix-notebook-and-internet-access.html
+  - id: CR-AWS-SAGEMAKER-002
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker notebook instance is encrypted with a KMS key
+    description: The notebook instance has a KmsKeyId set so its attached ML storage
+      volume is encrypted with a customer-managed or AWS KMS key.
+    rationale: Without a KMS key the notebook volume relies only on default
+      handling; an explicit KMS key ensures at-rest encryption and key-level
+      access control over notebook data and credentials stored on disk.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: sagemaker_notebook_instance_encryption_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_notebook_instance
+    resourceIdField: $resourceKey
+    resourceNameField: NotebookInstanceName
+    passWhen:
+      op: exists
+      path: KmsKeyId
+    onError:
+      - contains: ValidationException
+        status: not_applicable
+        message: Notebook instance no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Notebook instance has no KMS key configured for volume encryption.
+    passMessage: Notebook instance is encrypted with a KMS key.
+    remediation:
+      summary: Recreate the notebook instance with a KMS key.
+      steps:
+        - The KMS key cannot be added to an existing instance; create a
+          replacement notebook instance specifying a KmsKeyId for the ML storage
+          volume.
+        - Use a customer-managed KMS key with a restrictive key policy where
+          key-level control is required.
+        - Delete the old instance once workloads are migrated.
+      verifyCommand: aws sagemaker describe-notebook-instance --notebook-instance-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/encryption-at-rest.html
+  - id: CR-AWS-SAGEMAKER-003
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker notebook instance is deployed inside a VPC
+    description: The notebook instance has a SubnetId set, placing it in a customer
+      VPC subnet rather than the SageMaker service-managed network.
+    rationale: A notebook launched outside a VPC cannot be governed by VPC security
+      groups, network ACLs, route tables or VPC endpoint policies, weakening
+      network isolation and egress control over the notebook environment.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: sagemaker_notebook_instance_vpc_settings_configured
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_notebook_instance
+    resourceIdField: $resourceKey
+    resourceNameField: NotebookInstanceName
+    passWhen:
+      op: exists
+      path: SubnetId
+    onError:
+      - contains: ValidationException
+        status: not_applicable
+        message: Notebook instance no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Notebook instance is not deployed inside a VPC (no SubnetId).
+    passMessage: Notebook instance is deployed inside a VPC subnet.
+    remediation:
+      summary: Recreate the notebook instance in a VPC subnet.
+      steps:
+        - VPC placement cannot be changed on an existing instance; create a
+          replacement notebook instance specifying a SubnetId and security
+          groups.
+        - Choose a private subnet and route required egress through VPC
+          endpoints or a controlled NAT gateway.
+        - Delete the old instance once workloads are migrated.
+      verifyCommand: aws sagemaker describe-notebook-instance --notebook-instance-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/appendix-notebook-and-internet-access.html
+  - id: CR-AWS-SAGEMAKER-004
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker notebook instance has root access disabled
+    description: The notebook instance is configured with RootAccess set to Disabled
+      so notebook users do not have root privileges on the instance.
+    rationale: Root access lets notebook users install arbitrary software and modify
+      instance-level settings, expanding the blast radius of a compromised
+      notebook and defeating least-privilege controls.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: sagemaker_notebook_instance_root_access_disabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_notebook_instance
+    resourceIdField: $resourceKey
+    resourceNameField: NotebookInstanceName
+    passWhen:
+      op: equals
+      path: RootAccess
+      value: Disabled
+    onError:
+      - contains: ValidationException
+        status: not_applicable
+        message: Notebook instance no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Notebook instance has root access enabled.
+    passMessage: Notebook instance has root access disabled.
+    remediation:
+      summary: Disable root access on the notebook instance.
+      steps:
+        - Stop the notebook instance.
+        - Update the notebook instance setting RootAccess to Disabled.
+        - Start the notebook instance again.
+      verifyCommand: aws sagemaker describe-notebook-instance --notebook-instance-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/nbi-root-access.html
+  - id: CR-AWS-SAGEMAKER-005
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker notebook instance requires IMDSv2
+    description: The notebook instance InstanceMetadataServiceConfiguration sets the
+      minimum IMDS version to 2, requiring token-based Instance Metadata Service
+      v2.
+    rationale: IMDSv1 is vulnerable to SSRF-based credential theft; requiring IMDSv2
+      forces session-token requests and blocks metadata credential exfiltration
+      through server-side request forgery.
+    severity: medium
+    categories:
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: sagemaker_notebook_instance_imdsv2_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_notebook_instance
+    resourceIdField: $resourceKey
+    resourceNameField: NotebookInstanceName
+    passWhen:
+      op: equals
+      path: InstanceMetadataServiceConfiguration.MinimumInstanceMetadataServiceVersion
+      value: "2"
+    onError:
+      - contains: ValidationException
+        status: not_applicable
+        message: Notebook instance no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Notebook instance does not require IMDSv2 (minimum metadata version
+      is not 2).
+    passMessage: Notebook instance requires IMDSv2.
+    remediation:
+      summary: Require IMDSv2 on the notebook instance.
+      steps:
+        - Stop the notebook instance.
+        - Update the notebook instance setting
+          InstanceMetadataServiceConfiguration
+          MinimumInstanceMetadataServiceVersion to "2".
+        - Start the notebook instance again.
+      verifyCommand: aws sagemaker describe-notebook-instance --notebook-instance-name
+        <name> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_InstanceMetadataServiceConfiguration.html

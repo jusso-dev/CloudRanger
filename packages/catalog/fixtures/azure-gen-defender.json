@@ -1,0 +1,326 @@
+[
+  {
+    "controlId": "CR-AZURE-DEFENDER-100",
+    "cases": [
+      {
+        "name": "servers plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/VirtualMachines",
+                  "name": "VirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard",
+                  "subPlan": "P2"
+                },
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/StorageAccounts",
+                  "name": "StorageAccounts",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "servers plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/VirtualMachines",
+                  "name": "VirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-101",
+    "cases": [
+      {
+        "name": "storage plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/StorageAccounts",
+                  "name": "StorageAccounts",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard",
+                  "subPlan": "DefenderForStorageV2"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "storage plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/StorageAccounts",
+                  "name": "StorageAccounts",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-102",
+    "cases": [
+      {
+        "name": "sql plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/SqlServers",
+                  "name": "SqlServers",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "sql plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/SqlServers",
+                  "name": "SqlServers",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-103",
+    "cases": [
+      {
+        "name": "keyvault plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/KeyVaults",
+                  "name": "KeyVaults",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard",
+                  "subPlan": "PerKeyVault"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "keyvault plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/KeyVaults",
+                  "name": "KeyVaults",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-104",
+    "cases": [
+      {
+        "name": "containers plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/Containers",
+                  "name": "Containers",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "containers plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/Containers",
+                  "name": "Containers",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-105",
+    "cases": [
+      {
+        "name": "appservices plan Standard",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/AppServices",
+                  "name": "AppServices",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "appservices plan Free",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/pricings/AppServices",
+                  "name": "AppServices",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-106",
+    "cases": [
+      {
+        "name": "auto-provisioning On",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.auto_provisioning",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/autoProvisioningSettings/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/autoProvisioningSettings",
+                  "autoProvision": "On"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "auto-provisioning Off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.auto_provisioning",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/providers/Microsoft.Security/autoProvisioningSettings/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/autoProvisioningSettings",
+                  "autoProvision": "Off"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

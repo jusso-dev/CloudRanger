@@ -1,0 +1,23 @@
+collectors:
+  - id: azure.storage.blob_service_properties_show
+    provider: azure
+    service: storage
+    description: >
+      Blob service properties (soft delete, container soft delete, versioning,
+      change feed) for a single storage account.
+    kind: per_resource
+    command: az storage account blob-service-properties show --account-name
+      {resource} --output json
+    regional: false
+    parent:
+      collector: azure.storage.list_accounts
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: >
+      Requires Reader plus data-plane read (or the operation uses the ARM
+      control-plane blobServices/default). Fields are camelCase:
+      deleteRetentionPolicy.enabled/days, containerDeleteRetentionPolicy,
+      isVersioningEnabled, changeFeed.enabled. Fails with
+      'StorageAccountNotFound' if the account was deleted between listing and
+      collection.

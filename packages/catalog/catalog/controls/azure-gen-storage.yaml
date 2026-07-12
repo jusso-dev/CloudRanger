@@ -1,0 +1,558 @@
+controls:
+  - id: CR-AZURE-STORAGE-100
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account disables public network access
+    description: >
+      Verifies publicNetworkAccess is set to Disabled so the account is
+      reachable only via private endpoints.
+    rationale: >
+      With public network access enabled, the storage endpoint is resolvable and
+      reachable from the internet; combined with any credential leak this is a
+      direct data-exfiltration path. Disabling it forces private-endpoint access
+      and eliminates the public attack surface.
+    severity: high
+    categories:
+      - storage
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: storage_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: Storage account allows public network access.
+    passMessage: Public network access is disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision private endpoints for all required storage services (blob,
+          file, etc.).
+        - Confirm no client depends on the public endpoint, then set
+          publicNetworkAccess=Disabled (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.8"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-network-security
+  - id: CR-AZURE-STORAGE-101
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account restricts network bypass to none or AzureServices only
+    description: >
+      Verifies the network rule set bypass does not grant broad exceptions such
+      as Logging or Metrics beyond trusted Azure services.
+    rationale: >
+      A permissive bypass (e.g. Logging, Metrics) allows traffic to skip the
+      storage firewall's deny rules, undermining the network restrictions and
+      widening the exposed surface.
+    severity: low
+    categories:
+      - storage
+      - network
+    source:
+      engine: prowler
+      id: storage_default_network_access_rule_is_denied
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: notExists
+          path: networkRuleSet.bypass
+        - op: equals
+          path: networkRuleSet.bypass
+          value: None
+        - op: equals
+          path: networkRuleSet.bypass
+          value: AzureServices
+    failMessage: Storage account network bypass grants broad exceptions beyond
+      AzureServices.
+    passMessage: Network bypass is limited to None or AzureServices.
+    remediation:
+      summary: Set networkRuleSet bypass to AzureServices (or None) only.
+      steps:
+        - Review which bypass exceptions are actually required.
+        - Reduce bypass to AzureServices or None (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.8"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-network-security
+  - id: CR-AZURE-STORAGE-102
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account uses a customer-managed key for encryption
+    description: >
+      Verifies the account's encryption keySource is Microsoft.Keyvault
+      (customer-managed key) rather than Microsoft-managed keys.
+    rationale: >
+      Customer-managed keys (CMK) let the organisation control key rotation,
+      revocation, and access, and satisfy regulated baselines that require
+      independent key custody for data at rest.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: storage_encryption_with_key_vault
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: encryption.keySource
+          value: Microsoft.Keyvault
+        - op: exists
+          path: encryption.keyVaultProperties
+    failMessage: Storage account uses Microsoft-managed keys, not a customer-managed key.
+    passMessage: Storage account encrypts data with a customer-managed key.
+    remediation:
+      summary: Configure encryption with a Key Vault customer-managed key.
+      steps:
+        - Create or select a Key Vault key with purge protection and soft delete
+          enabled.
+        - Grant the account's managed identity access and set keySource to
+          Microsoft.Keyvault (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.9"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/customer-managed-keys-overview
+  - id: CR-AZURE-STORAGE-103
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account enforces a key expiration policy
+    description: >
+      Verifies a shared-key rotation reminder policy is set via
+      keyPolicy.keyExpirationPeriodInDays (<= 90 days).
+    rationale: >
+      Without a key expiration policy, account access keys never signal a
+      rotation deadline, so long-lived keys accumulate and leaked keys stay
+      valid indefinitely.
+    severity: low
+    categories:
+      - storage
+      - identity
+      - resilience
+    source:
+      engine: prowler
+      id: storage_key_rotation_90_days
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: keyPolicy.keyExpirationPeriodInDays
+        - op: lte
+          path: keyPolicy.keyExpirationPeriodInDays
+          value: 90
+    failMessage: Storage account has no key expiration policy (or exceeds 90 days).
+    passMessage: Storage account enforces key expiration within 90 days.
+    remediation:
+      summary: Set a key expiration period of 90 days or fewer.
+      steps:
+        - Set keyPolicy.keyExpirationPeriodInDays to 90 or less (operator
+          action).
+        - Establish an operational process to rotate keys before expiry.
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.11"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage
+  - id: CR-AZURE-STORAGE-104
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account restricts copy scope
+    description: >
+      Verifies allowedCopyScope limits copy operations to the same Entra tenant
+      (AAD) or private links rather than any account.
+    rationale: >
+      An unrestricted copy scope lets data be copied to arbitrary external
+      storage accounts, providing an exfiltration channel that bypasses network
+      controls.
+    severity: medium
+    categories:
+      - storage
+      - data-protection
+    source:
+      engine: prowler
+      id: storage_cross_tenant_replication_disabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: in
+      path: allowedCopyScope
+      values:
+        - AAD
+        - PrivateLink
+    failMessage: Storage account allows copy operations from any account
+      (unrestricted copy scope).
+    passMessage: Copy scope is restricted to the tenant or private links.
+    remediation:
+      summary: Set allowedCopyScope to AAD or PrivateLink.
+      steps:
+        - Confirm no legitimate cross-tenant copy workflows exist.
+        - Set allowedCopyScope to AAD (or PrivateLink) (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.14"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/security-restrict-copy-operations
+  - id: CR-AZURE-STORAGE-105
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account defaults to Entra ID authorization in the portal
+    description: >
+      Verifies defaultToOAuthAuthentication is true so portal data access
+      defaults to Entra ID rather than account keys.
+    rationale: >
+      Defaulting to Entra ID (OAuth) authorization steers users away from
+      shared-key access, reducing reliance on long-lived account keys and
+      improving audit fidelity.
+    severity: low
+    categories:
+      - storage
+      - identity
+    source:
+      engine: prowler
+      id: storage_default_to_entra_authorization_enabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: defaultToOAuthAuthentication
+      value: true
+    failMessage: Storage account does not default to Entra ID authorization.
+    passMessage: Storage account defaults to Entra ID authorization.
+    remediation:
+      summary: Enable "default to Entra authorization" on the account.
+      steps:
+        - Set defaultToOAuthAuthentication to true (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.12"
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/authorize-data-operations-portal
+  - id: CR-AZURE-STORAGE-106
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account uses the standard DNS endpoint type
+    description: >
+      Verifies the account does not use the Internet-routing / cross-region
+      endpoint type that broadens exposure (dnsEndpointType is Standard or
+      unset).
+    rationale: >
+      The AzureDnsZone endpoint type is intended for very large fleets and can
+      complicate private-endpoint and firewall enforcement; standard endpoints
+      keep the network model simple and predictable.
+    severity: informational
+    categories:
+      - storage
+      - network
+    source:
+      engine: prowler
+      id: storage_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: notExists
+          path: dnsEndpointType
+        - op: equals
+          path: dnsEndpointType
+          value: Standard
+    failMessage: Storage account uses a non-standard DNS endpoint type.
+    passMessage: Storage account uses the standard DNS endpoint type.
+    remediation:
+      summary: Prefer the Standard DNS endpoint type unless AzureDnsZone is required
+        at scale.
+      steps:
+        - Review whether the AzureDnsZone endpoint type is genuinely required
+          (operator action).
+      verifyCommand: az storage account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-account-overview
+  - id: CR-AZURE-STORAGE-107
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account blob service encryption is enabled
+    description: >
+      Verifies service-level encryption is enabled for the blob service
+      (encryption.services.blob.enabled is true).
+    rationale: >
+      Blob service encryption at rest is the baseline protection for object
+      data; while enabled by default, an explicit check catches accounts where
+      it was disabled or misconfigured.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: storage_infrastructure_encryption_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: encryption.services.blob.enabled
+      value: true
+    failMessage: Blob service encryption at rest is not enabled.
+    passMessage: Blob service encryption at rest is enabled.
+    remediation:
+      summary: Ensure blob service encryption is enabled on the account.
+      steps:
+        - Verify the encryption services configuration on the account (operator
+          action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.2"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-service-encryption
+  - id: CR-AZURE-STORAGE-108
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account file service encryption is enabled
+    description: >
+      Verifies service-level encryption is enabled for the file service
+      (encryption.services.file.enabled is true).
+    rationale: >
+      File share data at rest must be encrypted; an explicit check catches
+      accounts where file service encryption was disabled.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: storage_infrastructure_encryption_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: encryption.services.file.enabled
+      value: true
+    failMessage: File service encryption at rest is not enabled.
+    passMessage: File service encryption at rest is enabled.
+    remediation:
+      summary: Ensure file service encryption is enabled on the account.
+      steps:
+        - Verify the encryption services configuration on the account (operator
+          action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.2"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-service-encryption
+  - id: CR-AZURE-STORAGE-109
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account blob soft delete is enabled
+    description: >
+      Verifies blob soft delete (deleteRetentionPolicy.enabled) is on with a
+      retention of at least 7 days.
+    rationale: >
+      Without blob soft delete, accidental or malicious deletions and overwrites
+      are unrecoverable; a retention window provides a resilience buffer against
+      data loss and ransomware.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: storage_blob_soft_delete_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.blob_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: deleteRetentionPolicy.enabled
+          value: true
+        - op: gte
+          path: deleteRetentionPolicy.days
+          value: 7
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: Blob soft delete is disabled or retention is under 7 days.
+    passMessage: Blob soft delete is enabled with at least 7 days retention.
+    remediation:
+      summary: Enable blob soft delete with a retention period of 7 or more days.
+      steps:
+        - Enable deleteRetentionPolicy on the blob service with days >= 7
+          (operator action).
+      verifyCommand: az storage account blob-service-properties show --account-name
+        <name> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.11"
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/soft-delete-blob-overview
+  - id: CR-AZURE-STORAGE-110
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account container soft delete is enabled
+    description: >
+      Verifies container soft delete (containerDeleteRetentionPolicy.enabled) is
+      on with a retention of at least 7 days.
+    rationale: >
+      Container soft delete protects against loss of an entire container (and
+      all its blobs) from accidental or malicious deletion, complementing
+      blob-level soft delete.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: storage_blob_soft_delete_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.blob_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: containerDeleteRetentionPolicy.enabled
+          value: true
+        - op: gte
+          path: containerDeleteRetentionPolicy.days
+          value: 7
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: Container soft delete is disabled or retention is under 7 days.
+    passMessage: Container soft delete is enabled with at least 7 days retention.
+    remediation:
+      summary: Enable container soft delete with a retention period of 7 or more days.
+      steps:
+        - Enable containerDeleteRetentionPolicy on the blob service with days >=
+          7 (operator action).
+      verifyCommand: az storage account blob-service-properties show --account-name
+        <name> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.11"
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/soft-delete-container-overview
+  - id: CR-AZURE-STORAGE-111
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account blob versioning is enabled
+    description: >
+      Verifies blob versioning (isVersioningEnabled) is enabled so prior
+      versions are automatically retained.
+    rationale: >
+      Versioning preserves previous blob states on overwrite or delete, enabling
+      recovery from corruption, accidental change, or ransomware encryption of
+      objects.
+    severity: low
+    categories:
+      - storage
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: storage_blob_versioning_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.blob_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: isVersioningEnabled
+      value: true
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: Blob versioning is not enabled.
+    passMessage: Blob versioning is enabled.
+    remediation:
+      summary: Enable blob versioning on the blob service.
+      steps:
+        - Set isVersioningEnabled to true on the blob service (operator action).
+      verifyCommand: az storage account blob-service-properties show --account-name
+        <name> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/versioning-overview

@@ -1,0 +1,490 @@
+[
+  {
+    "controlId": "CR-AZURE-COMPUTE-100",
+    "cases": [
+      {
+        "name": "pass managed os disk",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-managed",
+                "name": "vm-managed",
+                "storageProfile": {
+                  "osDisk": {
+                    "name": "vm-managed_osdisk",
+                    "osType": "Linux",
+                    "managedDisk": {
+                      "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/vm-managed_osdisk",
+                      "storageAccountType": "Premium_LRS"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail unmanaged vhd os disk",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-vhd",
+                "name": "vm-vhd",
+                "storageProfile": {
+                  "osDisk": {
+                    "name": "vm-vhd-osdisk",
+                    "osType": "Linux",
+                    "vhd": {
+                      "uri": "https://stg.blob.core.windows.net/vhds/vm-vhd-osdisk.vhd"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-101",
+    "cases": [
+      {
+        "name": "pass boot diagnostics enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-diag",
+                "name": "vm-diag",
+                "diagnosticsProfile": {
+                  "bootDiagnostics": {
+                    "enabled": true,
+                    "storageUri": "https://diag.blob.core.windows.net/"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail boot diagnostics disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-nodiag",
+                "name": "vm-nodiag",
+                "diagnosticsProfile": {
+                  "bootDiagnostics": {
+                    "enabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail boot diagnostics absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-absent",
+                "name": "vm-absent",
+                "diagnosticsProfile": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-102",
+    "cases": [
+      {
+        "name": "pass no public ip (empty array)",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list_ip_addresses",
+            "exitCode": 0,
+            "output": [
+              {
+                "virtualMachine": {
+                  "name": "vm-private",
+                  "network": {
+                    "privateIpAddresses": ["10.0.0.4"],
+                    "publicIpAddresses": []
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail directly-attached public ip",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list_ip_addresses",
+            "exitCode": 0,
+            "output": [
+              {
+                "virtualMachine": {
+                  "name": "vm-public",
+                  "network": {
+                    "privateIpAddresses": ["10.0.0.5"],
+                    "publicIpAddresses": [
+                      {
+                        "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/publicIPAddresses/vm-public-ip",
+                        "name": "vm-public-ip",
+                        "ipAddress": "52.170.10.10",
+                        "ipAllocationMethod": "Static"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-103",
+    "cases": [
+      {
+        "name": "pass system-assigned identity",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-mi",
+                "name": "vm-mi",
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "11111111-1111-1111-1111-111111111111",
+                  "tenantId": "22222222-2222-2222-2222-222222222222"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail identity type None",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-none",
+                "name": "vm-none",
+                "identity": {
+                  "type": "None"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no identity block",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-noid",
+                "name": "vm-noid"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-104",
+    "cases": [
+      {
+        "name": "pass only approved extensions",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-ext-ok",
+                "name": "vm-ext-ok",
+                "resources": [
+                  {
+                    "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-ext-ok/extensions/AzureMonitorLinuxAgent",
+                    "name": "AzureMonitorLinuxAgent",
+                    "properties": {
+                      "publisher": "Microsoft.Azure.Monitor",
+                      "type": "AzureMonitorLinuxAgent",
+                      "provisioningState": "Succeeded"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass no extensions",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-ext-empty",
+                "name": "vm-ext-empty",
+                "resources": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail unapproved custom script extension",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-ext-bad",
+                "name": "vm-ext-bad",
+                "resources": [
+                  {
+                    "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-ext-bad/extensions/CustomScript",
+                    "name": "CustomScript",
+                    "properties": {
+                      "publisher": "Microsoft.Azure.Extensions",
+                      "type": "CustomScript",
+                      "provisioningState": "Succeeded"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-105",
+    "cases": [
+      {
+        "name": "pass encryption at host enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-eah-on",
+                "name": "vm-eah-on",
+                "securityProfile": {
+                  "encryptionAtHost": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail encryption at host disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-eah-off",
+                "name": "vm-eah-off",
+                "securityProfile": {
+                  "encryptionAtHost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no security profile",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm-eah-absent",
+                "name": "vm-eah-absent"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-106",
+    "cases": [
+      {
+        "name": "pass customer-managed key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/disk-cmk",
+                "name": "disk-cmk",
+                "diskState": "Attached",
+                "encryption": {
+                  "type": "EncryptionAtRestWithCustomerKey",
+                  "diskEncryptionSetId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/diskEncryptionSets/des1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail platform key only",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/disk-pmk",
+                "name": "disk-pmk",
+                "diskState": "Attached",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-107",
+    "cases": [
+      {
+        "name": "pass public network access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/disk-private",
+                "name": "disk-private",
+                "diskState": "Attached",
+                "publicNetworkAccess": "Disabled",
+                "networkAccessPolicy": "AllowPrivate",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass deny-all network policy",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/disk-denyall",
+                "name": "disk-denyall",
+                "diskState": "Unattached",
+                "publicNetworkAccess": "Enabled",
+                "networkAccessPolicy": "DenyAll",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public network access enabled with allow-all policy",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/disks/disk-public",
+                "name": "disk-public",
+                "diskState": "Attached",
+                "publicNetworkAccess": "Enabled",
+                "networkAccessPolicy": "AllowAll",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

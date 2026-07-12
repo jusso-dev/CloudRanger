@@ -1,0 +1,17 @@
+collectors:
+  - id: aws.elasticache.describe_replication_groups
+    provider: aws
+    service: elasticache
+    description: Lists ElastiCache (Redis/Valkey) replication groups in a region
+      with their encryption, failover, and Multi-AZ configuration.
+    kind: single
+    command: aws elasticache describe-replication-groups --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns the ReplicationGroups array. Each group exposes
+      AtRestEncryptionEnabled, TransitEncryptionEnabled, AuthTokenEnabled
+      (bool), AutomaticFailover and MultiAZ (string enums
+      "enabled"/"disabled"/"enabling"/"disabling"), SnapshotRetentionLimit, and
+      ARN. Memcached clusters and standalone Redis clusters that are not part of
+      a replication group do not appear here (see describe-cache-clusters).
+      Requires elasticache:DescribeReplicationGroups.

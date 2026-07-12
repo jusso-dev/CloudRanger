@@ -1,0 +1,643 @@
+[
+  {
+    "controlId": "CR-GCP-COMPUTE-100",
+    "cases": [
+      {
+        "name": "fail public IP present",
+        "expected": "fail",
+        "resourceId": "vm-web",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-web",
+                "status": "RUNNING",
+                "networkInterfaces": [
+                  {
+                    "name": "nic0",
+                    "network": "projects/p/global/networks/default",
+                    "networkIP": "10.0.0.5",
+                    "accessConfigs": [
+                      {
+                        "type": "ONE_TO_ONE_NAT",
+                        "name": "External NAT",
+                        "natIP": "34.120.10.5",
+                        "networkTier": "PREMIUM"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass private only",
+        "expected": "pass",
+        "resourceId": "vm-private",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-private",
+                "status": "RUNNING",
+                "networkInterfaces": [
+                  {
+                    "name": "nic0",
+                    "network": "projects/p/global/networks/default",
+                    "networkIP": "10.0.0.6"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-101",
+    "cases": [
+      {
+        "name": "pass oslogin true",
+        "expected": "pass",
+        "resourceId": "vm-a",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-a",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "enable-oslogin",
+                      "value": "TRUE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no oslogin",
+        "expected": "fail",
+        "resourceId": "vm-b",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-b",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "foo",
+                      "value": "bar"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-102",
+    "cases": [
+      {
+        "name": "pass secure boot on",
+        "expected": "pass",
+        "resourceId": "vm-sb",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-sb",
+                "status": "RUNNING",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail secure boot off",
+        "expected": "fail",
+        "resourceId": "vm-nosb",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-nosb",
+                "status": "RUNNING",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": false,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-103",
+    "cases": [
+      {
+        "name": "fail cloud-platform scope",
+        "expected": "fail",
+        "resourceId": "vm-broad",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-broad",
+                "status": "RUNNING",
+                "serviceAccounts": [
+                  {
+                    "email": "app@my-proj.iam.gserviceaccount.com",
+                    "scopes": ["https://www.googleapis.com/auth/cloud-platform"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass narrow scopes",
+        "expected": "pass",
+        "resourceId": "vm-narrow",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-narrow",
+                "status": "RUNNING",
+                "serviceAccounts": [
+                  {
+                    "email": "app@my-proj.iam.gserviceaccount.com",
+                    "scopes": [
+                      "https://www.googleapis.com/auth/logging.write",
+                      "https://www.googleapis.com/auth/monitoring.write"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-104",
+    "cases": [
+      {
+        "name": "pass confidential compute on",
+        "expected": "pass",
+        "resourceId": "vm-conf",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-conf",
+                "status": "RUNNING",
+                "confidentialInstanceConfig": {
+                  "enableConfidentialCompute": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no confidential config",
+        "expected": "fail",
+        "resourceId": "vm-plain",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-plain",
+                "status": "RUNNING"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-105",
+    "cases": [
+      {
+        "name": "fail ssh-keys in metadata",
+        "expected": "fail",
+        "resourceId": "vm-keys",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-keys",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "ssh-keys",
+                      "value": "alice:ssh-rsa AAAAB3Nza..."
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass no ssh keys",
+        "expected": "pass",
+        "resourceId": "vm-clean",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-clean",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "enable-oslogin",
+                      "value": "TRUE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-106",
+    "cases": [
+      {
+        "name": "pass project serial disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": {
+              "name": "my-project",
+              "commonInstanceMetadata": {
+                "items": [
+                  {
+                    "key": "enable-oslogin",
+                    "value": "TRUE"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail project serial enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": {
+              "name": "my-project",
+              "commonInstanceMetadata": {
+                "items": [
+                  {
+                    "key": "serial-port-enable",
+                    "value": "true"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-107",
+    "cases": [
+      {
+        "name": "pass all disks cmek",
+        "expected": "pass",
+        "resourceId": "vm-enc",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-enc",
+                "status": "RUNNING",
+                "disks": [
+                  {
+                    "deviceName": "boot",
+                    "boot": true,
+                    "diskEncryptionKey": {
+                      "kmsKeyName": "projects/p/locations/us/keyRings/r/cryptoKeys/k"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail default encryption disk",
+        "expected": "fail",
+        "resourceId": "vm-def",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-def",
+                "status": "RUNNING",
+                "disks": [
+                  {
+                    "deviceName": "boot",
+                    "boot": true
+                  },
+                  {
+                    "deviceName": "data",
+                    "boot": false,
+                    "diskEncryptionKey": {
+                      "kmsKeyName": "projects/p/locations/us/keyRings/r/cryptoKeys/k"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-108",
+    "cases": [
+      {
+        "name": "pass instance serial disabled",
+        "expected": "pass",
+        "resourceId": "vm-ok",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-ok",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "enable-oslogin",
+                      "value": "TRUE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail instance serial enabled",
+        "expected": "fail",
+        "resourceId": "vm-serial",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-serial",
+                "status": "RUNNING",
+                "metadata": {
+                  "items": [
+                    {
+                      "key": "serial-port-enable",
+                      "value": "1"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-109",
+    "cases": [
+      {
+        "name": "pass all shielded protections",
+        "expected": "pass",
+        "resourceId": "vm-full",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-full",
+                "status": "RUNNING",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail missing vtpm",
+        "expected": "fail",
+        "resourceId": "vm-partial",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-partial",
+                "status": "RUNNING",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": false,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-110",
+    "cases": [
+      {
+        "name": "fail broad compute scope",
+        "expected": "fail",
+        "resourceId": "vm-rw",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-rw",
+                "status": "RUNNING",
+                "serviceAccounts": [
+                  {
+                    "email": "app@my-proj.iam.gserviceaccount.com",
+                    "scopes": [
+                      "https://www.googleapis.com/auth/compute",
+                      "https://www.googleapis.com/auth/logging.write"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass narrow scopes",
+        "expected": "pass",
+        "resourceId": "vm-min",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-min",
+                "status": "RUNNING",
+                "serviceAccounts": [
+                  {
+                    "email": "app@my-proj.iam.gserviceaccount.com",
+                    "scopes": ["https://www.googleapis.com/auth/logging.write"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-111",
+    "cases": [
+      {
+        "name": "pass deletion protection on",
+        "expected": "pass",
+        "resourceId": "vm-prot",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-prot",
+                "status": "RUNNING",
+                "deletionProtection": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail deletion protection off",
+        "expected": "fail",
+        "resourceId": "vm-unprot",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-unprot",
+                "status": "RUNNING",
+                "deletionProtection": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable terminated instance",
+        "expected": "not_applicable",
+        "resourceId": "vm-stopped",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-stopped",
+                "status": "TERMINATED",
+                "deletionProtection": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

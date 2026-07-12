@@ -1,0 +1,234 @@
+controls:
+  - id: CR-AWS-APIGATEWAY-002
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stages have access logging enabled
+    description: Every stage of the REST API delivers access logs to a CloudWatch
+      Logs or Firehose destination.
+    rationale: Access logs capture caller identity, source IP and response codes;
+      without them there is no audit trail of who called the API.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: apigateway_restapi_client_certificate_enabled
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: exists
+        path: accessLogSettings.destinationArn
+    failMessage: One or more REST API stages do not have access logging configured.
+    passMessage: All REST API stages have access logging configured.
+    remediation:
+      summary: Configure an access log destination on every stage.
+      steps:
+        - Open each stage's Logs/Tracing settings and enable access logging.
+        - Set a CloudWatch Logs log group ARN (or Firehose ARN) and a log format.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html
+  - id: CR-AWS-APIGATEWAY-003
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stages are associated with a WAF web ACL
+    description: Every stage of the REST API is protected by an AWS WAF web ACL.
+    rationale: Without WAF, public REST APIs have no L7 protection against
+      injection, bad bots and volumetric application-layer attacks.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: apigateway_restapi_waf_acl_attached
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: exists
+        path: webAclArn
+    failMessage: One or more REST API stages are not associated with a WAF web ACL.
+    passMessage: All REST API stages are associated with a WAF web ACL.
+    remediation:
+      summary: Associate a WAF web ACL with every stage.
+      steps:
+        - Create or select an AWS WAF (regional) web ACL.
+        - Associate it with each API Gateway stage.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-control-access-aws-waf.html
+  - id: CR-AWS-APIGATEWAY-004
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stages use a client certificate for backend authentication
+    description: Every stage of the REST API presents a client certificate so the
+      backend can verify requests originate from API Gateway.
+    rationale: Without mutual TLS via a client certificate, a backend cannot
+      distinguish API Gateway traffic from direct attacker calls.
+    severity: low
+    categories:
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: apigateway_restapi_client_certificate_enabled
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: exists
+        path: clientCertificateId
+    failMessage: One or more REST API stages have no client certificate configured.
+    passMessage: All REST API stages have a client certificate configured.
+    remediation:
+      summary: Generate and attach a client certificate to every stage.
+      steps:
+        - Generate a client certificate in API Gateway.
+        - Assign the certificate to each stage and configure the backend to
+          validate it.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-client-side-ssl-authentication.html
+  - id: CR-AWS-APIGATEWAY-005
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stages have X-Ray tracing enabled
+    description: Every stage of the REST API has AWS X-Ray active tracing enabled.
+    rationale: X-Ray tracing provides end-to-end request visibility needed to
+      diagnose latency and errors; without it distributed failures are opaque.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: apigateway_restapi_tracing_enabled
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: equals
+        path: tracingEnabled
+        value: true
+    failMessage: One or more REST API stages do not have X-Ray tracing enabled.
+    passMessage: All REST API stages have X-Ray tracing enabled.
+    remediation:
+      summary: Enable X-Ray active tracing on every stage.
+      steps:
+        - Open each stage's Logs/Tracing settings.
+        - Enable X-Ray tracing.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-xray.html
+  - id: CR-AWS-APIGATEWAY-001
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stages have execution logging enabled
+    description: Every stage of the REST API has CloudWatch execution logging set
+      to ERROR or INFO for all methods.
+    rationale: Without execution logging there is no record of request handling,
+      errors or latency, crippling incident investigation and abuse detection.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: apigateway_restapi_logging_enabled
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: in
+        path: methodSettings.*/*.loggingLevel
+        values:
+          - ERROR
+          - INFO
+    failMessage: One or more REST API stages do not have execution logging (ERROR/INFO) enabled.
+    passMessage: All REST API stages have execution logging enabled.
+    remediation:
+      summary: Enable CloudWatch execution logging on every stage.
+      steps:
+        - Open the stage and set the CloudWatch log level to INFO or ERROR for all methods.
+        - Ensure the API Gateway CloudWatch Logs role ARN is configured on the account.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html
+  - id: CR-AWS-APIGATEWAY-006
+    version: 1.0.0
+    provider: aws
+    service: apigateway
+    title: REST API stage cache data is encrypted
+    description: For stages with a cache cluster enabled, cache data is encrypted
+      at rest for all methods.
+    rationale: An unencrypted API Gateway cache stores response payloads in
+      plaintext, exposing sensitive data if the cache is compromised.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: apigateway_restapi_cache_encrypted
+      license: Apache-2.0
+    collector: aws.apigateway.get_stages
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: anyItem
+      path: item
+      condition:
+        op: equals
+        path: cacheClusterEnabled
+        value: true
+    passWhen:
+      op: allItems
+      path: item
+      condition:
+        op: or
+        exprs:
+          - op: notEquals
+            path: cacheClusterEnabled
+            value: true
+          - op: equals
+            path: methodSettings.*/*.cacheDataEncrypted
+            value: true
+    failMessage: One or more cache-enabled stages do not encrypt cache data.
+    passMessage: All cache-enabled stages encrypt cache data at rest.
+    remediation:
+      summary: Enable cache encryption on every cache-enabled stage.
+      steps:
+        - In the stage cache settings enable "Encrypt cache data".
+        - Re-deploy the stage so the setting takes effect.
+      verifyCommand: aws apigateway get-stages --rest-api-id <api-id> --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-caching.html

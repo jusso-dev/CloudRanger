@@ -1,0 +1,431 @@
+[
+  {
+    "controlId": "CR-AWS-OPENSEARCH-001",
+    "cases": [
+      {
+        "name": "encryption at rest enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainId": "111122223333/prod-logs",
+                "DomainName": "prod-logs",
+                "ARN": "arn:aws:es:us-east-1:111122223333:domain/prod-logs",
+                "EncryptionAtRestOptions": {
+                  "Enabled": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "encryption at rest disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "ARN": "arn:aws:es:us-east-1:111122223333:domain/dev-logs",
+                "EncryptionAtRestOptions": {
+                  "Enabled": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "domain deleted mid-scan",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "gone",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the DescribeDomain operation: Domain not found: gone"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-002",
+    "cases": [
+      {
+        "name": "node-to-node encryption on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "NodeToNodeEncryptionOptions": {
+                  "Enabled": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "node-to-node encryption off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "NodeToNodeEncryptionOptions": {
+                  "Enabled": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-003",
+    "cases": [
+      {
+        "name": "https enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "DomainEndpointOptions": {
+                  "EnforceHTTPS": true,
+                  "TLSSecurityPolicy": "Policy-Min-TLS-1-2-2019-07"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "https not enforced",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "DomainEndpointOptions": {
+                  "EnforceHTTPS": false,
+                  "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-004",
+    "cases": [
+      {
+        "name": "tls 1.2 policy",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "DomainEndpointOptions": {
+                  "EnforceHTTPS": true,
+                  "TLSSecurityPolicy": "Policy-Min-TLS-1-2-2019-07"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "tls 1.0 policy weak",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "DomainEndpointOptions": {
+                  "EnforceHTTPS": true,
+                  "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "https not enforced so not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "legacy",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "legacy",
+                "DomainEndpointOptions": {
+                  "EnforceHTTPS": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-005",
+    "cases": [
+      {
+        "name": "audit logs enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "LogPublishingOptions": {
+                  "AUDIT_LOGS": {
+                    "CloudWatchLogsLogGroupArn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/opensearch/audit",
+                    "Enabled": true
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no audit logs configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "LogPublishingOptions": {}
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-006",
+    "cases": [
+      {
+        "name": "search slow logs enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "LogPublishingOptions": {
+                  "SEARCH_SLOW_LOGS": {
+                    "CloudWatchLogsLogGroupArn": "arn:aws:logs:us-east-1:111122223333:log-group:/aws/opensearch/search-slow",
+                    "Enabled": true
+                  },
+                  "INDEX_SLOW_LOGS": {
+                    "Enabled": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no slow logs enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "LogPublishingOptions": {
+                  "SEARCH_SLOW_LOGS": {
+                    "Enabled": false
+                  },
+                  "INDEX_SLOW_LOGS": {
+                    "Enabled": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-007",
+    "cases": [
+      {
+        "name": "domain in vpc",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "VPCOptions": {
+                  "VPCId": "vpc-0a1b2c3d",
+                  "SubnetIds": ["subnet-111", "subnet-222"],
+                  "SecurityGroupIds": ["sg-abc"]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "public domain no vpc",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "public-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "public-logs",
+                "Endpoint": "search-public-logs-abc123.us-east-1.es.amazonaws.com"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-OPENSEARCH-008",
+    "cases": [
+      {
+        "name": "fine-grained access control on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "prod-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "prod-logs",
+                "AdvancedSecurityOptions": {
+                  "Enabled": true,
+                  "InternalUserDatabaseEnabled": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fine-grained access control off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "dev-logs",
+            "exitCode": 0,
+            "output": {
+              "DomainStatus": {
+                "DomainName": "dev-logs",
+                "AdvancedSecurityOptions": {
+                  "Enabled": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.opensearch.describe_domain",
+            "region": "us-east-1",
+            "resourceKey": "restricted",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the DescribeDomain operation: User is not authorized to perform es:DescribeDomain"
+          }
+        ]
+      }
+    ]
+  }
+]
