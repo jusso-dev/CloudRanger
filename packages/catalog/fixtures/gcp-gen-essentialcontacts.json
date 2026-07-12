@@ -1,0 +1,155 @@
+[
+  {
+    "controlId": "CR-GCP-ESSENTIALCONTACTS-100",
+    "cases": [
+      {
+        "name": "pass - contact subscribed to SECURITY",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/1",
+                "email": "secops@example.com",
+                "notificationCategorySubscriptions": ["SECURITY", "TECHNICAL"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              },
+              {
+                "name": "projects/my-project/contacts/2",
+                "email": "billing@example.com",
+                "notificationCategorySubscriptions": ["BILLING"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "pass - contact subscribed to ALL",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/3",
+                "email": "admin@example.com",
+                "notificationCategorySubscriptions": ["ALL"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no SECURITY contact",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/2",
+                "email": "billing@example.com",
+                "notificationCategorySubscriptions": ["BILLING", "LEGAL"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no contacts configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ESSENTIALCONTACTS-101",
+    "cases": [
+      {
+        "name": "pass - contact subscribed to TECHNICAL",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/1",
+                "email": "ops@example.com",
+                "notificationCategorySubscriptions": ["TECHNICAL"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "pass - contact subscribed to ALL",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/3",
+                "email": "admin@example.com",
+                "notificationCategorySubscriptions": ["ALL"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no TECHNICAL contact",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [
+              {
+                "name": "projects/my-project/contacts/2",
+                "email": "secops@example.com",
+                "notificationCategorySubscriptions": ["SECURITY"],
+                "languageTag": "en-US",
+                "validationState": "VALID"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no contacts configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.essentialcontacts.list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  }
+]

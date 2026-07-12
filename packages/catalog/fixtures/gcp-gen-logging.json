@@ -1,0 +1,166 @@
+[
+  {
+    "controlId": "CR-GCP-LOGGING-111",
+    "cases": [
+      {
+        "name": "pass - sink has an export destination",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [
+              {
+                "name": "bq-export",
+                "destination": "bigquery.googleapis.com/projects/proj-1/datasets/logs",
+                "writerIdentity": "serviceAccount:p123-456@gcp-sa-logging.iam.gserviceaccount.com",
+                "createTime": "2024-01-01T00:00:00.000000Z",
+                "updateTime": "2024-01-01T00:00:00.000000Z"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no sinks defined",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-LOGGING-112",
+    "cases": [
+      {
+        "name": "pass - a user-defined log-based metric exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.logging.metrics_list",
+            "output": [
+              {
+                "name": "project-ownership-changes",
+                "filter": "(protoPayload.serviceName=\"cloudresourcemanager.googleapis.com\") AND (ProjectOwnership OR projectOwnerInvitee)",
+                "metricDescriptor": {
+                  "name": "projects/proj-1/metricDescriptors/logging.googleapis.com/user/project-ownership-changes",
+                  "metricKind": "DELTA",
+                  "valueType": "INT64",
+                  "type": "logging.googleapis.com/user/project-ownership-changes"
+                },
+                "createTime": "2024-02-01T00:00:00.000000Z",
+                "updateTime": "2024-02-01T00:00:00.000000Z"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no user-defined log-based metrics",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.logging.metrics_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-LOGGING-110",
+    "cases": [
+      {
+        "name": "pass - a sink with absent filter is catch-all",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [
+              {
+                "name": "_Required",
+                "destination": "logging.googleapis.com/x",
+                "filter": "LOG_ID(\"cloudaudit.googleapis.com/activity\")"
+              },
+              {
+                "name": "all-export",
+                "destination": "storage.googleapis.com/my-log-bucket"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "pass - enabled sink with empty-string filter",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [
+              {
+                "name": "all",
+                "destination": "storage.googleapis.com/b",
+                "filter": ""
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - only filtered sinks",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [
+              {
+                "name": "audit",
+                "destination": "bigquery.googleapis.com/x",
+                "filter": "logName:cloudaudit"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - catch-all sink is disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [
+              {
+                "name": "all",
+                "destination": "storage.googleapis.com/b",
+                "filter": "",
+                "disabled": true
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no sinks at all",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.logging.sinks_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  }
+]

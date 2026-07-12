@@ -1,0 +1,94 @@
+controls:
+  - id: CR-GCP-ESSENTIALCONTACTS-100
+    version: 1.0.0
+    provider: gcp
+    service: essentialcontacts
+    title: A contact is subscribed to SECURITY notifications
+    description: At least one Essential Contact is subscribed to the SECURITY
+      notification category (or ALL).
+    rationale: Without a security-subscribed contact, Google Cloud security
+      notifications (compromise, abuse, vulnerability alerts) are not delivered
+      to a responsible party, delaying incident response.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: essentialcontacts_security_alerts_enabled
+      license: Apache-2.0
+    collector: gcp.essentialcontacts.list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: notificationCategorySubscriptions
+            value: SECURITY
+          - op: contains
+            path: notificationCategorySubscriptions
+            value: ALL
+    failMessage: No Essential Contact is subscribed to SECURITY (or ALL) notifications.
+    passMessage: An Essential Contact is subscribed to SECURITY notifications.
+    remediation:
+      summary: Add an Essential Contact subscribed to the SECURITY category.
+      steps:
+        - Identify a monitored security distribution email.
+        - Create an Essential Contact subscribed to the SECURITY category for
+          the project.
+        - Confirm the contact validation state is VALID.
+      verifyCommand: gcloud essential-contacts list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/resource-manager/docs/managing-notification-contacts
+  - id: CR-GCP-ESSENTIALCONTACTS-101
+    version: 1.0.0
+    provider: gcp
+    service: essentialcontacts
+    title: A contact is subscribed to TECHNICAL notifications
+    description: At least one Essential Contact is subscribed to the TECHNICAL
+      notification category (or ALL).
+    rationale: Without a technical-subscribed contact, operational notifications
+      about outages, migrations and technical incidents are not delivered,
+      risking unnoticed service disruption.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: essentialcontacts_technical_alerts_enabled
+      license: Apache-2.0
+    collector: gcp.essentialcontacts.list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: notificationCategorySubscriptions
+            value: TECHNICAL
+          - op: contains
+            path: notificationCategorySubscriptions
+            value: ALL
+    failMessage: No Essential Contact is subscribed to TECHNICAL (or ALL) notifications.
+    passMessage: An Essential Contact is subscribed to TECHNICAL notifications.
+    remediation:
+      summary: Add an Essential Contact subscribed to the TECHNICAL category.
+      steps:
+        - Identify a monitored operations distribution email.
+        - Create an Essential Contact subscribed to the TECHNICAL category for
+          the project.
+        - Confirm the contact validation state is VALID.
+      verifyCommand: gcloud essential-contacts list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/resource-manager/docs/managing-notification-contacts

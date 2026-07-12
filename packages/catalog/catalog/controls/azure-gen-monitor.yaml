@@ -1,0 +1,198 @@
+controls:
+  - id: CR-AZURE-MONITOR-100
+    version: 1.0.0
+    provider: azure
+    service: monitor
+    title: Activity log profile captures Write, Delete, and Action categories
+    description: A Monitor log profile exists that exports the Write, Delete, and
+      Action activity log categories.
+    rationale: If the activity log profile omits any of the write, delete, or action
+      categories, control-plane changes such as resource deletion or permission
+      grants go unrecorded, crippling incident investigation and tamper
+      detection.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitor_diagnostic_setting_with_appropriate_categories
+      license: Apache-2.0
+    collector: azure.monitor.log_profiles_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: contains
+            path: properties.categories
+            value: Write
+          - op: contains
+            path: properties.categories
+            value: Delete
+          - op: contains
+            path: properties.categories
+            value: Action
+    failMessage: No activity log profile captures all of Write, Delete, and Action
+      categories.
+    passMessage: An activity log profile captures Write, Delete, and Action categories.
+    remediation:
+      summary: Configure a log profile that captures the Write, Delete, and Action
+        categories.
+      steps:
+        - Create or update an activity log profile including the Write, Delete,
+          and Action categories.
+        - Route the profile to a storage account and/or Log Analytics workspace
+          for retention.
+      verifyCommand: az monitor log-profiles list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - 5.1.2
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log
+  - id: CR-AZURE-MONITOR-101
+    version: 1.0.0
+    provider: azure
+    service: monitor
+    title: Activity log profile retains data for at least 365 days
+    description: A Monitor log profile has its retention policy enabled with a
+      retention period of at least 365 days.
+    rationale: Short or disabled activity log retention means historical
+      control-plane evidence is purged before many breaches are even detected,
+      breaking forensic timelines and compliance mandates.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitor_storage_account_with_activity_logs_cmk_encrypted
+      license: Apache-2.0
+    collector: azure.monitor.log_profiles_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: properties.retentionPolicy.enabled
+            value: true
+          - op: gte
+            path: properties.retentionPolicy.days
+            value: 365
+    failMessage: No activity log profile has retention enabled with at least 365 days.
+    passMessage: An activity log profile retains data for at least 365 days.
+    remediation:
+      summary: Enable retention on the log profile and set retention to 365 days or
+        more (or 0 for unlimited).
+      steps:
+        - Enable the retention policy on the activity log profile.
+        - Set the retention period to at least 365 days.
+      verifyCommand: az monitor log-profiles list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - 5.1.6
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log
+  - id: CR-AZURE-MONITOR-102
+    version: 1.0.0
+    provider: azure
+    service: monitor
+    title: Activity log profile includes the global location
+    description: A Monitor log profile lists the 'global' location so that
+      region-agnostic activity events are captured.
+    rationale: Activity events for global (non-regional) resources and control-plane
+      operations are only exported when the log profile's locations include
+      'global'; omitting it silently drops a large class of tenant-wide events.
+    severity: low
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: monitor_log_profile_with_all_locations
+      license: Apache-2.0
+    collector: azure.monitor.log_profiles_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: contains
+        path: properties.locations
+        value: global
+    failMessage: No activity log profile lists the 'global' location.
+    passMessage: An activity log profile includes the 'global' location.
+    remediation:
+      summary: Update the log profile so its locations list includes 'global' (and all
+        regions).
+      steps:
+        - Edit the activity log profile's locations to include every region plus
+          'global'.
+      verifyCommand: az monitor log-profiles list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - 5.1.5
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log
+  - id: CR-AZURE-MONITOR-103
+    version: 1.0.0
+    provider: azure
+    service: monitor
+    title: Activity log profile exports to a storage account
+    description: A Monitor log profile designates a storage account to archive
+      exported activity logs.
+    rationale: Without a storage account (or other durable sink) the activity log is
+      retained only in the platform's rolling 90-day buffer, so long-term,
+      tamper-resistant archival for audit and forensics is absent.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitor_activity_log_stored_in_storage_account
+      license: Apache-2.0
+    collector: azure.monitor.log_profiles_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: properties.storageAccountId
+          - op: not
+            expr:
+              op: isEmpty
+              path: properties.storageAccountId
+    failMessage: No activity log profile exports to a storage account.
+    passMessage: An activity log profile exports to a storage account.
+    remediation:
+      summary: Configure the log profile to archive activity logs to a storage account.
+      steps:
+        - Set a storage account as the destination for the activity log profile.
+        - Ensure the storage account has appropriate retention and access
+          controls.
+      verifyCommand: az monitor log-profiles list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - 5.1.6
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log

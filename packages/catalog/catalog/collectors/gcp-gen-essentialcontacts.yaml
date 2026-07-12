@@ -1,0 +1,19 @@
+collectors:
+  - id: gcp.essentialcontacts.list
+    provider: gcp
+    service: essentialcontacts
+    description: All Essential Contacts configured on the project.
+    kind: single
+    command: gcloud essential-contacts list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; each element mirrors the Essential
+      Contacts REST Contact resource. Fields include: name
+      (projects/<project>/contacts/<id>), email (the contact email address),
+      notificationCategorySubscriptions (array of enum strings the contact is
+      subscribed to: ALL, SUSPENSION, SECURITY, TECHNICAL, BILLING, LEGAL,
+      PRODUCT_UPDATES, TECHNICAL_INCIDENTS), languageTag (e.g. "en-US"),
+      validationState (VALID/UNVALIDATED/INVALID) and validateTime. An empty
+      array means no contacts are configured. Requires
+      essentialcontacts.contacts.list.

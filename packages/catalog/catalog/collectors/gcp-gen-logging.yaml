@@ -1,0 +1,25 @@
+collectors:
+  - id: gcp.logging.sinks_list
+    provider: gcp
+    service: logging
+    description: All Cloud Logging sinks in the project (name, destination, filter,
+      disabled).
+    kind: single
+    command: gcloud logging sinks list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Returns a JSON array at the root. A sink with an empty/absent 'filter'
+      exports ALL log entries. 'disabled' is absent when the sink is enabled.
+      Requires logging.sinks.list. The implicit '_Default'/'_Required' sinks may
+      also appear.
+  - id: gcp.logging.metrics_list
+    provider: gcp
+    service: logging
+    description: All user-defined log-based metrics in the project.
+    kind: single
+    command: gcloud logging metrics list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Returns a JSON array at the root; empty array when no user-defined
+      metrics exist. Each metric has 'name', 'filter' and a 'metricDescriptor'.
+      Requires logging.logMetrics.list.

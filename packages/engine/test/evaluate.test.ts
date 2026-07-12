@@ -277,7 +277,11 @@ describe("evaluateControls", () => {
       collector: "aws.accessanalyzer.list_analyzers",
       aggregate: true,
       resourceIdField: "$scope",
-      passWhen: { op: "anyItem", path: "$", condition: { op: "equals", path: "status", value: "ACTIVE" } },
+      passWhen: {
+        op: "anyItem",
+        path: "$",
+        condition: { op: "equals", path: "status", value: "ACTIVE" },
+      },
       onError: [],
       failMessage: "No active Access Analyzer.",
       passMessage: "An active Access Analyzer exists.",
@@ -290,12 +294,20 @@ describe("evaluateControls", () => {
       provider: "aws",
       scopeId: "123456789012",
       records: [
-        { collectorId: listCollector.id, region: "us-east-1", output, exitCode: 0, collectedAt: NOW.toISOString() },
+        {
+          collectorId: listCollector.id,
+          region: "us-east-1",
+          output,
+          exitCode: 0,
+          collectedAt: NOW.toISOString(),
+        },
       ],
     });
 
     // One record, whole array = one unit → exactly one result (not split per item).
-    const pass = evaluateControls([aggControl], aggCollectors, mk([{ status: "ACTIVE" }]), { now: NOW });
+    const pass = evaluateControls([aggControl], aggCollectors, mk([{ status: "ACTIVE" }]), {
+      now: NOW,
+    });
     expect(pass.results).toHaveLength(1);
     expect(pass.results[0]!.status).toBe("pass");
     expect(pass.results[0]!.resourceId).toBe("123456789012");

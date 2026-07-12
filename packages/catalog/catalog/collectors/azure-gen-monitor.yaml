@@ -1,0 +1,16 @@
+collectors:
+  - id: azure.monitor.log_profiles_list
+    provider: azure
+    service: monitor
+    description: All Azure Monitor log profiles in the subscription (activity log
+      export configuration).
+    kind: single
+    command: az monitor log-profiles list --output json
+    regional: false
+    outputFormat: json
+    notes: Subscription-level. Returns a JSON array at the root. Each item exposes
+      properties.categories, properties.locations,
+      properties.retentionPolicy{enabled,days}, and properties.storageAccountId.
+      An empty array means no log profile is configured. Requires Reader on the
+      subscription. Log profiles are legacy but still evaluated by CIS Azure
+      Foundations.

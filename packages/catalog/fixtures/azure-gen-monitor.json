@@ -1,0 +1,290 @@
+[
+  {
+    "controlId": "CR-AZURE-MONITOR-100",
+    "cases": [
+      {
+        "name": "pass - profile captures Write, Delete, Action",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - profile missing Delete category",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no log profiles configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MONITOR-101",
+    "cases": [
+      {
+        "name": "pass - retention enabled with 365 days",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - retention enabled but only 90 days",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 90
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no log profiles configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MONITOR-102",
+    "cases": [
+      {
+        "name": "pass - locations include global",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus", "westus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - locations omit global",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["eastus", "westus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no log profiles configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MONITOR-103",
+    "cases": [
+      {
+        "name": "pass - profile exports to a storage account",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "serviceBusRuleId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - profile has empty storageAccountId",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/providers/microsoft.insights/logprofiles/default",
+                "name": "default",
+                "location": "",
+                "type": "microsoft.insights/logprofiles",
+                "properties": {
+                  "categories": ["Write", "Delete", "Action"],
+                  "locations": ["global", "eastus"],
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": 365
+                  },
+                  "storageAccountId": "",
+                  "serviceBusRuleId": "/subscriptions/1111/resourceGroups/rg/providers/Microsoft.ServiceBus/namespaces/ns/authorizationrules/RootManageSharedAccessKey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no log profiles configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.monitor.log_profiles_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,147 @@
+controls:
+  - id: CR-GCP-LOGGING-111
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: A log sink exports to an external destination
+    description: At least one Cloud Logging sink is configured with an export
+      destination (GCS bucket, BigQuery dataset, or Pub/Sub topic).
+    rationale: Logs held only in the default _Default bucket are subject to platform
+      retention limits and in-project tampering. Exporting to a separate
+      destination preserves an independent, longer-lived audit trail.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: logging_sink_project_exists
+      license: Apache-2.0
+    collector: gcp.logging.sinks_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: exists
+        path: destination
+    failMessage: No log sink defines an export destination.
+    passMessage: At least one log sink exports to an external destination.
+    remediation:
+      summary: Configure a log sink with an export destination.
+      steps:
+        - Provision a GCS bucket, BigQuery dataset, or Pub/Sub topic to receive
+          logs.
+        - Create a sink whose destination points at that resource.
+        - Grant the sink writerIdentity write access to the destination.
+      verifyCommand: gcloud logging sinks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "2.2"
+    references:
+      - https://cloud.google.com/logging/docs/export/configure_export_v2
+      - https://cloud.google.com/sdk/gcloud/reference/logging/sinks/list
+  - id: CR-GCP-LOGGING-112
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: At least one user-defined log-based metric exists
+    description: The project has one or more user-defined log-based metrics, which
+      are the foundation for alerting on security-relevant log events.
+    rationale: Log-based metrics let you alert on events such as project ownership
+      or audit-config changes. With none defined, suspicious activity in the
+      logs goes unnoticed because nothing turns log entries into monitored
+      signals.
+    severity: low
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: logging_log_metric_filter_and_alerts_exists
+      license: Apache-2.0
+    collector: gcp.logging.metrics_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: exists
+        path: name
+    failMessage: No user-defined log-based metrics exist in the project.
+    passMessage: At least one user-defined log-based metric exists.
+    remediation:
+      summary: Create log-based metrics for security-relevant log events.
+      steps:
+        - Identify audit events to monitor (e.g. project ownership assignments,
+          audit config changes).
+        - Create a user-defined log-based metric with a filter matching those
+          events.
+        - Attach an alerting policy in Cloud Monitoring to the metric.
+      verifyCommand: gcloud logging metrics list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "2.4"
+    references:
+      - https://cloud.google.com/logging/docs/logs-based-metrics
+      - https://cloud.google.com/sdk/gcloud/reference/logging/metrics/list
+  - id: CR-GCP-LOGGING-110
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: A catch-all log sink exports all log entries
+    description: At least one enabled Cloud Logging sink has an empty or absent
+      (catch-all) filter, so it captures every log entry in the project.
+    rationale: Without a catch-all sink, logs are not durably exported off the
+      platform. An attacker who tampers with or disables logging, or waits out
+      the default retention window, can erase evidence of malicious activity.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: logging_sink_project_exists
+      license: Apache-2.0
+    collector: gcp.logging.sinks_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: "$"
+      condition:
+        op: and
+        exprs:
+          - op: not
+            expr:
+              op: equals
+              path: disabled
+              value: true
+          - op: or
+            exprs:
+              - op: notExists
+                path: filter
+              - op: isEmpty
+                path: filter
+    failMessage: No enabled catch-all log sink (empty filter) exports all log entries.
+    passMessage: An enabled catch-all log sink exports all log entries.
+    remediation:
+      summary: Create an enabled log sink with an empty filter to export all entries.
+      steps:
+        - Choose or create an export destination (GCS bucket, BigQuery dataset, or Pub/Sub topic).
+        - Create a project-level sink with no inclusion filter so it captures all entries.
+        - Grant the sink's writerIdentity write access to the destination.
+        - Confirm the sink is enabled (not disabled).
+      verifyCommand: gcloud logging sinks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "2.2"
+    references:
+      - https://cloud.google.com/logging/docs/export/configure_export_v2
