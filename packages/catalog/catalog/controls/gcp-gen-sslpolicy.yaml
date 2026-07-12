@@ -1,0 +1,148 @@
+controls:
+  - id: CR-GCP-SSLPOLICY-100
+    version: 1.0.0
+    provider: gcp
+    service: sslpolicy
+    title: SSL policy enforces a minimum TLS version of TLS 1.2
+    description: Every Compute Engine SSL policy sets minTlsVersion to TLS_1_2 so
+      that clients cannot negotiate TLS 1.0 or TLS 1.1.
+    rationale: TLS 1.0 and TLS 1.1 have known weaknesses (BEAST, POODLE, weak
+      MAC/cipher negotiation) and are deprecated. Allowing them on an
+      internet-facing HTTPS/SSL load balancer lets attackers downgrade
+      connections and attack the transport layer.
+    severity: high
+    categories:
+      - encryption
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_ssl_policy_no_weak_ciphers
+      license: Apache-2.0
+    collector: gcp.compute.ssl_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: minTlsVersion
+      value: TLS_1_2
+    failMessage: SSL policy allows TLS versions below 1.2 (minTlsVersion is not
+      TLS_1_2), permitting downgrade to deprecated TLS 1.0/1.1.
+    passMessage: SSL policy enforces a minimum TLS version of TLS 1.2.
+    remediation:
+      summary: Set the SSL policy minimum TLS version to TLS 1.2.
+      steps:
+        - Update the SSL policy so its minimum TLS version is TLS_1_2 (operator
+          action).
+        - Attach the hardened SSL policy to all HTTPS/SSL target proxies.
+        - Verify no legacy clients require TLS 1.0/1.1 before enforcing.
+      verifyCommand: gcloud compute ssl-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/load-balancing/docs/ssl-policies-concepts
+      - https://cloud.google.com/sdk/gcloud/reference/compute/ssl-policies/list
+  - id: CR-GCP-SSLPOLICY-101
+    version: 1.0.0
+    provider: gcp
+    service: sslpolicy
+    title: SSL policy does not use the permissive COMPATIBLE profile
+    description: Every Compute Engine SSL policy uses a MODERN, RESTRICTED, or
+      CUSTOM feature profile rather than the permissive COMPATIBLE profile.
+    rationale: The COMPATIBLE profile enables the broadest set of ciphers, including
+      weak and legacy suites, to maximize client compatibility. On
+      internet-facing load balancers this exposes the service to weak-cipher and
+      downgrade attacks; MODERN or RESTRICTED profiles remove insecure suites.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: compute_ssl_policy_no_weak_ciphers
+      license: Apache-2.0
+    collector: gcp.compute.ssl_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: profile
+      values:
+        - MODERN
+        - RESTRICTED
+        - CUSTOM
+    failMessage: SSL policy uses the COMPATIBLE profile, which enables weak and
+      legacy cipher suites.
+    passMessage: SSL policy uses a MODERN, RESTRICTED, or CUSTOM profile rather than
+      the permissive COMPATIBLE profile.
+    remediation:
+      summary: Move the SSL policy to the MODERN or RESTRICTED profile.
+      steps:
+        - Update the SSL policy profile to RESTRICTED (or MODERN if broader
+          client support is required).
+        - Re-attach the policy to affected target proxies.
+        - Confirm clients still connect after tightening the cipher set.
+      verifyCommand: gcloud compute ssl-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/load-balancing/docs/ssl-policies-concepts
+      - https://cloud.google.com/sdk/gcloud/reference/compute/ssl-policies/list
+  - id: CR-GCP-SSLPOLICY-102
+    version: 1.0.0
+    provider: gcp
+    service: sslpolicy
+    title: CUSTOM SSL policy does not enable weak cipher features
+    description: Every Compute Engine SSL policy using the CUSTOM profile does not
+      enable known-weak cipher features such as 3DES or non-forward-secret
+      TLS_RSA suites.
+    rationale: A CUSTOM SSL policy lets an operator hand-pick enabled cipher
+      features. Enabling suites like TLS_RSA_WITH_3DES_EDE_CBC_SHA (Sweet32) or
+      non-ephemeral TLS_RSA suites (no forward secrecy) reintroduces the weak
+      ciphers that the RESTRICTED/MODERN profiles were designed to exclude.
+    severity: high
+    categories:
+      - encryption
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_ssl_policy_no_weak_ciphers
+      license: Apache-2.0
+    collector: gcp.compute.ssl_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: profile
+      value: CUSTOM
+    passWhen:
+      op: noneItem
+      path: enabledFeatures
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: $
+            value: 3DES
+          - op: startsWith
+            path: $
+            value: TLS_RSA_WITH
+    failMessage: CUSTOM SSL policy enables a weak cipher feature (3DES or a
+      non-forward-secret TLS_RSA suite).
+    passMessage: CUSTOM SSL policy enables no known-weak cipher features.
+    remediation:
+      summary: Remove weak cipher features from the CUSTOM SSL policy or switch to
+        RESTRICTED.
+      steps:
+        - Remove 3DES and TLS_RSA (non-ECDHE) features from the policy's enabled
+          feature list.
+        - Prefer switching the policy to the RESTRICTED profile, which excludes
+          these suites by default.
+        - Re-attach the policy and verify client connectivity.
+      verifyCommand: gcloud compute ssl-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/load-balancing/docs/ssl-policies-concepts#restricted_ssl_policies
+      - https://cloud.google.com/sdk/gcloud/reference/compute/ssl-policies/list

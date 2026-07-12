@@ -1,0 +1,257 @@
+[
+  {
+    "controlId": "CR-AZURE-SECURITYCONTACTS-100",
+    "cases": [
+      {
+        "name": "email configured",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com;jane@contoso.com",
+                    "isEnabled": true,
+                    "phone": "(214)275-4038",
+                    "notificationsByRole": {
+                      "roles": ["Owner"],
+                      "state": "On"
+                    },
+                    "notificationsSources": [
+                      {
+                        "sourceType": "Alert",
+                        "minimalSeverity": "High"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "contact exists but emails empty",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "",
+                    "isEnabled": true,
+                    "notificationsByRole": {
+                      "roles": ["Owner"],
+                      "state": "On"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no contacts configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SECURITYCONTACTS-101",
+    "cases": [
+      {
+        "name": "notify by role On",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com",
+                    "notificationsByRole": {
+                      "roles": ["Owner", "ServiceAdmin"],
+                      "state": "On"
+                    },
+                    "notificationsSources": [
+                      {
+                        "sourceType": "Alert",
+                        "minimalSeverity": "High"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "notify by role Off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com",
+                    "notificationsByRole": {
+                      "roles": [],
+                      "state": "Off"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no contacts configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SECURITYCONTACTS-102",
+    "cases": [
+      {
+        "name": "alert notification High",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com",
+                    "notificationsByRole": {
+                      "roles": ["Owner"],
+                      "state": "On"
+                    },
+                    "notificationsSources": [
+                      {
+                        "sourceType": "AttackPath",
+                        "minimalRiskLevel": "Critical"
+                      },
+                      {
+                        "sourceType": "Alert",
+                        "minimalSeverity": "High"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "alert threshold Critical only",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com",
+                    "notificationsByRole": {
+                      "roles": ["Owner"],
+                      "state": "On"
+                    },
+                    "notificationsSources": [
+                      {
+                        "sourceType": "Alert",
+                        "minimalSeverity": "Critical"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no alert notification source",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.contacts_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/20ff7fc3-e762-44dd-bd96-b71116dcdc23/providers/Microsoft.Security/securityContact/default",
+                  "name": "default",
+                  "type": "Microsoft.Security/securityContact",
+                  "properties": {
+                    "emails": "soc@contoso.com",
+                    "notificationsByRole": {
+                      "roles": ["Owner"],
+                      "state": "On"
+                    },
+                    "notificationsSources": []
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

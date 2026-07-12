@@ -1,0 +1,16 @@
+collectors:
+  - id: azure.eventhub.namespace_list
+    provider: azure
+    service: eventhub
+    description: All Azure Event Hubs namespaces (Microsoft.EventHub/namespaces) in the subscription.
+    kind: single
+    command: az eventhubs namespace list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. Returns a JSON array at the root; each
+      namespace keeps an ARM-style properties bag. Security-relevant fields live
+      under properties: minimumTlsVersion ("1.0"|"1.1"|"1.2"),
+      publicNetworkAccess ("Enabled"|"Disabled"|"SecuredByPerimeter"),
+      disableLocalAuth (bool), zoneRedundant (bool). sku.name is Basic/Standard/Premium
+      (disableLocalAuth and private endpoints require Standard or Premium).

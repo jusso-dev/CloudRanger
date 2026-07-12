@@ -1,0 +1,191 @@
+controls:
+  - id: CR-AWS-ATHENA-001
+    version: 1.0.0
+    provider: aws
+    service: athena
+    title: Athena workgroup enforces its workgroup configuration
+    description: The workgroup has EnforceWorkGroupConfiguration set to true so that
+      client-side settings cannot override workgroup-level controls.
+    rationale: If enforcement is disabled, users can override the workgroup's
+      encryption and result-location settings from the client side, silently
+      bypassing mandated encryption and audit controls.
+    severity: medium
+    categories:
+      - encryption
+      - logging
+    source:
+      engine: prowler
+      id: athena_workgroup_enforce_configuration
+      license: Apache-2.0
+    collector: aws.athena.get_work_group
+    resourceIdField: $resourceKey
+    resourceNameField: WorkGroup.Name
+    passWhen:
+      op: equals
+      path: WorkGroup.Configuration.EnforceWorkGroupConfiguration
+      value: true
+    onError:
+      - contains: InvalidRequestException
+        status: not_applicable
+        message: Workgroup no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Workgroup does not enforce its configuration; client settings can
+      override workgroup controls.
+    passMessage: Workgroup enforces its configuration.
+    remediation:
+      summary: Enable EnforceWorkGroupConfiguration on the workgroup.
+      steps:
+        - Edit the workgroup and enable "Override client-side settings"
+          (EnforceWorkGroupConfiguration=true).
+      verifyCommand: aws athena get-work-group --work-group <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html
+  - id: CR-AWS-ATHENA-002
+    version: 1.0.0
+    provider: aws
+    service: athena
+    title: Athena workgroup encrypts query results at rest
+    description: The workgroup result configuration defines an
+      EncryptionConfiguration whose EncryptionOption is SSE_S3, SSE_KMS, or
+      CSE_KMS.
+    rationale: Athena query results written to S3 may contain sensitive data pulled
+      from underlying datasets; without result encryption those objects are
+      stored in cleartext and exposed if the S3 location is compromised.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: athena_workgroup_encryption
+      license: Apache-2.0
+    collector: aws.athena.get_work_group
+    resourceIdField: $resourceKey
+    resourceNameField: WorkGroup.Name
+    passWhen:
+      op: in
+      path: WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption
+      values:
+        - SSE_S3
+        - SSE_KMS
+        - CSE_KMS
+    onError:
+      - contains: InvalidRequestException
+        status: not_applicable
+        message: Workgroup no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Workgroup does not encrypt query results at rest.
+    passMessage: Workgroup encrypts query results at rest.
+    remediation:
+      summary: Configure query-result encryption on the workgroup.
+      steps:
+        - Edit the workgroup result configuration and set an encryption option
+          (SSE_S3, SSE_KMS, or CSE_KMS).
+        - Enable EnforceWorkGroupConfiguration so the encryption setting cannot
+          be overridden.
+      verifyCommand: aws athena get-work-group --work-group <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/athena/latest/ug/encryption.html
+  - id: CR-AWS-ATHENA-003
+    version: 1.0.0
+    provider: aws
+    service: athena
+    title: Athena workgroup publishes CloudWatch metrics
+    description: The workgroup has PublishCloudWatchMetricsEnabled set to true so
+      that query execution metrics are emitted to CloudWatch.
+    rationale: Without published metrics there is no operational or security
+      telemetry for query volume, failures, or scanned data, hindering detection
+      of abuse and anomalous query activity.
+    severity: low
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: athena_workgroup_cloudwatch_metrics_enabled
+      license: Apache-2.0
+    collector: aws.athena.get_work_group
+    resourceIdField: $resourceKey
+    resourceNameField: WorkGroup.Name
+    passWhen:
+      op: equals
+      path: WorkGroup.Configuration.PublishCloudWatchMetricsEnabled
+      value: true
+    onError:
+      - contains: InvalidRequestException
+        status: not_applicable
+        message: Workgroup no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Workgroup does not publish CloudWatch metrics.
+    passMessage: Workgroup publishes CloudWatch metrics.
+    remediation:
+      summary: Enable CloudWatch metrics on the workgroup.
+      steps:
+        - Edit the workgroup and enable "Publish query metrics to CloudWatch"
+          (PublishCloudWatchMetricsEnabled=true).
+      verifyCommand: aws athena get-work-group --work-group <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/athena/latest/ug/query-metrics-viewing.html
+  - id: CR-AWS-ATHENA-004
+    version: 1.0.0
+    provider: aws
+    service: athena
+    title: Athena workgroup enforces encrypted query results
+    description: The workgroup both enforces its configuration and defines a
+      query-result encryption option, ensuring encryption cannot be bypassed by
+      client settings.
+    rationale: Result encryption alone is ineffective if enforcement is off, because
+      a client can override the result configuration and write cleartext
+      results; both must be set to guarantee encryption at rest.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: athena_workgroup_encryption
+      license: Apache-2.0
+    collector: aws.athena.get_work_group
+    resourceIdField: $resourceKey
+    resourceNameField: WorkGroup.Name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: WorkGroup.Configuration.EnforceWorkGroupConfiguration
+          value: true
+        - op: in
+          path: WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption
+          values:
+            - SSE_S3
+            - SSE_KMS
+            - CSE_KMS
+    onError:
+      - contains: InvalidRequestException
+        status: not_applicable
+        message: Workgroup no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Workgroup does not enforce encrypted query results (enforcement off
+      or no encryption).
+    passMessage: Workgroup enforces encrypted query results.
+    remediation:
+      summary: Enable both enforcement and result encryption on the workgroup.
+      steps:
+        - Set an encryption option (SSE_S3, SSE_KMS, or CSE_KMS) in the
+          workgroup result configuration.
+        - Enable EnforceWorkGroupConfiguration so client-side settings cannot
+          override it.
+      verifyCommand: aws athena get-work-group --work-group <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/athena/latest/ug/manage-queries-control-costs-with-workgroups.html

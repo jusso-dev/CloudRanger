@@ -1,0 +1,364 @@
+[
+  {
+    "controlId": "CR-AZURE-REDIS-100",
+    "cases": [
+      {
+        "name": "non-ssl port disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheA",
+                "name": "cacheA",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "hostName": "cacheA.redis.cache.windows.net",
+                "port": 6379,
+                "sslPort": 6380,
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Standard",
+                  "family": "C",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "non-ssl port enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB",
+                "name": "cacheB",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "hostName": "cacheB.redis.cache.windows.net",
+                "port": 6379,
+                "sslPort": 6380,
+                "enableNonSslPort": true,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-REDIS-101",
+    "cases": [
+      {
+        "name": "tls 1.2 enforced passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheA",
+                "name": "cacheA",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Standard",
+                  "family": "C",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tls 1.0 allowed fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB",
+                "name": "cacheB",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.0",
+                "publicNetworkAccess": "Enabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                }
+              }
+            ]
+          },
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": []
+          }
+        ],
+        "resourceId": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB"
+      },
+      {
+        "name": "minimumTlsVersion absent fails (missing never satisfies positive predicate)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheC",
+                "name": "cacheC",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "publicNetworkAccess": "Enabled",
+                "redisVersion": "4.0",
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-REDIS-102",
+    "cases": [
+      {
+        "name": "public network access disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheA",
+                "name": "cacheA",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Premium",
+                  "family": "P",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network access enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB",
+                "name": "cacheB",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Standard",
+                  "family": "C",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-REDIS-103",
+    "cases": [
+      {
+        "name": "redis 6.0 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheA",
+                "name": "cacheA",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Standard",
+                  "family": "C",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "redis 4.0 fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB",
+                "name": "cacheB",
+                "location": "West US",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "4.0",
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-REDIS-104",
+    "cases": [
+      {
+        "name": "premium multi-zone passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheA",
+                "name": "cacheA",
+                "location": "West US 2",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "zones": ["1", "2", "3"],
+                "sku": {
+                  "name": "Premium",
+                  "family": "P",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "premium single-zone fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheB",
+                "name": "cacheB",
+                "location": "West US 2",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "zones": ["1"],
+                "sku": {
+                  "name": "Premium",
+                  "family": "P",
+                  "capacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "basic tier not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.redis.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg1/providers/Microsoft.Cache/Redis/cacheC",
+                "name": "cacheC",
+                "location": "West US 2",
+                "provisioningState": "Succeeded",
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "redisVersion": "6.0",
+                "sku": {
+                  "name": "Basic",
+                  "family": "C",
+                  "capacity": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

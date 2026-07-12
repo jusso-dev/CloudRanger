@@ -1,0 +1,153 @@
+controls:
+  - id: CR-AZURE-EVENTHUB-100
+    version: 1.0.0
+    provider: azure
+    service: eventhub
+    title: Event Hubs namespace requires TLS 1.2 or higher
+    description: Verifies properties.minimumTlsVersion is "1.2" so clients cannot
+      negotiate legacy TLS 1.0/1.1.
+    rationale: >
+      TLS 1.0 and 1.1 have known cryptographic weaknesses. Permitting them lets a
+      client (or a man-in-the-middle) negotiate breakable transport encryption for
+      event data and fails modern compliance baselines.
+    severity: medium
+    categories:
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: eventhub_namespace_uses_at_least_tls_1_2
+      license: Apache-2.0
+    collector: azure.eventhub.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.minimumTlsVersion
+      value: "1.2"
+    failMessage: Event Hubs namespace permits TLS below 1.2.
+    passMessage: Event Hubs namespace requires TLS 1.2.
+    remediation:
+      summary: Set the namespace minimum TLS version to 1.2.
+      steps:
+        - Confirm no legacy client depends on TLS 1.0/1.1.
+        - Set minimumTlsVersion to 1.2 on the namespace (operator action).
+      verifyCommand: az eventhubs namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/event-hubs/transport-layer-security-enforce-minimum-version
+  - id: CR-AZURE-EVENTHUB-101
+    version: 1.0.0
+    provider: azure
+    service: eventhub
+    title: Event Hubs namespace disables public network access
+    description: Verifies properties.publicNetworkAccess is Disabled so the namespace
+      is reachable only via private endpoints.
+    rationale: >
+      A namespace with public network access enabled is reachable from the
+      internet; combined with a leaked SAS key or lax firewall this is a direct
+      path to publish or consume event data.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: eventhub_namespace_uses_private_endpoint
+      license: Apache-2.0
+    collector: azure.eventhub.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Event Hubs namespace allows public network access.
+    passMessage: Event Hubs namespace has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the namespace.
+        - Disable public network access on the namespace (operator action).
+      verifyCommand: az eventhubs namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/event-hubs/private-link-service
+  - id: CR-AZURE-EVENTHUB-102
+    version: 1.0.0
+    provider: azure
+    service: eventhub
+    title: Event Hubs namespace disables local (SAS key) authentication
+    description: Verifies properties.disableLocalAuth is true so only Microsoft Entra
+      ID (RBAC) authentication is permitted.
+    rationale: >
+      Shared Access Signature keys grant broad data-plane access, cannot be scoped
+      to identities, and are frequently embedded in code or leaked. Disabling local
+      auth forces auditable Entra ID identities with RBAC.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: eventhub_namespace_uses_managed_identity
+      license: Apache-2.0
+    collector: azure.eventhub.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.disableLocalAuth
+      value: true
+    failMessage: Event Hubs namespace allows SAS key (local) authentication.
+    passMessage: Event Hubs namespace requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true on the namespace.
+      steps:
+        - Migrate producers and consumers to Microsoft Entra ID token
+          authentication with RBAC roles.
+        - Disable local (SAS key) authentication on the namespace (operator
+          action).
+      verifyCommand: az eventhubs namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/event-hubs/authenticate-application
+  - id: CR-AZURE-EVENTHUB-103
+    version: 1.0.0
+    provider: azure
+    service: eventhub
+    title: Event Hubs namespace is zone redundant
+    description: Verifies properties.zoneRedundant is true so the namespace tolerates
+      the loss of a single availability zone.
+    rationale: >
+      A namespace confined to one availability zone loses ingestion and event data
+      availability if that zone fails; zone redundancy replicates across zones to
+      preserve availability.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: eventhub_namespace_uses_private_endpoint
+      license: Apache-2.0
+    collector: azure.eventhub.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.zoneRedundant
+      value: true
+    failMessage: Event Hubs namespace is not zone redundant.
+    passMessage: Event Hubs namespace is zone redundant.
+    remediation:
+      summary: Enable zone redundancy for the namespace.
+      steps:
+        - Confirm the namespace region supports availability zones.
+        - Enable zone redundancy on the namespace, recreating it if required
+          (operator action).
+      verifyCommand: az eventhubs namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/reliability/reliability-event-hubs

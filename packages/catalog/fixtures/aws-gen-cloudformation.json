@@ -1,0 +1,143 @@
+[
+  {
+    "controlId": "CR-AWS-CLOUDFORMATION-001",
+    "cases": [
+      {
+        "name": "pass termination protection enabled",
+        "expected": "pass",
+        "resourceId": "prod-network",
+        "records": [
+          {
+            "collectorId": "aws.cloudformation.describe_stacks",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Stacks": [
+                {
+                  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/prod-network/abcd1234-0000-1111-2222-333344445555",
+                  "StackName": "prod-network",
+                  "CreationTime": "2025-01-15T10:22:31.123000+00:00",
+                  "StackStatus": "CREATE_COMPLETE",
+                  "EnableTerminationProtection": true,
+                  "NotificationARNs": [],
+                  "DriftInformation": {
+                    "StackDriftStatus": "NOT_CHECKED"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail termination protection disabled",
+        "expected": "fail",
+        "resourceId": "dev-app",
+        "records": [
+          {
+            "collectorId": "aws.cloudformation.describe_stacks",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Stacks": [
+                {
+                  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/dev-app/eeee1234-0000-1111-2222-333344445555",
+                  "StackName": "dev-app",
+                  "CreationTime": "2025-03-02T08:11:05.000000+00:00",
+                  "StackStatus": "UPDATE_COMPLETE",
+                  "EnableTerminationProtection": false,
+                  "NotificationARNs": [],
+                  "DriftInformation": {
+                    "StackDriftStatus": "IN_SYNC"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail when field absent",
+        "expected": "fail",
+        "resourceId": "legacy-stack",
+        "records": [
+          {
+            "collectorId": "aws.cloudformation.describe_stacks",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Stacks": [
+                {
+                  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/legacy-stack/ffff1234-0000-1111-2222-333344445555",
+                  "StackName": "legacy-stack",
+                  "CreationTime": "2021-06-01T00:00:00.000000+00:00",
+                  "StackStatus": "CREATE_COMPLETE",
+                  "NotificationARNs": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDFORMATION-002",
+    "cases": [
+      {
+        "name": "pass with notification arns",
+        "expected": "pass",
+        "resourceId": "prod-network",
+        "records": [
+          {
+            "collectorId": "aws.cloudformation.describe_stacks",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Stacks": [
+                {
+                  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/prod-network/abcd1234-0000-1111-2222-333344445555",
+                  "StackName": "prod-network",
+                  "CreationTime": "2025-01-15T10:22:31.123000+00:00",
+                  "StackStatus": "CREATE_COMPLETE",
+                  "EnableTerminationProtection": true,
+                  "NotificationARNs": ["arn:aws:sns:us-east-1:111122223333:cfn-stack-events"],
+                  "DriftInformation": {
+                    "StackDriftStatus": "IN_SYNC"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail with empty notification arns",
+        "expected": "fail",
+        "resourceId": "dev-app",
+        "records": [
+          {
+            "collectorId": "aws.cloudformation.describe_stacks",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Stacks": [
+                {
+                  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/dev-app/eeee1234-0000-1111-2222-333344445555",
+                  "StackName": "dev-app",
+                  "CreationTime": "2025-03-02T08:11:05.000000+00:00",
+                  "StackStatus": "UPDATE_COMPLETE",
+                  "EnableTerminationProtection": false,
+                  "NotificationARNs": [],
+                  "DriftInformation": {
+                    "StackDriftStatus": "NOT_CHECKED"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

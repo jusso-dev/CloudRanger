@@ -1,0 +1,273 @@
+[
+  {
+    "controlId": "CR-AWS-KINESIS-001",
+    "cases": [
+      {
+        "name": "pass kms encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "orders-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "orders-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/orders-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "PROVISIONED"
+                },
+                "RetentionPeriodHours": 24,
+                "StreamCreationTimestamp": "2025-01-10T12:00:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "KMS",
+                "KeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                "OpenShardCount": 2,
+                "ConsumerCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail encryption none",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "clicks-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "clicks-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/clicks-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "ON_DEMAND"
+                },
+                "RetentionPeriodHours": 24,
+                "StreamCreationTimestamp": "2025-02-01T09:30:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "NONE",
+                "OpenShardCount": 4,
+                "ConsumerCount": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable stream deleted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "gone-stream",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the DescribeStreamSummary operation: Stream gone-stream under account 111122223333 not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KINESIS-002",
+    "cases": [
+      {
+        "name": "pass customer managed key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "orders-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "orders-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/orders-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "PROVISIONED"
+                },
+                "RetentionPeriodHours": 168,
+                "StreamCreationTimestamp": "2025-01-10T12:00:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "KMS",
+                "KeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                "OpenShardCount": 2,
+                "ConsumerCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail default aws managed key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "events-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "events-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/events-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "PROVISIONED"
+                },
+                "RetentionPeriodHours": 24,
+                "StreamCreationTimestamp": "2025-03-05T18:45:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "KMS",
+                "KeyId": "alias/aws/kinesis",
+                "OpenShardCount": 1,
+                "ConsumerCount": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable unencrypted stream skipped",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "clicks-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "clicks-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/clicks-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "ON_DEMAND"
+                },
+                "RetentionPeriodHours": 24,
+                "StreamCreationTimestamp": "2025-02-01T09:30:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "NONE",
+                "OpenShardCount": 4,
+                "ConsumerCount": 0
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-KINESIS-003",
+    "cases": [
+      {
+        "name": "pass 7 day retention",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "orders-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "orders-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/orders-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "PROVISIONED"
+                },
+                "RetentionPeriodHours": 168,
+                "StreamCreationTimestamp": "2025-01-10T12:00:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "KMS",
+                "KeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                "OpenShardCount": 2,
+                "ConsumerCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail default 24h retention",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "clicks-stream",
+            "exitCode": 0,
+            "output": {
+              "StreamDescriptionSummary": {
+                "StreamName": "clicks-stream",
+                "StreamARN": "arn:aws:kinesis:us-east-1:111122223333:stream/clicks-stream",
+                "StreamStatus": "ACTIVE",
+                "StreamModeDetails": {
+                  "StreamMode": "ON_DEMAND"
+                },
+                "RetentionPeriodHours": 24,
+                "StreamCreationTimestamp": "2025-02-01T09:30:00+00:00",
+                "EnhancedMonitoring": [
+                  {
+                    "ShardLevelMetrics": []
+                  }
+                ],
+                "EncryptionType": "NONE",
+                "OpenShardCount": 4,
+                "ConsumerCount": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.kinesis.describe_stream_summary",
+            "region": "us-east-1",
+            "resourceKey": "secure-stream",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the DescribeStreamSummary operation: User is not authorized to perform: kinesis:DescribeStreamSummary"
+          }
+        ]
+      }
+    ]
+  }
+]

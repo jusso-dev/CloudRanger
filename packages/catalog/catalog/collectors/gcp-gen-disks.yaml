@@ -1,0 +1,18 @@
+collectors:
+  - id: gcp.compute.disks_list
+    provider: gcp
+    service: compute
+    description: >
+      Lists all Compute Engine persistent disk resources across every zone in
+      the project, including each disk's encryption configuration
+      (diskEncryptionKey), size, type, status and attachment (users).
+    kind: single
+    command: gcloud compute disks list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires compute.disks.list. Returns a JSON array at the root (one element
+      per disk across all zones). The diskEncryptionKey object is only present
+      when the disk is encrypted with a customer-managed (kmsKeyName) or
+      customer-supplied (sha256) key; disks using default Google-managed
+      encryption omit diskEncryptionKey entirely.

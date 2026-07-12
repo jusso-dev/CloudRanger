@@ -1,0 +1,141 @@
+[
+  {
+    "controlId": "CR-AWS-SECURITYHUB-001",
+    "cases": [
+      {
+        "name": "passes when hub is present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "HubArn": "arn:aws:securityhub:us-east-1:123456789012:hub/default",
+              "SubscribedAt": "2021-03-01T12:00:00.000Z",
+              "AutoEnableControls": true,
+              "ControlFindingGenerator": "SECURITY_CONTROL"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when not subscribed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (InvalidAccessException) when calling the DescribeHub operation: Account 123456789012 is not subscribed to AWS Security Hub"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SECURITYHUB-002",
+    "cases": [
+      {
+        "name": "passes when auto enable is true",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "HubArn": "arn:aws:securityhub:us-east-1:123456789012:hub/default",
+              "SubscribedAt": "2021-03-01T12:00:00.000Z",
+              "AutoEnableControls": true,
+              "ControlFindingGenerator": "SECURITY_CONTROL"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when auto enable is false",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "HubArn": "arn:aws:securityhub:us-east-1:123456789012:hub/default",
+              "SubscribedAt": "2021-03-01T12:00:00.000Z",
+              "AutoEnableControls": false,
+              "ControlFindingGenerator": "SECURITY_CONTROL"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when hub not enabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (InvalidAccessException) when calling the DescribeHub operation: Account 123456789012 is not subscribed to AWS Security Hub"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SECURITYHUB-003",
+    "cases": [
+      {
+        "name": "passes with consolidated findings",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "HubArn": "arn:aws:securityhub:us-east-1:123456789012:hub/default",
+              "SubscribedAt": "2021-03-01T12:00:00.000Z",
+              "AutoEnableControls": true,
+              "ControlFindingGenerator": "SECURITY_CONTROL"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with legacy generator",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "HubArn": "arn:aws:securityhub:us-east-1:123456789012:hub/default",
+              "SubscribedAt": "2021-03-01T12:00:00.000Z",
+              "AutoEnableControls": true,
+              "ControlFindingGenerator": "STANDARD_CONTROL"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when hub not enabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.securityhub.describe_hub",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (InvalidAccessException) when calling the DescribeHub operation: Account 123456789012 is not subscribed to AWS Security Hub"
+          }
+        ]
+      }
+    ]
+  }
+]

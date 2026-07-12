@@ -1,0 +1,40 @@
+collectors:
+  - id: aws.athena.list_work_groups
+    provider: aws
+    service: athena
+    description: Lists Amazon Athena workgroups in a region with summary attributes
+      (Name, State, Description, CreationTime, EngineVersion). Used as the
+      parent enumerator for per-workgroup configuration checks.
+    kind: single
+    command: aws athena list-work-groups --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a WorkGroups array of summary objects. Detailed configuration
+      (ResultConfiguration, EnforceWorkGroupConfiguration,
+      PublishCloudWatchMetricsEnabled) is NOT in this summary and requires
+      get-work-group per workgroup. Every account has a default "primary"
+      workgroup.
+  - id: aws.athena.get_work_group
+    provider: aws
+    service: athena
+    description: Full configuration for a single Athena workgroup, including the
+      result configuration, encryption settings, enforcement flag, and
+      CloudWatch metrics publishing flag.
+    kind: per_resource
+    command: aws athena get-work-group --work-group {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.athena.list_work_groups
+      itemsPath: WorkGroups
+      resourceField: Name
+    outputFormat: json
+    notes: Returns a single WorkGroup object. WorkGroup.Configuration contains
+      EnforceWorkGroupConfiguration (bool), PublishCloudWatchMetricsEnabled
+      (bool), and ResultConfiguration.
+      ResultConfiguration.EncryptionConfiguration is present ONLY when
+      query-result encryption is configured; its EncryptionOption is one of
+      SSE_S3, SSE_KMS, CSE_KMS (with KmsKey for the KMS variants). When
+      encryption is not configured, EncryptionConfiguration is absent entirely.
+      InvalidRequestException is returned if the workgroup was deleted between
+      the list and get calls.

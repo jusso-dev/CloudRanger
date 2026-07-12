@@ -1,0 +1,312 @@
+[
+  {
+    "controlId": "CR-AWS-ATHENA-001",
+    "cases": [
+      {
+        "name": "enforcement enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-east-1",
+            "resourceKey": "primary",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "primary",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://aws-athena-query-results-123456789012-us-east-1/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_S3"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2023-01-15T10:22:33.123000+00:00"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "enforcement disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-east-1",
+            "resourceKey": "analytics",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "analytics",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://analytics-results/"
+                  },
+                  "EnforceWorkGroupConfiguration": false,
+                  "PublishCloudWatchMetricsEnabled": false,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "ad hoc",
+                "CreationTime": "2024-03-01T08:00:00.000000+00:00"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "workgroup deleted between calls is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-east-1",
+            "resourceKey": "ghost",
+            "exitCode": 255,
+            "output": null,
+            "errorText": "An error occurred (InvalidRequestException) when calling the GetWorkGroup operation: WorkGroup ghost is not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ATHENA-002",
+    "cases": [
+      {
+        "name": "SSE_KMS encryption passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-east-1",
+            "resourceKey": "secure",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "secure",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://secure-results/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_KMS",
+                      "KmsKey": "arn:aws:kms:us-east-1:123456789012:key/abcd1234-5678-90ab-cdef-1234567890ab"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2023-06-11T12:00:00.000000+00:00"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no encryption configuration fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-east-1",
+            "resourceKey": "plain",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "plain",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://plain-results/"
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2023-06-11T12:00:00.000000+00:00"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ATHENA-003",
+    "cases": [
+      {
+        "name": "metrics enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-west-2",
+            "resourceKey": "primary",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "primary",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://aws-athena-query-results-123456789012-us-west-2/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_S3"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2023-01-15T10:22:33.123000+00:00"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "metrics disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "us-west-2",
+            "resourceKey": "batch",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "batch",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://batch-results/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_S3"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": false,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "nightly batch",
+                "CreationTime": "2024-02-20T00:00:00.000000+00:00"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ATHENA-004",
+    "cases": [
+      {
+        "name": "enforced and encrypted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "eu-west-1",
+            "resourceKey": "primary",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "primary",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://aws-athena-query-results-123456789012-eu-west-1/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_KMS",
+                      "KmsKey": "arn:aws:kms:eu-west-1:123456789012:key/1111"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": true,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2023-01-15T10:22:33.123000+00:00"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "encrypted but not enforced fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.athena.get_work_group",
+            "region": "eu-west-1",
+            "resourceKey": "adhoc",
+            "exitCode": 0,
+            "output": {
+              "WorkGroup": {
+                "Name": "adhoc",
+                "State": "ENABLED",
+                "Configuration": {
+                  "ResultConfiguration": {
+                    "OutputLocation": "s3://adhoc-results/",
+                    "EncryptionConfiguration": {
+                      "EncryptionOption": "SSE_S3"
+                    }
+                  },
+                  "EnforceWorkGroupConfiguration": false,
+                  "PublishCloudWatchMetricsEnabled": true,
+                  "RequesterPaysEnabled": false,
+                  "EngineVersion": {
+                    "SelectedEngineVersion": "AUTO",
+                    "EffectiveEngineVersion": "Athena engine version 3"
+                  }
+                },
+                "Description": "",
+                "CreationTime": "2024-05-01T00:00:00.000000+00:00"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

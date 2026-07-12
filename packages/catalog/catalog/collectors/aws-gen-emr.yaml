@@ -1,0 +1,27 @@
+collectors:
+  - id: aws.emr.list_clusters
+    provider: aws
+    service: emr
+    description: EMR clusters and their status in one region.
+    kind: single
+    command: aws emr list-clusters --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns Clusters array; each item has Id, Name, ClusterArn,
+      NormalizedInstanceHours and Status.State (one of STARTING, BOOTSTRAPPING,
+      RUNNING, WAITING, TERMINATING, TERMINATED, TERMINATED_WITH_ERRORS). Does
+      NOT include VisibleToAllUsers, security configuration, or master public IP
+      (those require emr describe-cluster).
+  - id: aws.emr.get_block_public_access_configuration
+    provider: aws
+    service: emr
+    description: Account/region-level EMR block public access configuration.
+    kind: single
+    command: aws emr get-block-public-access-configuration --region {region}
+      --output json
+    regional: true
+    outputFormat: json
+    notes: Returns BlockPublicAccessConfiguration with BlockPublicSecurityGroupRules
+      (bool) and PermittedPublicSecurityGroupRuleRanges (array of
+      {MinRange,MaxRange}). This is an account setting scoped per region; the
+      output root is a single account-level object.

@@ -1,0 +1,262 @@
+[
+  {
+    "controlId": "CR-AZURE-EVENTHUB-100",
+    "cases": [
+      {
+        "name": "pass tls 1.2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-secure",
+                "name": "eh-secure",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "zoneRedundant": true,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail tls 1.0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-legacy",
+                "name": "eh-legacy",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.0",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "zoneRedundant": false,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-EVENTHUB-101",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-private",
+                "name": "eh-private",
+                "location": "westus2",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "zoneRedundant": true,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-open",
+                "name": "eh-open",
+                "location": "westus2",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "zoneRedundant": false,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-EVENTHUB-102",
+    "cases": [
+      {
+        "name": "pass local auth disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-rbac",
+                "name": "eh-rbac",
+                "location": "eastus2",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard",
+                  "capacity": 2
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "zoneRedundant": true,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail local auth enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-keys",
+                "name": "eh-keys",
+                "location": "eastus2",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "zoneRedundant": false,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-EVENTHUB-103",
+    "cases": [
+      {
+        "name": "pass zone redundant",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-zr",
+                "name": "eh-zr",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Disabled",
+                  "disableLocalAuth": true,
+                  "zoneRedundant": true,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail not zone redundant",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.eventhub.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.EventHub/namespaces/eh-single",
+                "name": "eh-single",
+                "location": "eastus",
+                "sku": {
+                  "name": "Basic",
+                  "tier": "Basic",
+                  "capacity": 1
+                },
+                "properties": {
+                  "minimumTlsVersion": "1.2",
+                  "publicNetworkAccess": "Enabled",
+                  "disableLocalAuth": false,
+                  "zoneRedundant": false,
+                  "provisioningState": "Succeeded",
+                  "status": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

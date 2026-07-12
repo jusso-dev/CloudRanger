@@ -1,0 +1,153 @@
+controls:
+  - id: CR-AWS-KINESIS-001
+    version: 1.0.0
+    provider: aws
+    service: kinesis
+    title: Kinesis Data Stream has server-side encryption enabled with KMS
+    description: The stream's EncryptionType is KMS and a KMS KeyId is configured so
+      records are encrypted at rest.
+    rationale: An unencrypted Kinesis stream stores records in cleartext at rest,
+      exposing potentially sensitive event data to anyone who gains access to
+      the underlying storage or a misconfigured IAM principal.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: kinesis_stream_encrypted_at_rest
+      license: Apache-2.0
+    collector: aws.kinesis.describe_stream_summary
+    resourceIdField: $resourceKey
+    resourceNameField: StreamDescriptionSummary.StreamName
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: StreamDescriptionSummary.EncryptionType
+          value: KMS
+        - op: exists
+          path: StreamDescriptionSummary.KeyId
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Stream no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Kinesis Data Stream does not have KMS server-side encryption enabled.
+    passMessage: Kinesis Data Stream has KMS server-side encryption enabled.
+    remediation:
+      summary: Enable server-side encryption with a KMS key on the stream.
+      steps:
+        - Enable server-side encryption by calling StartStreamEncryption with a
+          KMS key (for example aws kinesis start-stream-encryption --stream-name
+          <name> --encryption-type KMS --key-id <kms-key-id> --region <region>).
+        - Prefer a customer-managed KMS key over the AWS-managed
+          alias/aws/kinesis key so key usage and rotation can be governed.
+      verifyCommand: aws kinesis describe-stream-summary --stream-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/streams/latest/dev/server-side-encryption.html
+  - id: CR-AWS-KINESIS-002
+    version: 1.0.0
+    provider: aws
+    service: kinesis
+    title: Kinesis Data Stream uses a customer-managed KMS key for encryption
+    description: The stream is encrypted with KMS and does not rely on the default
+      AWS-managed alias/aws/kinesis key.
+    rationale: The AWS-managed alias/aws/kinesis key cannot have its key policy or
+      rotation independently governed; a customer-managed key gives explicit
+      control over who can decrypt stream data and provides an auditable key
+      policy.
+    severity: medium
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: kinesis_stream_encrypted_at_rest
+      license: Apache-2.0
+    collector: aws.kinesis.describe_stream_summary
+    resourceIdField: $resourceKey
+    resourceNameField: StreamDescriptionSummary.StreamName
+    applicableWhen:
+      op: equals
+      path: StreamDescriptionSummary.EncryptionType
+      value: KMS
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: StreamDescriptionSummary.KeyId
+        - op: notEquals
+          path: StreamDescriptionSummary.KeyId
+          value: alias/aws/kinesis
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Stream no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Kinesis Data Stream is encrypted with the default AWS-managed
+      alias/aws/kinesis key rather than a customer-managed key.
+    passMessage: Kinesis Data Stream is encrypted with a customer-managed KMS key.
+    remediation:
+      summary: Re-encrypt the stream with a customer-managed KMS key.
+      steps:
+        - Create or select a customer-managed KMS key with a restrictive key
+          policy.
+        - Call StartStreamEncryption with the customer-managed key id (for
+          example aws kinesis start-stream-encryption --stream-name <name>
+          --encryption-type KMS --key-id <kms-key-arn> --region <region>).
+      verifyCommand: aws kinesis describe-stream-summary --stream-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/streams/latest/dev/server-side-encryption.html
+  - id: CR-AWS-KINESIS-003
+    version: 1.0.0
+    provider: aws
+    service: kinesis
+    title: Kinesis Data Stream retains records for at least 7 days
+    description: The stream's RetentionPeriodHours is 168 (7 days) or greater so
+      records survive downstream consumer outages and support reprocessing.
+    rationale: The default 24-hour retention gives little margin to recover from a
+      consumer outage or replay records for reprocessing; a short window can
+      cause permanent data loss and hampers incident investigation.
+    severity: medium
+    categories:
+      - resilience
+      - logging
+    source:
+      engine: prowler
+      id: kinesis_stream_data_retention_period
+      license: Apache-2.0
+    collector: aws.kinesis.describe_stream_summary
+    resourceIdField: $resourceKey
+    resourceNameField: StreamDescriptionSummary.StreamName
+    passWhen:
+      op: gte
+      path: StreamDescriptionSummary.RetentionPeriodHours
+      value: 168
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Stream no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Kinesis Data Stream retains records for fewer than 7 days (168 hours).
+    passMessage: Kinesis Data Stream retains records for at least 7 days.
+    remediation:
+      summary: Increase the stream data retention period to at least 168 hours.
+      steps:
+        - Increase retention with IncreaseStreamRetentionPeriod (for example aws
+          kinesis increase-stream-retention-period --stream-name <name>
+          --retention-period-hours 168 --region <region>).
+        - Confirm the change and note that extended retention beyond 24 hours
+          incurs additional cost.
+      verifyCommand: aws kinesis describe-stream-summary --stream-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/streams/latest/dev/kinesis-extended-retention.html

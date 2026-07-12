@@ -1,0 +1,83 @@
+controls:
+  - id: CR-AWS-CLOUDFORMATION-001
+    version: 1.0.0
+    provider: aws
+    service: cloudformation
+    title: CloudFormation stack has termination protection enabled
+    description: The CloudFormation stack has EnableTerminationProtection set to
+      true so it cannot be deleted without first disabling protection.
+    rationale: Without termination protection a stack can be deleted accidentally or
+      by a compromised credential, tearing down all resources it manages
+      (databases, roles, networking) and causing an outage or data loss that is
+      hard to recover from.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cloudformation_stacks_termination_protection_enabled
+      license: Apache-2.0
+    collector: aws.cloudformation.describe_stacks
+    resourcesPath: Stacks
+    resourceIdField: StackName
+    resourceNameField: StackName
+    passWhen:
+      op: equals
+      path: EnableTerminationProtection
+      value: true
+    failMessage: CloudFormation stack does not have termination protection enabled.
+    passMessage: CloudFormation stack has termination protection enabled.
+    remediation:
+      summary: Enable termination protection on the stack.
+      steps:
+        - In the CloudFormation console open the stack, choose Stack actions,
+          then Edit termination protection and set it to Activated.
+        - Or run update-termination-protection to enable protection for the
+          stack.
+      verifyCommand: aws cloudformation describe-stacks --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-protect-stacks.html
+      - https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html
+  - id: CR-AWS-CLOUDFORMATION-002
+    version: 1.0.0
+    provider: aws
+    service: cloudformation
+    title: CloudFormation stack has SNS notification ARNs configured
+    description: The CloudFormation stack has at least one SNS topic ARN in
+      NotificationARNs so stack events are published for monitoring and
+      alerting.
+    rationale: Without SNS notifications, stack lifecycle events such as failed
+      updates, rollbacks, or unexpected deletions go unobserved, delaying
+      detection of misconfiguration or malicious changes to managed
+      infrastructure.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudformation_stack_outputs_find_secrets
+      license: Apache-2.0
+    collector: aws.cloudformation.describe_stacks
+    resourcesPath: Stacks
+    resourceIdField: StackName
+    resourceNameField: StackName
+    passWhen:
+      op: lengthGt
+      path: NotificationARNs
+      value: 0
+    failMessage: CloudFormation stack has no SNS notification ARNs configured.
+    passMessage: CloudFormation stack has SNS notification ARNs configured.
+    remediation:
+      summary: Attach one or more SNS topic ARNs to the stack for event notifications.
+      steps:
+        - Create or identify an SNS topic to receive stack event notifications.
+        - Update the stack and set NotificationARNs to include the SNS topic ARN.
+        - Subscribe an operations endpoint (email, Lambda, or chatbot) to the
+          topic.
+      verifyCommand: aws cloudformation describe-stacks --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stack-sns-topic.html
+      - https://docs.aws.amazon.com/cli/latest/reference/cloudformation/describe-stacks.html

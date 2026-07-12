@@ -1,0 +1,160 @@
+controls:
+  - id: CR-AZURE-RBAC-100
+    version: 1.0.0
+    provider: azure
+    service: rbac
+    title: No custom role grants the wildcard control-plane action
+    description: >
+      Verifies that no custom RBAC role definition grants the wildcard '*'
+      control-plane action, which is equivalent to full Owner-level control.
+    rationale: >
+      A custom role whose permissions include the '*' action can perform any
+      management operation on every in-scope resource, defeating least privilege
+      and giving any assigned principal effective Owner rights that are easy to
+      overlook because the role has a benign custom name.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: iam_custom_role_has_permissions_to_administer_resource_locks
+      license: Apache-2.0
+    collector: azure.authorization.custom_role_definitions
+    resourcesPath: $
+    resourceIdField: roleName
+    resourceNameField: roleName
+    passWhen:
+      op: noneItem
+      path: permissions
+      condition:
+        op: contains
+        path: actions
+        value: "*"
+    failMessage: Custom role grants the wildcard '*' control-plane action
+      (equivalent to Owner).
+    passMessage: Custom role does not grant the wildcard '*' control-plane action.
+    remediation:
+      summary: Replace the '*' action with the specific actions the role needs.
+      steps:
+        - Identify the operations the role legitimately requires.
+        - Update the role definition to list only those explicit actions instead
+          of '*' (operator action).
+        - Reassess principals currently assigned the role.
+      verifyCommand: az role definition list --custom-role-only true --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "1.23"
+    references:
+      - https://learn.microsoft.com/azure/role-based-access-control/custom-roles
+  - id: CR-AZURE-RBAC-101
+    version: 1.0.0
+    provider: azure
+    service: rbac
+    title: No custom role is assignable at the root or subscription scope
+    description: >
+      Verifies that no custom RBAC role definition lists the root '/' or a bare
+      subscription as an assignable scope.
+    rationale: >
+      When a custom role is assignable at root or subscription scope, any grant
+      of that role applies to the entire subscription (or tenant), so an
+      over-broad permission set propagates far wider than intended and is a
+      common privilege-escalation path.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: iam_custom_role_has_permissions_to_administer_resource_locks
+      license: Apache-2.0
+    collector: azure.authorization.custom_role_definitions
+    resourcesPath: $
+    resourceIdField: roleName
+    resourceNameField: roleName
+    passWhen:
+      op: noneItem
+      path: assignableScopes
+      condition:
+        op: or
+        exprs:
+          - op: equals
+            path: $
+            value: /
+          - op: matches
+            path: $
+            pattern: ^/subscriptions/[^/]+$
+    failMessage: Custom role is assignable at the root or subscription scope.
+    passMessage: Custom role is assignable only at narrower scopes.
+    remediation:
+      summary: Narrow assignableScopes to specific resource groups or resources.
+      steps:
+        - Determine the smallest scope at which the role is actually used.
+        - Replace root '/' or subscription-wide entries with resource-group or
+          resource scopes (operator action).
+      verifyCommand: az role definition list --custom-role-only true --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "1.23"
+    references:
+      - https://learn.microsoft.com/azure/role-based-access-control/custom-roles
+  - id: CR-AZURE-RBAC-103
+    version: 1.0.0
+    provider: azure
+    service: rbac
+    title: No guest or unknown-type principal holds a subscription Owner role
+    description: >
+      Verifies that every subscription-scoped Owner assignment is held by a
+      recognised principal type (User, Group or ServicePrincipal) and not an
+      empty or foreign principal type.
+    rationale: >
+      Owner assignments to principals whose type cannot be resolved (for example
+      deleted objects or unexpected external identities) grant full subscription
+      control to an account outside normal governance and should be investigated
+      and removed.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: iam_subscription_roles_owner_no_custom_role
+      license: Apache-2.0
+    collector: azure.authorization.role_assignments_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: principalName
+    applicableWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: roleDefinitionName
+          value: Owner
+        - op: matches
+          path: scope
+          pattern: ^/subscriptions/[^/]+$
+    passWhen:
+      op: in
+      path: principalType
+      values:
+        - User
+        - Group
+        - ServicePrincipal
+    failMessage: Subscription Owner assignment is held by an unrecognised principal type.
+    passMessage: Subscription Owner assignment is held by a recognised principal type.
+    remediation:
+      summary: Remove Owner assignments held by unresolved or unexpected principals.
+      steps:
+        - Investigate the principal behind the flagged Owner assignment.
+        - Remove the assignment if the principal is stale, deleted or
+          unauthorised (operator action).
+      verifyCommand: az role assignment list --all --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "1.22"
+    references:
+      - https://learn.microsoft.com/azure/role-based-access-control/best-practices

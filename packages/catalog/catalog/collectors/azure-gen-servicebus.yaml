@@ -1,0 +1,18 @@
+collectors:
+  - id: azure.servicebus.namespace_list
+    provider: azure
+    service: servicebus
+    description: All Azure Service Bus namespaces in the subscription.
+    kind: single
+    command: az servicebus namespace list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. The az servicebus namespace command
+      group flattens the ARM Microsoft.ServiceBus/namespaces properties bag to
+      top-level fields on each namespace object (minimumTlsVersion,
+      publicNetworkAccess, disableLocalAuth, zoneRedundant), with sku exposed as
+      a nested object (sku.name = Basic|Standard|Premium). minimumTlsVersion is
+      the string "1.0", "1.1", or "1.2". publicNetworkAccess is "Enabled" or
+      "Disabled". zoneRedundant is a boolean that is only true on Premium
+      namespaces. Returns a JSON array at the root (use resourcesPath "$").

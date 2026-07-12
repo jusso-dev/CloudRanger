@@ -1,0 +1,148 @@
+controls:
+  - id: CR-GCP-ARMOR-100
+    version: 1.0.0
+    provider: gcp
+    service: armor
+    title: Cloud Armor policy enables Adaptive Protection Layer 7 DDoS defense
+    description: Each Cloud Armor security policy has
+      adaptiveProtectionConfig.layer7DdosDefenseConfig.enable set to true so the
+      ML-based Adaptive Protection engine detects and mitigates Layer 7
+      (HTTP/HTTPS) DDoS attacks.
+    rationale: Without Adaptive Protection, volumetric and low-and-slow
+      application-layer DDoS attacks against protected backends go undetected
+      until they cause an outage. The ML engine surfaces attack signatures and
+      suggested mitigation rules that static rules cannot anticipate.
+    severity: medium
+    categories:
+      - network
+      - resilience
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_security_policy_adaptive_protection_enabled
+      license: Apache-2.0
+    collector: gcp.compute.security_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: adaptiveProtectionConfig.layer7DdosDefenseConfig.enable
+      value: true
+    failMessage: Cloud Armor policy does not enable Adaptive Protection Layer 7 DDoS
+      defense (adaptiveProtectionConfig.layer7DdosDefenseConfig.enable is not
+      true).
+    passMessage: Cloud Armor policy enables Adaptive Protection Layer 7 DDoS defense.
+    remediation:
+      summary: Enable Adaptive Protection Layer 7 DDoS defense on the security policy.
+      steps:
+        - Identify the backend security policy attached to your external HTTP(S)
+          load balancer.
+        - Run gcloud compute security-policies update POLICY
+          --enable-layer7-ddos-defense.
+        - Review Adaptive Protection alerts in Cloud Armor and promote suggested
+          rules from preview to enforce.
+      verifyCommand: gcloud compute security-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/armor/docs/adaptive-protection-overview
+      - https://cloud.google.com/compute/docs/reference/rest/v1/securityPolicies
+  - id: CR-GCP-ARMOR-101
+    version: 1.0.0
+    provider: gcp
+    service: armor
+    title: Cloud Armor policy defines rules beyond the default rule
+    description: Each Cloud Armor security policy contains at least one custom rule
+      in addition to the mandatory default catch-all rule (rules length greater
+      than 1).
+    rationale: A policy that only contains the default rule performs no meaningful
+      filtering; it neither blocks known-bad traffic, IP ranges, nor applies WAF
+      or rate-limiting rules, providing a false sense of protection while
+      leaving backends exposed.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_security_policy_has_rules
+      license: Apache-2.0
+    collector: gcp.compute.security_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: lengthGt
+      path: rules
+      value: 1
+    failMessage: Cloud Armor policy has only the default rule and no custom rules;
+      it applies no meaningful traffic filtering.
+    passMessage: Cloud Armor policy defines custom rules in addition to the default rule.
+    remediation:
+      summary: Add custom rules (IP allow/deny, WAF, or rate limiting) to the policy.
+      steps:
+        - Determine the traffic filtering the protected backend requires.
+        - Add rules with gcloud compute security-policies rules create PRIORITY
+          --security-policy POLICY ...
+        - Consider enabling preconfigured WAF rules and rate-based ban rules.
+      verifyCommand: gcloud compute security-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/armor/docs/security-policy-overview
+      - https://cloud.google.com/compute/docs/reference/rest/v1/securityPolicies
+  - id: CR-GCP-ARMOR-102
+    version: 1.0.0
+    provider: gcp
+    service: armor
+    title: Cloud Armor default rule does not allow all internet traffic
+    description: The default catch-all rule (priority 2147483647 matching source
+      range "*") of each security policy has an action other than "allow", so
+      unmatched traffic is not permitted by default.
+    rationale: If the default rule allows all sources ("*") with action "allow",
+      every request that does not match an explicit deny rule is permitted,
+      effectively making the policy fail-open. A default-deny posture forces
+      traffic to be explicitly permitted and shrinks the attack surface.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_security_policy_default_rule_denies_traffic
+      license: Apache-2.0
+    collector: gcp.compute.security_policies_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: rules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: priority
+            value: 2147483647
+          - op: equals
+            path: action
+            value: allow
+          - op: anyItem
+            path: match.config.srcIpRanges
+            condition:
+              op: isPublicCidr
+              path: $
+    failMessage: Cloud Armor default rule (priority 2147483647) allows all internet
+      traffic ("*") with action "allow"; the policy is fail-open.
+    passMessage: Cloud Armor default rule does not allow all internet traffic.
+    remediation:
+      summary: Set the default rule action to deny so the policy is default-deny.
+      steps:
+        - Add explicit allow rules for the sources that must reach the backend.
+        - Update the default rule to deny with gcloud compute security-policies
+          rules update 2147483647 --security-policy POLICY --action "deny-403".
+        - Validate legitimate traffic still passes before enforcing.
+      verifyCommand: gcloud compute security-policies list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/armor/docs/security-policy-overview#default_rule
+      - https://cloud.google.com/compute/docs/reference/rest/v1/securityPolicies

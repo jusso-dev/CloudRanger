@@ -1,0 +1,284 @@
+[
+  {
+    "controlId": "CR-GCP-ARMOR-100",
+    "cases": [
+      {
+        "name": "adaptive protection L7 DDoS enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod-armor-policy",
+                "description": "Protects prod LB",
+                "type": "CLOUD_ARMOR",
+                "adaptiveProtectionConfig": {
+                  "layer7DdosDefenseConfig": {
+                    "enable": true,
+                    "ruleVisibility": "STANDARD"
+                  }
+                },
+                "rules": [
+                  {
+                    "priority": 1000,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["203.0.113.0/24"]
+                      }
+                    },
+                    "preview": false
+                  },
+                  {
+                    "priority": 2147483647,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule, higher priority overrides it",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "adaptive protection disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dev-armor-policy",
+                "description": "Dev LB",
+                "type": "CLOUD_ARMOR",
+                "adaptiveProtectionConfig": {
+                  "layer7DdosDefenseConfig": {
+                    "enable": false
+                  }
+                },
+                "rules": [
+                  {
+                    "priority": 2147483647,
+                    "action": "allow",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule, allow all",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "adaptive protection config absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "legacy-armor-policy",
+                "type": "CLOUD_ARMOR",
+                "rules": [
+                  {
+                    "priority": 2147483647,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ARMOR-101",
+    "cases": [
+      {
+        "name": "policy has custom rules plus default",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod-armor-policy",
+                "type": "CLOUD_ARMOR",
+                "rules": [
+                  {
+                    "priority": 1000,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["198.51.100.0/24"]
+                      }
+                    },
+                    "preview": false
+                  },
+                  {
+                    "priority": 2000,
+                    "action": "allow",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["10.0.0.0/8"]
+                      }
+                    },
+                    "preview": false
+                  },
+                  {
+                    "priority": 2147483647,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "policy has only the default rule",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "empty-armor-policy",
+                "type": "CLOUD_ARMOR",
+                "rules": [
+                  {
+                    "priority": 2147483647,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule, higher priority overrides it",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ARMOR-102",
+    "cases": [
+      {
+        "name": "default rule denies all traffic",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "prod-armor-policy",
+                "type": "CLOUD_ARMOR",
+                "rules": [
+                  {
+                    "priority": 1000,
+                    "action": "allow",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["10.0.0.0/8"]
+                      }
+                    },
+                    "preview": false
+                  },
+                  {
+                    "priority": 2147483647,
+                    "action": "deny(403)",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "default rule allows all internet traffic",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.security_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "open-armor-policy",
+                "type": "CLOUD_ARMOR",
+                "rules": [
+                  {
+                    "priority": 2147483647,
+                    "action": "allow",
+                    "match": {
+                      "versionedExpr": "SRC_IPS_V1",
+                      "config": {
+                        "srcIpRanges": ["*"]
+                      }
+                    },
+                    "description": "Default rule, allow all",
+                    "preview": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

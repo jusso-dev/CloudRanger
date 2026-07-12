@@ -1,0 +1,22 @@
+collectors:
+  - id: azure.mysql.list
+    provider: azure
+    service: mysql
+    description: >
+      Lists all Azure Database for MySQL Single Server instances in the
+      subscription with their security-relevant properties.
+    kind: single
+    command: az mysql server list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY at the root; each element is a MySQL Single Server.
+      The CLI flattens the ARM 'properties' object to top-level camelCase
+      fields: sslEnforcement (Enabled/Disabled), minimalTlsVersion
+      (TLS1_0/TLS1_1/TLS1_2/TLSEnforcementDisabled), publicNetworkAccess
+      (Enabled/Disabled), infrastructureEncryption (Enabled/Disabled), plus
+      storageProfile.backupRetentionDays, storageProfile.geoRedundantBackup,
+      version, userVisibleState, sku, and id/name/location. Covers the classic
+      MySQL Single Server offering; Flexible Server uses a different command and
+      shape and is out of scope here. Requires
+      Microsoft.DBforMySQL/servers/read.

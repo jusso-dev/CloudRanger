@@ -1,0 +1,191 @@
+[
+  {
+    "controlId": "CR-AWS-EMR-001",
+    "cases": [
+      {
+        "name": "block public access enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.emr.get_block_public_access_configuration",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BlockPublicAccessConfiguration": {
+                "BlockPublicSecurityGroupRules": true,
+                "PermittedPublicSecurityGroupRuleRanges": [
+                  {
+                    "MinRange": 22,
+                    "MaxRange": 22
+                  }
+                ]
+              },
+              "BlockPublicAccessConfigurationMetadata": {
+                "CreationDateTime": "2024-05-01T12:00:00+00:00",
+                "CreatedByArn": "arn:aws:iam::111122223333:root"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "block public access disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.emr.get_block_public_access_configuration",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BlockPublicAccessConfiguration": {
+                "BlockPublicSecurityGroupRules": false,
+                "PermittedPublicSecurityGroupRuleRanges": []
+              },
+              "BlockPublicAccessConfigurationMetadata": {
+                "CreationDateTime": "2024-05-01T12:00:00+00:00",
+                "CreatedByArn": "arn:aws:iam::111122223333:root"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EMR-002",
+    "cases": [
+      {
+        "name": "only ssh permitted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.emr.get_block_public_access_configuration",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BlockPublicAccessConfiguration": {
+                "BlockPublicSecurityGroupRules": true,
+                "PermittedPublicSecurityGroupRuleRanges": [
+                  {
+                    "MinRange": 22,
+                    "MaxRange": 22
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "extra public range permitted",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.emr.get_block_public_access_configuration",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BlockPublicAccessConfiguration": {
+                "BlockPublicSecurityGroupRules": true,
+                "PermittedPublicSecurityGroupRuleRanges": [
+                  {
+                    "MinRange": 22,
+                    "MaxRange": 22
+                  },
+                  {
+                    "MinRange": 8088,
+                    "MaxRange": 8088
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "block public access disabled is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.emr.get_block_public_access_configuration",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BlockPublicAccessConfiguration": {
+                "BlockPublicSecurityGroupRules": false,
+                "PermittedPublicSecurityGroupRuleRanges": []
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EMR-003",
+    "cases": [
+      {
+        "name": "running cluster passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.emr.list_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "Id": "j-2AXXXXXXGAPLF",
+                  "Name": "analytics-prod",
+                  "Status": {
+                    "State": "RUNNING",
+                    "StateChangeReason": {},
+                    "Timeline": {
+                      "CreationDateTime": "2026-07-01T10:00:00+00:00",
+                      "ReadyDateTime": "2026-07-01T10:08:00+00:00"
+                    }
+                  },
+                  "NormalizedInstanceHours": 12,
+                  "ClusterArn": "arn:aws:elasticmapreduce:us-east-1:111122223333:cluster/j-2AXXXXXXGAPLF"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "terminated with errors fails",
+        "expected": "fail",
+        "resourceId": "j-3BYYYYYYHBQMG",
+        "records": [
+          {
+            "collectorId": "aws.emr.list_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Clusters": [
+                {
+                  "Id": "j-3BYYYYYYHBQMG",
+                  "Name": "batch-etl",
+                  "Status": {
+                    "State": "TERMINATED_WITH_ERRORS",
+                    "StateChangeReason": {
+                      "Code": "BOOTSTRAP_FAILURE",
+                      "Message": "Bootstrap action failed."
+                    },
+                    "Timeline": {
+                      "CreationDateTime": "2026-07-02T09:00:00+00:00",
+                      "EndDateTime": "2026-07-02T09:05:00+00:00"
+                    }
+                  },
+                  "NormalizedInstanceHours": 0,
+                  "ClusterArn": "arn:aws:elasticmapreduce:us-east-1:111122223333:cluster/j-3BYYYYYYHBQMG"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

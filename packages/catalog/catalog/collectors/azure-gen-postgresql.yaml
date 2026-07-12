@@ -1,0 +1,21 @@
+collectors:
+  - id: azure.postgresql.list
+    provider: azure
+    service: postgresql
+    description: Lists Azure Database for PostgreSQL Single Servers
+      (Microsoft.DBforPostgreSQL/servers) in the subscription with their
+      security-relevant configuration.
+    kind: single
+    command: az postgres server list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; one object per PostgreSQL Single Server.
+      The az CLI flattens the SDK properties model, so each item exposes
+      top-level fields: id, name, location, sslEnforcement (Enabled/Disabled),
+      minimalTlsVersion (TLS1_0/TLS1_1/TLS1_2/TLSEnforcementDisabled),
+      publicNetworkAccess (Enabled/Disabled), infrastructureEncryption
+      (Enabled/Disabled), version, sku, userVisibleState. Applies only to the
+      classic Single Server offering, not Flexible Server. Requires
+      Microsoft.DBforPostgreSQL/servers/read. Returns an empty array when no
+      Single Servers exist.

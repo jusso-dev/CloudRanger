@@ -1,0 +1,139 @@
+controls:
+  - id: CR-AZURE-APPGWWAF-100
+    version: 1.0.0
+    provider: azure
+    service: appgatewaywaf
+    title: Application Gateway WAF policy is enabled
+    description: >
+      Each Application Gateway WAF policy has policySettings.state set to
+      Enabled so that the firewall actively inspects traffic.
+    rationale: >
+      A WAF policy whose state is Disabled provides no protection — requests
+      bypass all managed and custom rules, exposing the backing web apps to
+      OWASP-class attacks such as SQL injection and cross-site scripting.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_watcher_enabled
+      license: Apache-2.0
+    collector: azure.network.appgw_waf_policy_list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.policySettings.state
+      value: Enabled
+    failMessage: Application Gateway WAF policy is not enabled (policySettings.state
+      is not Enabled).
+    passMessage: Application Gateway WAF policy is enabled.
+    remediation:
+      summary: Enable the WAF policy so it actively inspects traffic.
+      steps:
+        - Set the policy state to Enabled with az network application-gateway
+          waf-policy policy-setting update --state Enabled.
+        - Confirm the policy is associated with the Application Gateway or
+          listener.
+      verifyCommand: az network application-gateway waf-policy list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/ag-overview
+      - https://learn.microsoft.com/en-us/cli/azure/network/application-gateway/waf-policy
+  - id: CR-AZURE-APPGWWAF-101
+    version: 1.0.0
+    provider: azure
+    service: appgatewaywaf
+    title: Application Gateway WAF policy runs in Prevention mode
+    description: >
+      Each Application Gateway WAF policy has policySettings.mode set to
+      Prevention so that matched malicious requests are blocked rather than only
+      logged.
+    rationale: >
+      In Detection mode the WAF logs but does not block matched requests, so
+      attacks still reach the backend. Prevention mode actively drops malicious
+      traffic and is required for the firewall to reduce risk rather than merely
+      observe it.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_watcher_enabled
+      license: Apache-2.0
+    collector: azure.network.appgw_waf_policy_list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: properties.policySettings.state
+      value: Enabled
+    passWhen:
+      op: equals
+      path: properties.policySettings.mode
+      value: Prevention
+    failMessage: WAF policy is in Detection mode; malicious requests are logged but
+      not blocked.
+    passMessage: WAF policy runs in Prevention mode.
+    remediation:
+      summary: Switch the WAF policy to Prevention mode.
+      steps:
+        - Update the policy mode with az network application-gateway waf-policy
+          policy-setting update --mode Prevention.
+        - Validate legitimate traffic is not blocked, then keep Prevention
+          enabled.
+      verifyCommand: az network application-gateway waf-policy list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/ag-overview
+      - https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/policy-overview
+  - id: CR-AZURE-APPGWWAF-102
+    version: 1.0.0
+    provider: azure
+    service: appgatewaywaf
+    title: Application Gateway WAF policy uses an OWASP managed rule set
+    description: >
+      Each Application Gateway WAF policy references at least one managed rule
+      set whose ruleSetType is OWASP, providing baseline protection against
+      common web attacks.
+    rationale: >
+      Without the OWASP Core Rule Set the WAF lacks signatures for common attack
+      classes (SQLi, XSS, RCE, path traversal). A policy with only custom or bot
+      rules leaves the backend exposed to the broad OWASP threat categories.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_watcher_enabled
+      license: Apache-2.0
+    collector: azure.network.appgw_waf_policy_list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: anyItem
+      path: properties.managedRules.managedRuleSets
+      condition:
+        op: equals
+        path: ruleSetType
+        value: OWASP
+    failMessage: WAF policy has no OWASP managed rule set configured.
+    passMessage: WAF policy uses an OWASP managed rule set.
+    remediation:
+      summary: Attach an OWASP Core Rule Set to the WAF policy.
+      steps:
+        - Add an OWASP rule set with az network application-gateway waf-policy
+          managed-rule rule-set add --type OWASP --version 3.2.
+        - Confirm the managed rule set appears under
+          properties.managedRules.managedRuleSets.
+      verifyCommand: az network application-gateway waf-policy list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules
+      - https://learn.microsoft.com/en-us/cli/azure/network/application-gateway/waf-policy/managed-rule/rule-set

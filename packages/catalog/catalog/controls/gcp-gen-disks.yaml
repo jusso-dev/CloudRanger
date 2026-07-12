@@ -1,0 +1,98 @@
+controls:
+  - id: CR-GCP-DISKS-100
+    version: 1.0.0
+    provider: gcp
+    service: disks
+    title: Persistent disk uses a customer-managed or customer-supplied encryption key
+    description: >
+      Verifies the persistent disk declares a diskEncryptionKey containing a
+      Cloud KMS key (kmsKeyName) or a customer-supplied key (sha256) rather than
+      relying only on default Google-managed encryption.
+    rationale: >
+      Default Google-managed encryption keys cannot be independently rotated or
+      revoked by the customer, so disk data cannot be centrally cut off during
+      an incident; customer-managed or customer-supplied keys restore that
+      control.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: compute_instance_encryption_with_csek_disabled
+      license: Apache-2.0
+    collector: gcp.compute.disks_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: exists
+          path: diskEncryptionKey.kmsKeyName
+        - op: exists
+          path: diskEncryptionKey.sha256
+    failMessage: Disk relies on default Google-managed encryption (no customer key).
+    passMessage: Disk is encrypted with a customer-managed or customer-supplied key.
+    remediation:
+      summary: Recreate the disk with a Cloud KMS (CMEK) or customer-supplied (CSEK)
+        key.
+      steps:
+        - Create a replacement disk encrypted with a Cloud KMS key or a
+          customer-supplied key (operator action).
+        - Migrate data from the default-encrypted disk, then detach and delete
+          it.
+      verifyCommand: gcloud compute disks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.7"
+    references:
+      - https://cloud.google.com/compute/docs/disks/customer-managed-encryption
+      - https://cloud.google.com/compute/docs/disks/customer-supplied-encryption
+  - id: CR-GCP-DISKS-101
+    version: 1.0.0
+    provider: gcp
+    service: disks
+    title: Persistent disk uses a Cloud KMS customer-managed encryption key
+    description: >
+      Verifies the persistent disk's diskEncryptionKey references a Cloud KMS
+      key (kmsKeyName), enforcing centrally managed CMEK rather than
+      customer-supplied raw keys or default Google-managed encryption.
+    rationale: >
+      Cloud KMS keys provide auditable, IAM-governed key management with
+      rotation, versioning and revocation; customer-supplied raw keys must be
+      supplied on every operation and lack this lifecycle governance.
+    severity: low
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: compute_instance_encryption_with_csek_disabled
+      license: Apache-2.0
+    collector: gcp.compute.disks_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: diskEncryptionKey.kmsKeyName
+    failMessage: Disk is not encrypted with a Cloud KMS customer-managed key.
+    passMessage: Disk is encrypted with a Cloud KMS customer-managed key.
+    remediation:
+      summary: Recreate the disk with a Cloud KMS (CMEK) key.
+      steps:
+        - Create or select a Cloud KMS key in the same region as the disk
+          (operator action).
+        - Create a replacement disk with --kms-key referencing that key.
+        - Migrate data from the existing disk, then detach and delete it.
+      verifyCommand: gcloud compute disks list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.7"
+    references:
+      - https://cloud.google.com/compute/docs/disks/customer-managed-encryption

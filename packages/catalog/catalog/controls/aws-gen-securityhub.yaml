@@ -1,0 +1,156 @@
+controls:
+  - id: CR-AWS-SECURITYHUB-001
+    version: 1.0.0
+    provider: aws
+    service: securityhub
+    title: AWS Security Hub is enabled in the region
+    description: Security Hub is subscribed for the account in this region, as shown
+      by a present HubArn returned by describe-hub.
+    rationale: Without Security Hub enabled there is no centralized aggregation of
+      security findings and no continuous CIS/foundational best-practice
+      scoring, leaving misconfigurations undetected across the account.
+    severity: medium
+    categories:
+      - logging
+      - monitoring
+    source:
+      engine: prowler
+      id: securityhub_enabled
+      license: Apache-2.0
+    collector: aws.securityhub.describe_hub
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: exists
+      path: HubArn
+    onError:
+      - contains: InvalidAccessException
+        status: fail
+        message: Security Hub is not enabled in this region.
+      - contains: ResourceNotFoundException
+        status: fail
+        message: Security Hub is not enabled in this region.
+      - contains: AccessDenied
+        status: error
+    failMessage: Security Hub is not enabled in this region.
+    passMessage: Security Hub is enabled in this region.
+    remediation:
+      summary: Enable AWS Security Hub in the region.
+      steps:
+        - Open the Security Hub console in the target region and choose Enable
+          Security Hub.
+        - Or run aws securityhub enable-security-hub in the region.
+      verifyCommand: aws securityhub describe-hub --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "4.16"
+    references:
+      - https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-settingup.html
+      - https://docs.aws.amazon.com/cli/latest/reference/securityhub/describe-hub.html
+  - id: CR-AWS-SECURITYHUB-002
+    version: 1.0.0
+    provider: aws
+    service: securityhub
+    title: Security Hub auto-enables new controls
+    description: The Security Hub hub configuration has AutoEnableControls set to
+      true so that newly released controls in enabled standards are
+      automatically turned on.
+    rationale: When new controls are not auto-enabled, freshly published security
+      checks stay dormant until manually activated, creating blind spots as AWS
+      adds coverage for emerging misconfigurations.
+    severity: low
+    categories:
+      - logging
+      - monitoring
+      - resilience
+    source:
+      engine: prowler
+      id: securityhub_enabled
+      license: Apache-2.0
+    collector: aws.securityhub.describe_hub
+    resourcesPath: $
+    resourceIdField: $scope
+    applicableWhen:
+      op: exists
+      path: HubArn
+    passWhen:
+      op: equals
+      path: AutoEnableControls
+      value: true
+    onError:
+      - contains: InvalidAccessException
+        status: not_applicable
+        message: Security Hub is not enabled in this region.
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Security Hub is not enabled in this region.
+      - contains: AccessDenied
+        status: error
+    failMessage: Security Hub does not auto-enable new controls (AutoEnableControls
+      is false).
+    passMessage: Security Hub auto-enables new controls.
+    remediation:
+      summary: Enable automatic enablement of new controls.
+      steps:
+        - In the Security Hub console open Settings, then General, and enable
+          "Automatically enable new controls".
+        - Or run aws securityhub update-security-hub-configuration
+          --auto-enable-controls in the region.
+      verifyCommand: aws securityhub describe-hub --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/securityhub/latest/userguide/controls-auto-enable.html
+      - https://docs.aws.amazon.com/cli/latest/reference/securityhub/describe-hub.html
+  - id: CR-AWS-SECURITYHUB-003
+    version: 1.0.0
+    provider: aws
+    service: securityhub
+    title: Security Hub uses consolidated control findings
+    description: The Security Hub hub has ControlFindingGenerator set to
+      SECURITY_CONTROL, enabling consolidated control findings across standards.
+    rationale: With the legacy STANDARD_CONTROL generator, the same underlying check
+      produces duplicate findings per standard, inflating finding volume and
+      making triage harder so real issues are more easily missed.
+    severity: informational
+    categories:
+      - logging
+      - monitoring
+    source:
+      engine: prowler
+      id: securityhub_enabled
+      license: Apache-2.0
+    collector: aws.securityhub.describe_hub
+    resourcesPath: $
+    resourceIdField: $scope
+    applicableWhen:
+      op: exists
+      path: HubArn
+    passWhen:
+      op: equals
+      path: ControlFindingGenerator
+      value: SECURITY_CONTROL
+    onError:
+      - contains: InvalidAccessException
+        status: not_applicable
+        message: Security Hub is not enabled in this region.
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Security Hub is not enabled in this region.
+      - contains: AccessDenied
+        status: error
+    failMessage: Security Hub uses the legacy STANDARD_CONTROL finding generator.
+    passMessage: Security Hub uses consolidated control findings (SECURITY_CONTROL).
+    remediation:
+      summary: Switch to consolidated control findings.
+      steps:
+        - In the Security Hub console open Settings, then General, and enable
+          "Consolidated control findings".
+        - Or run aws securityhub update-security-hub-configuration
+          --control-finding-generator SECURITY_CONTROL in the region.
+      verifyCommand: aws securityhub describe-hub --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/securityhub/latest/userguide/controls-findings-create-update.html
+      - https://docs.aws.amazon.com/cli/latest/reference/securityhub/describe-hub.html

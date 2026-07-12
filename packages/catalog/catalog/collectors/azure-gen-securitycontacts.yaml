@@ -1,0 +1,21 @@
+collectors:
+  - id: azure.security.contacts_list
+    provider: azure
+    service: securitycontacts
+    description: >
+      Lists all Microsoft Defender for Cloud security contact configurations for
+      the subscription (emails, phone, notificationsByRole,
+      notificationsSources).
+    kind: single
+    command: az security contact list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      az wraps the ARM 2023-12-01-preview response; output is an object with a
+      'value' array of contact objects. Each contact has properties.emails
+      (semicolon-joined string), properties.phone,
+      properties.notificationsByRole {roles[], state On|Off}, and
+      properties.notificationsSources[] where each item is {sourceType: Alert,
+      minimalSeverity} or {sourceType: AttackPath, minimalRiskLevel}. Requires
+      Security Reader on the subscription. When no contact is configured the
+      value array is empty.

@@ -122,7 +122,14 @@ for (const entry of sliceResults) {
 
   let controlsDoc, collectorsDoc, fixtures;
   try {
-    controlsDoc = parseYaml(sanitizeYaml(gen.controlsYaml || ""));
+    // Parse raw first; sanitizeYaml is a lossy repair (it mangles multiline
+    // plain scalars that embed quotes/colons) so only fall back to it when the
+    // raw YAML genuinely does not parse.
+    try {
+      controlsDoc = parseYaml(gen.controlsYaml || "");
+    } catch {
+      controlsDoc = parseYaml(sanitizeYaml(gen.controlsYaml || ""));
+    }
   } catch (e) {
     sliceReports.push({ service, kept: 0, dropped: [`controlsYaml unparseable: ${String(e.message).split("\n")[0]}`] });
     continue;

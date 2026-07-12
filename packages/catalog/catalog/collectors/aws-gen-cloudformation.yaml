@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.cloudformation.describe_stacks
+    provider: aws
+    service: cloudformation
+    description: CloudFormation stacks and their configuration in one region.
+    kind: single
+    command: aws cloudformation describe-stacks --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a Stacks array. Each stack includes StackName, StackId,
+      StackStatus, CreationTime, EnableTerminationProtection (boolean, absent on
+      some legacy/nested stacks), NotificationARNs (array of SNS topic ARNs;
+      empty array when none configured), Tags, and DriftInformation
+      {StackDriftStatus}. Requires cloudformation:DescribeStacks. Only stacks in
+      the queried region are returned.

@@ -1,0 +1,256 @@
+[
+  {
+    "controlId": "CR-AZURE-RBAC-100",
+    "cases": [
+      {
+        "name": "fails custom role with wildcard action",
+        "expected": "fail",
+        "resourceId": "Super Admin",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": [
+              {
+                "roleName": "Super Admin",
+                "roleType": "CustomRole",
+                "description": "Does everything",
+                "assignableScopes": ["/subscriptions/11111111-1111-1111-1111-111111111111"],
+                "permissions": [
+                  {
+                    "actions": ["*"],
+                    "notActions": [],
+                    "dataActions": [],
+                    "notDataActions": []
+                  }
+                ],
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/aaaa",
+                "name": "aaaa",
+                "type": "Microsoft.Authorization/roleDefinitions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes custom role with explicit actions",
+        "expected": "pass",
+        "resourceId": "VM Operator",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": [
+              {
+                "roleName": "VM Operator",
+                "roleType": "CustomRole",
+                "description": "Restart VMs",
+                "assignableScopes": [
+                  "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/prod"
+                ],
+                "permissions": [
+                  {
+                    "actions": [
+                      "Microsoft.Compute/virtualMachines/read",
+                      "Microsoft.Compute/virtualMachines/restart/action"
+                    ],
+                    "notActions": [],
+                    "dataActions": [],
+                    "notDataActions": []
+                  }
+                ],
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/bbbb",
+                "name": "bbbb",
+                "type": "Microsoft.Authorization/roleDefinitions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no custom roles defined",
+        "expected": "no_results",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-RBAC-101",
+    "cases": [
+      {
+        "name": "fails role assignable at subscription scope",
+        "expected": "fail",
+        "resourceId": "Broad Reader",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": [
+              {
+                "roleName": "Broad Reader",
+                "roleType": "CustomRole",
+                "description": "Read across the subscription",
+                "assignableScopes": ["/subscriptions/11111111-1111-1111-1111-111111111111"],
+                "permissions": [
+                  {
+                    "actions": ["Microsoft.Resources/subscriptions/resourceGroups/read"],
+                    "notActions": [],
+                    "dataActions": [],
+                    "notDataActions": []
+                  }
+                ],
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/cccc",
+                "name": "cccc",
+                "type": "Microsoft.Authorization/roleDefinitions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails role assignable at root scope",
+        "expected": "fail",
+        "resourceId": "Root Admin",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": [
+              {
+                "roleName": "Root Admin",
+                "roleType": "CustomRole",
+                "description": "Tenant-wide",
+                "assignableScopes": ["/"],
+                "permissions": [
+                  {
+                    "actions": ["Microsoft.Resources/subscriptions/read"],
+                    "notActions": [],
+                    "dataActions": [],
+                    "notDataActions": []
+                  }
+                ],
+                "id": "/providers/Microsoft.Authorization/roleDefinitions/dddd",
+                "name": "dddd",
+                "type": "Microsoft.Authorization/roleDefinitions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes role assignable at resource-group scope",
+        "expected": "pass",
+        "resourceId": "RG Operator",
+        "records": [
+          {
+            "collectorId": "azure.authorization.custom_role_definitions",
+            "exitCode": 0,
+            "output": [
+              {
+                "roleName": "RG Operator",
+                "roleType": "CustomRole",
+                "description": "Scoped to a resource group",
+                "assignableScopes": [
+                  "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/prod"
+                ],
+                "permissions": [
+                  {
+                    "actions": ["Microsoft.Compute/virtualMachines/read"],
+                    "notActions": [],
+                    "dataActions": [],
+                    "notDataActions": []
+                  }
+                ],
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/eeee",
+                "name": "eeee",
+                "type": "Microsoft.Authorization/roleDefinitions"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-RBAC-103",
+    "cases": [
+      {
+        "name": "fails unknown principal type owner",
+        "expected": "fail",
+        "resourceId": "ra-unknown",
+        "records": [
+          {
+            "collectorId": "azure.authorization.role_assignments_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "principalType": "Unknown",
+                "principalName": "",
+                "roleDefinitionName": "Owner",
+                "scope": "/subscriptions/11111111-1111-1111-1111-111111111111",
+                "principalId": "deleted-obj-id",
+                "roleDefinitionId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/8e3af657",
+                "name": "ra-unknown",
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleAssignments/ra-unknown",
+                "type": "Microsoft.Authorization/roleAssignments"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes recognised user owner",
+        "expected": "pass",
+        "resourceId": "ra-user",
+        "records": [
+          {
+            "collectorId": "azure.authorization.role_assignments_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "principalType": "User",
+                "principalName": "alice@contoso.com",
+                "roleDefinitionName": "Owner",
+                "scope": "/subscriptions/11111111-1111-1111-1111-111111111111",
+                "principalId": "p1",
+                "roleDefinitionId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/8e3af657",
+                "name": "ra-user",
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleAssignments/ra-user",
+                "type": "Microsoft.Authorization/roleAssignments"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable when only non-owner or non-subscription-scope assignments",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.authorization.role_assignments_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "principalType": "Group",
+                "principalName": "readers-grp",
+                "roleDefinitionName": "Reader",
+                "scope": "/subscriptions/11111111-1111-1111-1111-111111111111",
+                "principalId": "g1",
+                "roleDefinitionId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleDefinitions/acdd72a7",
+                "name": "ra-reader",
+                "id": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/roleAssignments/ra-reader",
+                "type": "Microsoft.Authorization/roleAssignments"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

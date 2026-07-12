@@ -1,0 +1,166 @@
+controls:
+  - id: CR-AZURE-SECURITYCONTACTS-100
+    version: 1.0.0
+    provider: azure
+    service: securitycontacts
+    title: A security contact email is configured for Defender for Cloud
+    description: >
+      At least one Microsoft Defender for Cloud security contact has a non-empty
+      email address so security alerts reach the organisation's security team.
+    rationale: >
+      Without a security contact email, high-severity Defender for Cloud alerts
+      about active compromise are never delivered to a human, so incidents go
+      unnoticed and unremediated.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: defender_additional_email_configured_with_a_security_contact
+      license: Apache-2.0
+    collector: azure.security.contacts_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: properties.emails
+          - op: notEquals
+            path: properties.emails
+            value: ""
+    failMessage: No Defender for Cloud security contact has an email address configured.
+    passMessage: A Defender for Cloud security contact email is configured.
+    remediation:
+      summary: Set an additional email address on the Defender for Cloud security
+        contact.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription >
+          Email notifications, add one or more security team email addresses.
+        - Or run az security contact create/update with --emails
+          'team@contoso.com'.
+      verifyCommand: az security contact list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - "2.13"
+    references:
+      - https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-email-notifications
+      - https://learn.microsoft.com/en-us/rest/api/defenderforcloud/security-contacts/list
+  - id: CR-AZURE-SECURITYCONTACTS-101
+    version: 1.0.0
+    provider: azure
+    service: securitycontacts
+    title: Defender for Cloud notifies subscription owners by role
+    description: >
+      At least one security contact has notificationsByRole.state set to On so
+      users holding subscription RBAC roles (e.g. Owner) receive email alerts.
+    rationale: >
+      Individual contact emails can go stale; notifying by RBAC role guarantees
+      current subscription owners are alerted about new security incidents even
+      as staff change, reducing the window of undetected compromise.
+    severity: medium
+    categories:
+      - logging
+      - identity
+      - resilience
+    source:
+      engine: prowler
+      id: defender_ensure_notify_emails_to_owners
+      license: Apache-2.0
+    collector: azure.security.contacts_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: equals
+        path: properties.notificationsByRole.state
+        value: On
+    failMessage: No security contact enables email notifications to subscription
+      role holders.
+    passMessage: Defender for Cloud sends email notifications to subscription role holders.
+    remediation:
+      summary: Enable notify-by-role for the security contact.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription >
+          Email notifications, enable "All users with the following roles" and
+          select Owner.
+        - Or run az security contact update -n default --notifications-by-role
+          '{"state":"On","roles":["Owner"]}'.
+      verifyCommand: az security contact list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - "2.15"
+    references:
+      - https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-email-notifications
+      - https://learn.microsoft.com/en-us/rest/api/defenderforcloud/security-contacts/list
+  - id: CR-AZURE-SECURITYCONTACTS-102
+    version: 1.0.0
+    provider: azure
+    service: securitycontacts
+    title: Defender for Cloud notifies on high-severity alerts
+    description: >
+      At least one security contact has an Alert notification source whose
+      minimalSeverity is High, Medium or Low (i.e. High-severity alerts are
+      included and the threshold is not narrowed to Critical only).
+    rationale: >
+      If the alert notification threshold is left unset or raised to Critical
+      only, High-severity alerts indicating active exploitation are silently
+      dropped, delaying detection and letting attackers persist and escalate.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: defender_ensure_notify_alerts_severity_is_high
+      license: Apache-2.0
+    collector: azure.security.contacts_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: anyItem
+        path: properties.notificationsSources
+        condition:
+          op: and
+          exprs:
+            - op: equals
+              path: sourceType
+              value: Alert
+            - op: in
+              path: minimalSeverity
+              values:
+                - High
+                - Medium
+                - Low
+    failMessage: No security contact notifies on High-severity (or more inclusive) alerts.
+    passMessage: Defender for Cloud notifies on High-severity alerts.
+    remediation:
+      summary: Set the alert notification minimal severity to High or lower.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription >
+          Email notifications, set the alert severity threshold to High (or
+          Medium/Low).
+        - Or run az security contact update -n default --alert-notifications
+          '{"state":"On","minimalSeverity":"High"}'.
+      verifyCommand: az security contact list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.0"
+        controls:
+          - "2.14"
+    references:
+      - https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-email-notifications
+      - https://learn.microsoft.com/en-us/rest/api/defenderforcloud/security-contacts/list

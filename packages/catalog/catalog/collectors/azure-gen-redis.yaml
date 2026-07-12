@@ -1,0 +1,18 @@
+collectors:
+  - id: azure.redis.list
+    provider: azure
+    service: redis
+    description: Lists all Azure Cache for Redis instances in the current
+      subscription with their configuration (TLS, non-SSL port, public network
+      access, version, SKU).
+    kind: single
+    command: az redis list --output json
+    regional: false
+    outputFormat: json
+    notes: Returns a JSON ARRAY at the root (use resourcesPath "$"). The az redis
+      CLI flattens the ARM properties.* bag onto each cache object, so fields
+      such as enableNonSslPort, minimumTlsVersion, publicNetworkAccess, sslPort,
+      port, redisVersion, sku and provisioningState appear at the object root,
+      not under a "properties" key. Requires Reader on the caches. Some fields
+      (minimumTlsVersion) may be absent on very old caches where the API returns
+      no value.

@@ -1,0 +1,86 @@
+controls:
+  - id: CR-AWS-BACKUP-001
+    version: 1.0.0
+    provider: aws
+    service: backup
+    title: At least one AWS Backup plan exists in the region
+    description: The region has one or more active AWS Backup plans configured,
+      giving resources a scheduled, policy-driven backup schedule.
+    rationale: Without a backup plan, no resources are backed up on a schedule,
+      leaving data with no recovery point after accidental deletion, corruption,
+      or a ransomware event.
+    severity: medium
+    categories:
+      - resilience
+      - backup
+    source:
+      engine: prowler
+      id: backup_plans_exist
+      license: Apache-2.0
+    collector: aws.backup.list_backup_plans
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: lengthGt
+      path: BackupPlansList
+      value: 0
+    failMessage: No AWS Backup plans exist in this region.
+    passMessage: At least one AWS Backup plan exists in this region.
+    remediation:
+      summary: Create an AWS Backup plan.
+      steps:
+        - Open AWS Backup and create a backup plan with a schedule and lifecycle
+          rules.
+        - Assign resources to the plan using tags or resource IDs.
+      verifyCommand: aws backup list-backup-plans --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/aws-backup/latest/devguide/creating-a-backup-plan.html
+  - id: CR-AWS-BACKUP-002
+    version: 1.0.0
+    provider: aws
+    service: backup
+    title: Key resource types are opted in to AWS Backup
+    description: AWS Backup region settings opt in EBS, RDS, DynamoDB, and EFS so
+      these services can be protected by backup plans.
+    rationale: If a resource type is not opted in, AWS Backup silently skips it even
+      when it matches a backup plan selection, so critical data can go
+      unprotected without any error.
+    severity: medium
+    categories:
+      - resilience
+      - backup
+    source:
+      engine: prowler
+      id: backup_reportplans_exist
+      license: Apache-2.0
+    collector: aws.backup.describe_region_settings
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: ResourceTypeOptInPreference.EBS
+          value: true
+        - op: equals
+          path: ResourceTypeOptInPreference.RDS
+          value: true
+        - op: equals
+          path: ResourceTypeOptInPreference.DynamoDB
+          value: true
+        - op: equals
+          path: ResourceTypeOptInPreference.EFS
+          value: true
+    failMessage: One or more key resource types (EBS, RDS, DynamoDB, EFS) are not
+      opted in to AWS Backup.
+    passMessage: EBS, RDS, DynamoDB, and EFS are all opted in to AWS Backup.
+    remediation:
+      summary: Opt in the required resource types in AWS Backup region settings.
+      steps:
+        - Open AWS Backup Settings for the region.
+        - Enable opt-in for EBS, RDS, DynamoDB, and EFS.
+      verifyCommand: aws backup describe-region-settings --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/aws-backup/latest/devguide/service-opt-in.html

@@ -1,0 +1,37 @@
+collectors:
+  - id: aws.kinesis.list_streams
+    provider: aws
+    service: kinesis
+    description: Lists the names of all Amazon Kinesis Data Streams in a region.
+    kind: single
+    command: aws kinesis list-streams --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns StreamNames (array of stream-name strings) and StreamSummaries
+      (array of objects with StreamName, StreamARN, StreamStatus,
+      StreamModeDetails, StreamCreationTimestamp). HasMoreStreams indicates
+      pagination. Provides only identifiers; per-stream encryption and retention
+      require describe-stream-summary.
+  - id: aws.kinesis.describe_stream_summary
+    provider: aws
+    service: kinesis
+    description: Returns the summary description (StreamDescriptionSummary) of one
+      Kinesis Data Stream, without listing shards.
+    kind: per_resource
+    command: aws kinesis describe-stream-summary --stream-name {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.kinesis.list_streams
+      itemsPath: StreamNames
+      resourceField: $
+    outputFormat: json
+    notes: Output root has a single StreamDescriptionSummary object holding
+      StreamName, StreamARN, StreamStatus, RetentionPeriodHours (integer;
+      minimum 24, up to 8760), EncryptionType ("KMS" or "NONE"), KeyId (present
+      only when EncryptionType is KMS; may be an alias, alias ARN, key id, or
+      key ARN), OpenShardCount, ConsumerCount, StreamCreationTimestamp,
+      StreamModeDetails and EnhancedMonitoring. EncryptionType is "NONE" and
+      KeyId absent when server-side encryption is disabled. Raises
+      ResourceNotFoundException if the stream was deleted between listing and
+      describing.

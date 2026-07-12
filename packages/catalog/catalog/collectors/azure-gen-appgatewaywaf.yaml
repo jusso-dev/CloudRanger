@@ -1,0 +1,18 @@
+collectors:
+  - id: azure.network.appgw_waf_policy_list
+    provider: azure
+    service: network
+    description: >
+      Lists all Application Gateway Web Application Firewall (WAF) policies in
+      the subscription, including their policySettings (state, mode) and
+      managedRules.
+    kind: single
+    command: az network application-gateway waf-policy list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY at the root (az list style) — use resourcesPath "$".
+      Each element has id, name, location, and
+      properties.{policySettings,managedRules,customRules}. Requires Reader on
+      the resource groups containing the policies. If no policies exist the
+      array is empty (no_results). Fields are camelCase.

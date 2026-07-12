@@ -1,0 +1,17 @@
+collectors:
+  - id: aws.securityhub.describe_hub
+    provider: aws
+    service: securityhub
+    description: Describes the Security Hub resource (hub) for the current account
+      in a region, returning HubArn, SubscribedAt, AutoEnableControls and
+      ControlFindingGenerator. If the account is not subscribed to Security Hub
+      in this region the call errors with InvalidAccessException.
+    kind: single
+    command: aws securityhub describe-hub --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires securityhub:DescribeHub. When Security Hub is not enabled the
+      CLI exits non-zero with "An error occurred (InvalidAccessException) ... is
+      not subscribed to AWS Security Hub". ResourceNotFoundException can also
+      occur. AccessDenied indicates missing IAM permission (treat as error, not
+      fail).

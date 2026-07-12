@@ -1,0 +1,266 @@
+[
+  {
+    "controlId": "CR-AZURE-APPGWWAF-100",
+    "cases": [
+      {
+        "name": "policy enabled passes",
+        "expected": "pass",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-enabled",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-enabled",
+                "name": "wafp-enabled",
+                "location": "eastus",
+                "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "policySettings": {
+                    "state": "Enabled",
+                    "mode": "Prevention",
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 128,
+                    "fileUploadLimitInMb": 100
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  },
+                  "customRules": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "policy disabled fails",
+        "expected": "fail",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-disabled",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-disabled",
+                "name": "wafp-disabled",
+                "location": "eastus",
+                "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "policySettings": {
+                    "state": "Disabled",
+                    "mode": "Detection",
+                    "requestBodyCheck": true
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  },
+                  "customRules": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no policies",
+        "expected": "no_results",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPGWWAF-101",
+    "cases": [
+      {
+        "name": "prevention mode passes",
+        "expected": "pass",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-prev",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-prev",
+                "name": "wafp-prev",
+                "location": "eastus",
+                "properties": {
+                  "policySettings": {
+                    "state": "Enabled",
+                    "mode": "Prevention"
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "detection mode fails",
+        "expected": "fail",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-det",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-det",
+                "name": "wafp-det",
+                "location": "eastus",
+                "properties": {
+                  "policySettings": {
+                    "state": "Enabled",
+                    "mode": "Detection"
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "disabled policy is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-off",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-off",
+                "name": "wafp-off",
+                "location": "eastus",
+                "properties": {
+                  "policySettings": {
+                    "state": "Disabled",
+                    "mode": "Detection"
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPGWWAF-102",
+    "cases": [
+      {
+        "name": "owasp rule set present passes",
+        "expected": "pass",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-owasp",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-owasp",
+                "name": "wafp-owasp",
+                "location": "eastus",
+                "properties": {
+                  "policySettings": {
+                    "state": "Enabled",
+                    "mode": "Prevention"
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "Microsoft_BotManagerRuleSet",
+                        "ruleSetVersion": "1.0"
+                      },
+                      {
+                        "ruleSetType": "OWASP",
+                        "ruleSetVersion": "3.2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no owasp rule set fails",
+        "expected": "fail",
+        "resourceId": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-bot-only",
+        "records": [
+          {
+            "collectorId": "azure.network.appgw_waf_policy_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/wafp-bot-only",
+                "name": "wafp-bot-only",
+                "location": "eastus",
+                "properties": {
+                  "policySettings": {
+                    "state": "Enabled",
+                    "mode": "Prevention"
+                  },
+                  "managedRules": {
+                    "managedRuleSets": [
+                      {
+                        "ruleSetType": "Microsoft_BotManagerRuleSet",
+                        "ruleSetVersion": "1.0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

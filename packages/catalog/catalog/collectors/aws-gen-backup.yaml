@@ -1,0 +1,25 @@
+collectors:
+  - id: aws.backup.list_backup_plans
+    provider: aws
+    service: backup
+    description: Active AWS Backup plans in one region.
+    kind: single
+    command: aws backup list-backup-plans --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a BackupPlansList array. Each item has BackupPlanArn,
+      BackupPlanId, BackupPlanName, CreationDate, VersionId, and
+      LastExecutionDate. By default only active (non-deleted) plans are
+      returned. An empty list means no backup plans exist in the region.
+  - id: aws.backup.describe_region_settings
+    provider: aws
+    service: backup
+    description: AWS Backup region-level opt-in settings for resource types.
+    kind: single
+    command: aws backup describe-region-settings --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns ResourceTypeOptInPreference (a map of service resource type name
+      to boolean, e.g. EBS, RDS, DynamoDB, EFS, Aurora, Storage Gateway, FSx)
+      and ResourceTypeManagementPreference. A resource type must be opted in for
+      AWS Backup to protect it.

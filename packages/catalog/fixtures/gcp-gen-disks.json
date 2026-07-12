@@ -1,0 +1,150 @@
+[
+  {
+    "controlId": "CR-GCP-DISKS-100",
+    "cases": [
+      {
+        "name": "passes with CMEK kmsKeyName",
+        "expected": "pass",
+        "resourceId": "disk-cmek",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-cmek",
+                "id": "1234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a",
+                "status": "READY",
+                "sizeGb": "50",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a/diskTypes/pd-balanced",
+                "diskEncryptionKey": {
+                  "kmsKeyName": "projects/proj/locations/us-central1/keyRings/ring1/cryptoKeys/key1/cryptoKeyVersions/1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with CSEK sha256",
+        "expected": "pass",
+        "resourceId": "disk-csek",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-csek",
+                "id": "2234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-b",
+                "status": "READY",
+                "sizeGb": "100",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-b/diskTypes/pd-ssd",
+                "diskEncryptionKey": {
+                  "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails default Google-managed encryption",
+        "expected": "fail",
+        "resourceId": "disk-default",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-default",
+                "id": "3234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a",
+                "status": "READY",
+                "sizeGb": "10",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a/diskTypes/pd-standard"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DISKS-101",
+    "cases": [
+      {
+        "name": "passes with Cloud KMS key",
+        "expected": "pass",
+        "resourceId": "disk-cmek",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-cmek",
+                "id": "1234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a",
+                "status": "READY",
+                "sizeGb": "50",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a/diskTypes/pd-balanced",
+                "diskEncryptionKey": {
+                  "kmsKeyName": "projects/proj/locations/us-central1/keyRings/ring1/cryptoKeys/key1/cryptoKeyVersions/1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with customer-supplied raw key only",
+        "expected": "fail",
+        "resourceId": "disk-csek",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-csek",
+                "id": "2234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-b",
+                "status": "READY",
+                "sizeGb": "100",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-b/diskTypes/pd-ssd",
+                "diskEncryptionKey": {
+                  "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails default Google-managed encryption",
+        "expected": "fail",
+        "resourceId": "disk-default",
+        "records": [
+          {
+            "collectorId": "gcp.compute.disks_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "disk-default",
+                "id": "3234567890123456789",
+                "zone": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a",
+                "status": "READY",
+                "sizeGb": "10",
+                "type": "https://www.googleapis.com/compute/v1/projects/proj/zones/us-central1-a/diskTypes/pd-standard"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

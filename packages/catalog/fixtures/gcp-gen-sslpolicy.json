@@ -1,0 +1,179 @@
+[
+  {
+    "controlId": "CR-GCP-SSLPOLICY-100",
+    "cases": [
+      {
+        "name": "pass tls 1.2 minimum",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-01-10T02:11:33.421-08:00",
+                "fingerprint": "aBcD1234==",
+                "id": "5551234567890",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "prod-lb-ssl-policy",
+                "profile": "RESTRICTED",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/prod-lb-ssl-policy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail tls 1.0 allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-02-01T09:00:00.000-08:00",
+                "fingerprint": "eFgH5678==",
+                "id": "5559876543210",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_0",
+                "name": "legacy-ssl-policy",
+                "profile": "COMPATIBLE",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/legacy-ssl-policy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SSLPOLICY-101",
+    "cases": [
+      {
+        "name": "pass modern profile",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-01-10T02:11:33.421-08:00",
+                "fingerprint": "aBcD1234==",
+                "id": "5551234567890",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "modern-ssl-policy",
+                "profile": "MODERN",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/modern-ssl-policy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail compatible profile",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-02-01T09:00:00.000-08:00",
+                "fingerprint": "eFgH5678==",
+                "id": "5559876543210",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "compat-ssl-policy",
+                "profile": "COMPATIBLE",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/compat-ssl-policy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SSLPOLICY-102",
+    "cases": [
+      {
+        "name": "pass custom no weak features",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-03-05T12:00:00.000-08:00",
+                "fingerprint": "iJkL9012==",
+                "id": "5551112223330",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "custom-strong-policy",
+                "profile": "CUSTOM",
+                "enabledFeatures": [
+                  "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                  "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+                ],
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/custom-strong-policy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail custom enables 3des",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-03-06T12:00:00.000-08:00",
+                "fingerprint": "mNoP3456==",
+                "id": "5554445556660",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "custom-weak-policy",
+                "profile": "CUSTOM",
+                "enabledFeatures": [
+                  "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                  "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+                ],
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/custom-weak-policy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable restricted profile",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.compute.ssl_policies_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "creationTimestamp": "2024-03-07T12:00:00.000-08:00",
+                "fingerprint": "qRsT7890==",
+                "id": "5557778889990",
+                "kind": "compute#sslPolicy",
+                "minTlsVersion": "TLS_1_2",
+                "name": "restricted-policy",
+                "profile": "RESTRICTED",
+                "selfLink": "https://www.googleapis.com/compute/v1/projects/demo-proj/global/sslPolicies/restricted-policy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

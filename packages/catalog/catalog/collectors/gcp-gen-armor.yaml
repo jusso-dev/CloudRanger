@@ -1,0 +1,15 @@
+collectors:
+  - id: gcp.compute.security_policies_list
+    provider: gcp
+    service: armor
+    description: Lists all Cloud Armor security policies (backend and edge) in the
+      project, including their rules and adaptive protection configuration.
+    kind: single
+    command: gcloud compute security-policies list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Returns a JSON array at the root, one object per security policy.
+      Requires compute.securityPolicies.list permission. Each policy includes a
+      rules[] array; the default catch-all rule has priority 2147483647 and
+      match.versionedExpr SRC_IPS_V1 with match.config.srcIpRanges ["*"].
+      adaptiveProtectionConfig may be absent on policies that never enabled it.

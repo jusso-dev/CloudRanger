@@ -1,0 +1,29 @@
+collectors:
+  - id: aws.glue.get_data_catalog_encryption_settings
+    provider: aws
+    service: glue
+    description: Account/region-level Glue Data Catalog encryption settings,
+      covering encryption at rest (CatalogEncryptionMode) and connection
+      password encryption (ReturnConnectionPasswordEncrypted).
+    kind: single
+    command: aws glue get-data-catalog-encryption-settings --region {region}
+      --output json
+    regional: true
+    outputFormat: json
+    notes: Requires glue:GetDataCatalogEncryptionSettings. Returns a single
+      account-level object per region under DataCatalogEncryptionSettings. The
+      settings always exist (defaults are DISABLED / false when never
+      configured), so no error mapping is normally required.
+  - id: aws.glue.get_security_configurations
+    provider: aws
+    service: glue
+    description: All Glue security configurations in the region, each carrying an
+      EncryptionConfiguration for S3, CloudWatch logs, and job bookmarks.
+    kind: single
+    command: aws glue get-security-configurations --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires glue:GetSecurityConfigurations. Returns an array under
+      SecurityConfigurations; each item has an EncryptionConfiguration with
+      S3Encryption (an array), CloudWatchEncryption, and JobBookmarksEncryption.
+      An empty account returns SecurityConfigurations as an empty list.

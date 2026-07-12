@@ -1,0 +1,322 @@
+[
+  {
+    "controlId": "CR-AWS-GLUE-001",
+    "cases": [
+      {
+        "name": "pass catalog encrypted with SSE-KMS",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_data_catalog_encryption_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DataCatalogEncryptionSettings": {
+                "EncryptionAtRest": {
+                  "CatalogEncryptionMode": "SSE-KMS",
+                  "SseAwsKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                },
+                "ConnectionPasswordEncryption": {
+                  "ReturnConnectionPasswordEncrypted": true,
+                  "AwsKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail catalog encryption disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_data_catalog_encryption_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DataCatalogEncryptionSettings": {
+                "EncryptionAtRest": {
+                  "CatalogEncryptionMode": "DISABLED"
+                },
+                "ConnectionPasswordEncryption": {
+                  "ReturnConnectionPasswordEncrypted": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-GLUE-002",
+    "cases": [
+      {
+        "name": "pass connection password encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_data_catalog_encryption_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DataCatalogEncryptionSettings": {
+                "EncryptionAtRest": {
+                  "CatalogEncryptionMode": "SSE-KMS",
+                  "SseAwsKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                },
+                "ConnectionPasswordEncryption": {
+                  "ReturnConnectionPasswordEncrypted": true,
+                  "AwsKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail connection password encryption disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_data_catalog_encryption_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DataCatalogEncryptionSettings": {
+                "EncryptionAtRest": {
+                  "CatalogEncryptionMode": "SSE-KMS"
+                },
+                "ConnectionPasswordEncryption": {
+                  "ReturnConnectionPasswordEncrypted": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-GLUE-003",
+    "cases": [
+      {
+        "name": "pass cloudwatch encryption SSE-KMS",
+        "expected": "pass",
+        "resourceId": "sec-cfg-encrypted",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-encrypted",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "SSE-KMS",
+                        "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "SSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "CSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail cloudwatch encryption disabled",
+        "expected": "fail",
+        "resourceId": "sec-cfg-nocw",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-nocw",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "SSE-S3"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "DISABLED"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "DISABLED"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-GLUE-004",
+    "cases": [
+      {
+        "name": "pass s3 encryption SSE-KMS",
+        "expected": "pass",
+        "resourceId": "sec-cfg-s3ok",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-s3ok",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "SSE-KMS",
+                        "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "DISABLED"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "DISABLED"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail s3 encryption disabled",
+        "expected": "fail",
+        "resourceId": "sec-cfg-s3off",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-s3off",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "DISABLED"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "SSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "CSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-GLUE-005",
+    "cases": [
+      {
+        "name": "pass job bookmarks encryption CSE-KMS",
+        "expected": "pass",
+        "resourceId": "sec-cfg-bmok",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-bmok",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "SSE-S3"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "DISABLED"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "CSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail job bookmarks encryption disabled",
+        "expected": "fail",
+        "resourceId": "sec-cfg-bmoff",
+        "records": [
+          {
+            "collectorId": "aws.glue.get_security_configurations",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "SecurityConfigurations": [
+                {
+                  "Name": "sec-cfg-bmoff",
+                  "CreatedTimeStamp": "2024-05-01T10:00:00.000000+00:00",
+                  "EncryptionConfiguration": {
+                    "S3Encryption": [
+                      {
+                        "S3EncryptionMode": "SSE-KMS",
+                        "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                      }
+                    ],
+                    "CloudWatchEncryption": {
+                      "CloudWatchEncryptionMode": "SSE-KMS",
+                      "KmsKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                    },
+                    "JobBookmarksEncryption": {
+                      "JobBookmarksEncryptionMode": "DISABLED"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

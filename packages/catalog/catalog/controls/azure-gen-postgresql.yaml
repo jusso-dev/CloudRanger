@@ -1,0 +1,173 @@
+controls:
+  - id: CR-AZURE-POSTGRESQL-100
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL server enforces SSL connections
+    description: Verifies each Azure Database for PostgreSQL Single Server has
+      sslEnforcement set to Enabled.
+    rationale: >
+      With SSL enforcement disabled, clients can connect over plaintext,
+      exposing credentials and query data to interception on the network path.
+    severity: high
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: postgresql_server_require_ssl_connection_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: sslEnforcement
+      value: Enabled
+    failMessage: PostgreSQL server does not enforce SSL connections.
+    passMessage: PostgreSQL server enforces SSL connections.
+    remediation:
+      summary: Enable SSL enforcement on the PostgreSQL server.
+      steps:
+        - Set the server's SSL enforcement to Enabled (operator action).
+        - Ensure clients are configured to connect using TLS before enabling.
+      verifyCommand: az postgres server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.1
+    references:
+      - https://learn.microsoft.com/azure/postgresql/single-server/concepts-ssl-connection-security
+  - id: CR-AZURE-POSTGRESQL-101
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL server enforces TLS 1.2 or higher
+    description: Verifies the minimalTlsVersion on each PostgreSQL Single Server is
+      TLS1_2 or above.
+    rationale: >
+      Legacy TLS versions (1.0/1.1) are vulnerable to downgrade and known
+      cryptographic attacks; enforcing TLS 1.2+ protects database sessions in
+      transit.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: postgresql_server_enforce_ssl_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: minimalTlsVersion
+      values:
+        - TLS1_2
+        - TLS1_3
+    failMessage: PostgreSQL server allows TLS below 1.2.
+    passMessage: PostgreSQL server requires TLS 1.2 or higher.
+    remediation:
+      summary: Set the minimal TLS version to TLS1_2.
+      steps:
+        - Update the server's minimal TLS version to TLS1_2 (operator action).
+        - Confirm clients support TLS 1.2 before applying to avoid outages.
+      verifyCommand: az postgres server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.1
+    references:
+      - https://learn.microsoft.com/azure/postgresql/single-server/concepts-ssl-connection-security
+  - id: CR-AZURE-POSTGRESQL-102
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL server public network access is disabled
+    description: Verifies each PostgreSQL Single Server has publicNetworkAccess set
+      to Disabled.
+    rationale: >
+      A publicly reachable PostgreSQL endpoint exposes the authentication
+      surface to the entire internet; disabling public network access forces
+      private connectivity and removes broad exposure to credential-stuffing and
+      vulnerability scanning.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: postgresql_server_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.postgresql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: PostgreSQL server allows public network access.
+    passMessage: PostgreSQL server public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Create private endpoints for consuming applications.
+        - Set the server's public network access to Disabled (operator action).
+      verifyCommand: az postgres server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.1
+    references:
+      - https://learn.microsoft.com/azure/postgresql/single-server/concepts-data-access-and-security-private-link
+  - id: CR-AZURE-POSTGRESQL-103
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL server has infrastructure double encryption enabled
+    description: Verifies each PostgreSQL Single Server has infrastructureEncryption
+      set to Enabled.
+    rationale: >
+      Infrastructure double encryption adds a second layer of encryption at rest
+      beneath the service-managed layer, mitigating the risk of a single
+      encryption algorithm or key being compromised for regulated data.
+    severity: medium
+    categories:
+      - database
+      - encryption
+    source:
+      engine: prowler
+      id: postgresql_server_infrastructure_encryption_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: infrastructureEncryption
+      value: Enabled
+    failMessage: PostgreSQL server does not have infrastructure double encryption enabled.
+    passMessage: PostgreSQL server has infrastructure double encryption enabled.
+    remediation:
+      summary: Enable infrastructure double encryption at server creation.
+      steps:
+        - Infrastructure encryption must be enabled when the server is created;
+          recreate the server with infrastructure encryption enabled and migrate
+          data (operator action).
+      verifyCommand: az postgres server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.8
+    references:
+      - https://learn.microsoft.com/azure/postgresql/single-server/concepts-infrastructure-double-encryption

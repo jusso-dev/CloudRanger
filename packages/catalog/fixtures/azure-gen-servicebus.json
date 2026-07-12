@@ -1,0 +1,252 @@
+[
+  {
+    "controlId": "CR-AZURE-SERVICEBUS-100",
+    "cases": [
+      {
+        "name": "pass tls 1.2 enforced",
+        "expected": "pass",
+        "resourceId": "sb-prod",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-prod",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "zoneRedundant": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail tls 1.0 allowed",
+        "expected": "fail",
+        "resourceId": "sb-legacy",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-legacy",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "minimumTlsVersion": "1.0",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "zoneRedundant": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SERVICEBUS-101",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "resourceId": "sb-prod",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-prod",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "zoneRedundant": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "resourceId": "sb-open",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-open",
+                "location": "westus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "zoneRedundant": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SERVICEBUS-102",
+    "cases": [
+      {
+        "name": "pass local auth disabled",
+        "expected": "pass",
+        "resourceId": "sb-prod",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-prod",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "zoneRedundant": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail sas auth allowed",
+        "expected": "fail",
+        "resourceId": "sb-sas",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-sas",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "zoneRedundant": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SERVICEBUS-103",
+    "cases": [
+      {
+        "name": "pass premium zone redundant",
+        "expected": "pass",
+        "resourceId": "sb-prod",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-prod",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "zoneRedundant": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail premium not zone redundant",
+        "expected": "fail",
+        "resourceId": "sb-prem-single",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-prem-single",
+                "location": "eastus",
+                "sku": {
+                  "name": "Premium",
+                  "tier": "Premium",
+                  "capacity": 1
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "zoneRedundant": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable standard sku",
+        "expected": "not_applicable",
+        "resourceId": "sb-std",
+        "records": [
+          {
+            "collectorId": "azure.servicebus.namespace_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sb-std",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard",
+                  "tier": "Standard"
+                },
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "zoneRedundant": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

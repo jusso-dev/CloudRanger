@@ -1,0 +1,16 @@
+collectors:
+  - id: gcp.compute.ssl_policies_list
+    provider: gcp
+    service: compute
+    description: All Compute Engine SSL policies (TLS/cipher profiles used by
+      HTTPS/SSL load balancer target proxies) in the project.
+    kind: single
+    command: gcloud compute ssl-policies list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Returns a JSON array at the root (use resourcesPath "$"). Requires
+      compute.sslPolicies.list. Each item has name, profile
+      (COMPATIBLE|MODERN|RESTRICTED|CUSTOM), minTlsVersion
+      (TLS_1_0|TLS_1_1|TLS_1_2), and, only when profile is CUSTOM, an
+      enabledFeatures array of cipher/feature strings. If no SSL policies exist
+      the command returns an empty array [] (no_results).

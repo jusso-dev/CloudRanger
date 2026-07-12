@@ -1,0 +1,37 @@
+collectors:
+  - id: azure.authorization.role_assignments_list
+    provider: azure
+    service: rbac
+    description: >
+      All Azure RBAC role assignments visible in the current subscription
+      context, including inherited assignments.
+    kind: single
+    command: az role assignment list --all --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader (and Microsoft.Authorization/roleAssignments/read) on the
+      subscription. Returns a JSON ARRAY at the root; each item has
+      principalType (User, Group, ServicePrincipal), principalName,
+      roleDefinitionName (e.g. Owner, Contributor), scope (e.g. /,
+      /subscriptions/<id>, /subscriptions/<id>/resourceGroups/<rg>),
+      principalId, roleDefinitionId, name and id. The --all flag is required to
+      include assignments scoped above the current subscription; use
+      resourcesPath "$".
+  - id: azure.authorization.custom_role_definitions
+    provider: azure
+    service: rbac
+    description: >
+      All custom (tenant-defined) Azure RBAC role definitions and the
+      permissions and assignable scopes they grant.
+    kind: single
+    command: az role definition list --custom-role-only true --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader (Microsoft.Authorization/roleDefinitions/read). Returns a
+      JSON ARRAY at the root; each item has roleName, roleType (CustomRole),
+      description, assignableScopes (array of scope strings such as / or
+      /subscriptions/<id>), and permissions (array of objects each with actions,
+      notActions, dataActions and notDataActions string arrays). Use
+      resourcesPath "$".

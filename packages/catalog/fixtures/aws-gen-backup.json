@@ -1,0 +1,101 @@
+[
+  {
+    "controlId": "CR-AWS-BACKUP-001",
+    "cases": [
+      {
+        "name": "pass - a backup plan exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.backup.list_backup_plans",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BackupPlansList": [
+                {
+                  "BackupPlanArn": "arn:aws:backup:us-east-1:111122223333:backup-plan:0b2a1c3d-1111-2222-3333-444455556666",
+                  "BackupPlanId": "0b2a1c3d-1111-2222-3333-444455556666",
+                  "CreationDate": "2026-01-15T10:22:31.123000-05:00",
+                  "VersionId": "YWMzMjZm...",
+                  "BackupPlanName": "daily-prod",
+                  "LastExecutionDate": "2026-07-12T05:00:00.000000-05:00"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - no backup plans",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.backup.list_backup_plans",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "BackupPlansList": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-BACKUP-002",
+    "cases": [
+      {
+        "name": "pass - all key types opted in",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.backup.describe_region_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ResourceTypeOptInPreference": {
+                "Aurora": true,
+                "DynamoDB": true,
+                "EBS": true,
+                "EFS": true,
+                "FSx": false,
+                "RDS": true,
+                "Storage Gateway": false
+              },
+              "ResourceTypeManagementPreference": {
+                "DynamoDB": true,
+                "EFS": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - DynamoDB not opted in",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.backup.describe_region_settings",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ResourceTypeOptInPreference": {
+                "Aurora": true,
+                "DynamoDB": false,
+                "EBS": true,
+                "EFS": true,
+                "FSx": false,
+                "RDS": true,
+                "Storage Gateway": false
+              },
+              "ResourceTypeManagementPreference": {
+                "DynamoDB": false,
+                "EFS": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

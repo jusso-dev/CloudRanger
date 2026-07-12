@@ -1,0 +1,151 @@
+controls:
+  - id: CR-AZURE-SERVICEBUS-100
+    version: 1.0.0
+    provider: azure
+    service: servicebus
+    title: Service Bus namespace requires TLS 1.2 or higher
+    description: Verifies minimumTlsVersion is 1.2 so legacy TLS 1.0/1.1 clients
+      cannot connect.
+    rationale: >
+      TLS 1.0 and 1.1 have known cryptographic weaknesses; permitting them lets
+      clients negotiate breakable transport encryption for messages in transit
+      and fails modern compliance baselines.
+    severity: medium
+    categories:
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: servicebus_namespace_minimum_tls_version
+      license: Apache-2.0
+    collector: azure.servicebus.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: minimumTlsVersion
+      value: "1.2"
+    failMessage: Service Bus namespace permits TLS below 1.2.
+    passMessage: Service Bus namespace requires TLS 1.2.
+    remediation:
+      summary: Set the namespace minimum TLS version to 1.2.
+      steps:
+        - Confirm no legacy client depends on TLS 1.0/1.1.
+        - Set minimumTlsVersion to 1.2 on the namespace (operator action).
+      verifyCommand: az servicebus namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/service-bus-messaging/transport-layer-security-enforce-minimum-version
+  - id: CR-AZURE-SERVICEBUS-101
+    version: 1.0.0
+    provider: azure
+    service: servicebus
+    title: Service Bus namespace disables public network access
+    description: Verifies publicNetworkAccess is Disabled so the namespace is
+      reachable only via private endpoints.
+    rationale: >
+      A Service Bus namespace with public network access enabled is reachable
+      from the internet; combined with a leaked SAS key or lax network controls
+      this is a direct message-tampering and data-exfiltration path.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: servicebus_namespace_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.servicebus.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: Service Bus namespace allows public network access.
+    passMessage: Service Bus namespace has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the namespace.
+        - Disable public network access on the namespace (operator action).
+      verifyCommand: az servicebus namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/service-bus-messaging/private-link-service
+  - id: CR-AZURE-SERVICEBUS-102
+    version: 1.0.0
+    provider: azure
+    service: servicebus
+    title: Service Bus namespace disables local (SAS) authentication
+    description: Verifies disableLocalAuth is true so only Microsoft Entra ID (RBAC)
+      authentication is permitted.
+    rationale: >
+      Shared Access Signature keys grant broad data-plane access, cannot be
+      scoped per identity, and are frequently shared or leaked. Disabling local
+      auth forces auditable Entra ID identities with RBAC.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: servicebus_namespace_disable_local_authentication
+      license: Apache-2.0
+    collector: azure.servicebus.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: disableLocalAuth
+      value: true
+    failMessage: Service Bus namespace allows local (SAS key) authentication.
+    passMessage: Service Bus namespace requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true.
+      steps:
+        - Migrate clients to Microsoft Entra ID token authentication with RBAC.
+        - Disable local (SAS) authentication on the namespace (operator action).
+      verifyCommand: az servicebus namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/service-bus-messaging/service-bus-authentication-and-authorization
+  - id: CR-AZURE-SERVICEBUS-103
+    version: 1.0.0
+    provider: azure
+    service: servicebus
+    title: Service Bus Premium namespace is zone redundant
+    description: Verifies zoneRedundant is true on Premium namespaces so the
+      namespace survives an availability-zone failure.
+    rationale: >
+      A non zone-redundant namespace is served from a single availability zone;
+      a zone outage takes the messaging backbone offline and can drop or delay
+      in-flight messages, breaking dependent workloads.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: servicebus_namespace_zone_redundant
+      license: Apache-2.0
+    collector: azure.servicebus.namespace_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: sku.name
+      value: Premium
+    passWhen:
+      op: equals
+      path: zoneRedundant
+      value: true
+    failMessage: Service Bus Premium namespace is not zone redundant.
+    passMessage: Service Bus Premium namespace is zone redundant.
+    remediation:
+      summary: Enable zone redundancy on the Premium namespace.
+      steps:
+        - Confirm the namespace region supports availability zones.
+        - Enable zoneRedundant on the namespace at creation time (operator
+          action; zone redundancy cannot be toggled on an existing namespace).
+      verifyCommand: az servicebus namespace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/service-bus-messaging/service-bus-outages-disasters

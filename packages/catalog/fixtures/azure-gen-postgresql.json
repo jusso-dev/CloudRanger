@@ -1,0 +1,202 @@
+[
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-100",
+    "cases": [
+      {
+        "name": "ssl enforcement enabled passes",
+        "expected": "pass",
+        "resourceId": "pg-prod",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-prod",
+                "name": "pg-prod",
+                "location": "eastus",
+                "version": "11",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "userVisibleState": "Ready"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ssl enforcement disabled fails",
+        "expected": "fail",
+        "resourceId": "pg-legacy",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-legacy",
+                "name": "pg-legacy",
+                "location": "eastus",
+                "version": "11",
+                "sslEnforcement": "Disabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "userVisibleState": "Ready"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-101",
+    "cases": [
+      {
+        "name": "tls 1.2 passes",
+        "expected": "pass",
+        "resourceId": "pg-prod",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-prod",
+                "name": "pg-prod",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tls 1.0 fails",
+        "expected": "fail",
+        "resourceId": "pg-legacy",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-legacy",
+                "name": "pg-legacy",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_0",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-102",
+    "cases": [
+      {
+        "name": "public network access disabled passes",
+        "expected": "pass",
+        "resourceId": "pg-prod",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-prod",
+                "name": "pg-prod",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network access enabled fails",
+        "expected": "fail",
+        "resourceId": "pg-public",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-public",
+                "name": "pg-public",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Enabled",
+                "infrastructureEncryption": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-103",
+    "cases": [
+      {
+        "name": "infrastructure encryption enabled passes",
+        "expected": "pass",
+        "resourceId": "pg-prod",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-prod",
+                "name": "pg-prod",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "infrastructure encryption disabled fails",
+        "expected": "fail",
+        "resourceId": "pg-single-enc",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforPostgreSQL/servers/pg-single-enc",
+                "name": "pg-single-enc",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Disabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

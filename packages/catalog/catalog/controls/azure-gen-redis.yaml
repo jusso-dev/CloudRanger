@@ -1,0 +1,197 @@
+controls:
+  - id: CR-AZURE-REDIS-100
+    version: 1.0.0
+    provider: azure
+    service: redis
+    title: Redis cache has the non-SSL port disabled
+    description: The plaintext non-SSL Redis port (6379) is disabled so all client
+      traffic must use TLS.
+    rationale: With the non-SSL port enabled, cache keys and data traverse the
+      network in cleartext and can be intercepted by an on-path attacker.
+    severity: high
+    categories:
+      - encryption
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: redis_enable_non_ssl_port_disabled
+      license: Apache-2.0
+    collector: azure.redis.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: enableNonSslPort
+      value: false
+    failMessage: Redis cache has the non-SSL (plaintext) port 6379 enabled.
+    passMessage: Redis cache non-SSL port is disabled; only TLS connections are accepted.
+    remediation:
+      summary: Disable the non-SSL port so only TLS connections are allowed.
+      steps:
+        - Set enableNonSslPort to false on the cache via az redis update --set
+          enableNonSslPort=false.
+        - Update client connection strings to use the SSL port (6380).
+      verifyCommand: az redis list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-configure#access-ports
+      - https://learn.microsoft.com/en-us/cli/azure/redis
+  - id: CR-AZURE-REDIS-101
+    version: 1.0.0
+    provider: azure
+    service: redis
+    title: Redis cache enforces a minimum TLS version of 1.2
+    description: The cache requires clients to connect using TLS 1.2 or higher.
+    rationale: TLS 1.0 and 1.1 have known cryptographic weaknesses; allowing them
+      lets clients negotiate insecure ciphers that can be downgraded or
+      decrypted.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: redis_minimum_tls_version_1_2
+      license: Apache-2.0
+    collector: azure.redis.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: minimumTlsVersion
+      value: "1.2"
+    failMessage: Redis cache does not enforce a minimum TLS version of 1.2.
+    passMessage: Redis cache enforces a minimum TLS version of 1.2.
+    remediation:
+      summary: Set the minimum TLS version to 1.2.
+      steps:
+        - Run az redis update --name <cache> --resource-group <rg> --set
+          minimumTlsVersion=1.2.
+        - Confirm all clients support TLS 1.2 before enforcing.
+      verifyCommand: az redis list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-remove-tls-10-11
+      - https://learn.microsoft.com/en-us/cli/azure/redis
+  - id: CR-AZURE-REDIS-102
+    version: 1.0.0
+    provider: azure
+    service: redis
+    title: Redis cache has public network access disabled
+    description: The cache rejects connections from public networks; access is only
+      via private endpoints.
+    rationale: A publicly reachable Redis cache expands the attack surface to the
+      entire internet, exposing it to credential attacks and exploitation of any
+      auth weakness.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: redis_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.redis.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: Redis cache allows public network access.
+    passMessage: Redis cache public network access is disabled; only private
+      endpoints can connect.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Configure a private endpoint for the cache.
+        - Set publicNetworkAccess to Disabled via az redis update --set
+          publicNetworkAccess=Disabled.
+      verifyCommand: az redis list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-private-link
+      - https://learn.microsoft.com/en-us/cli/azure/redis
+  - id: CR-AZURE-REDIS-103
+    version: 1.0.0
+    provider: azure
+    service: redis
+    title: Redis cache is running a current major Redis version
+    description: The cache runs Redis major version 6 or newer, which receives
+      security updates.
+    rationale: End-of-life Redis versions (e.g. 4.x) stop receiving security
+      patches, leaving known vulnerabilities unpatched.
+    severity: medium
+    categories:
+      - resilience
+      - patching
+    source:
+      engine: prowler
+      id: redis_version_recommended
+      license: Apache-2.0
+    collector: azure.redis.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: gte
+      path: redisVersion
+      value: 6
+    failMessage: Redis cache is running an outdated major Redis version.
+    passMessage: Redis cache is running a current (>= 6.x) Redis version.
+    remediation:
+      summary: Upgrade the cache to Redis 6 or later.
+      steps:
+        - Plan an upgrade window and update clients for compatibility.
+        - Upgrade the cache via the portal or az redis update --set
+          redisVersion=6.
+      verifyCommand: az redis list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-version
+      - https://learn.microsoft.com/en-us/cli/azure/redis
+  - id: CR-AZURE-REDIS-104
+    version: 1.0.0
+    provider: azure
+    service: redis
+    title: Premium Redis cache is deployed with zone redundancy
+    description: Premium-tier caches are provisioned across multiple availability
+      zones for high availability.
+    rationale: A single-zone cache is a single point of failure; a zonal outage
+      takes the cache and dependent applications offline.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: redis_zone_redundant
+      license: Apache-2.0
+    collector: azure.redis.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: sku.name
+      value: Premium
+    passWhen:
+      op: lengthGt
+      path: zones
+      value: 1
+    failMessage: Premium Redis cache is not zone redundant (deployed in a single zone).
+    passMessage: Premium Redis cache is deployed across multiple availability zones.
+    remediation:
+      summary: Deploy the Premium cache across multiple availability zones.
+      steps:
+        - Zone redundancy is set at creation; recreate the cache with --zones or
+          --zonal-allocation-policy Automatic.
+        - Migrate data using export/import if needed.
+      verifyCommand: az redis list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-high-availability#zone-redundancy
+      - https://learn.microsoft.com/en-us/cli/azure/redis

@@ -1,0 +1,290 @@
+[
+  {
+    "controlId": "CR-AZURE-MYSQL-100",
+    "cases": [
+      {
+        "name": "pass ssl enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-secure",
+                "name": "mysql-secure",
+                "location": "eastus",
+                "version": "8.0",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "userVisibleState": "Ready",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled",
+                  "storageMB": 51200
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail ssl disabled",
+        "expected": "fail",
+        "resourceId": "mysql-plain",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-plain",
+                "name": "mysql-plain",
+                "location": "eastus",
+                "version": "5.7",
+                "sslEnforcement": "Disabled",
+                "minimalTlsVersion": "TLSEnforcementDisabled",
+                "publicNetworkAccess": "Enabled",
+                "infrastructureEncryption": "Disabled",
+                "userVisibleState": "Ready",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Disabled",
+                  "storageMB": 51200
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-101",
+    "cases": [
+      {
+        "name": "pass tls 1.2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-secure",
+                "name": "mysql-secure",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail tls 1.0",
+        "expected": "fail",
+        "resourceId": "mysql-legacy-tls",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-legacy-tls",
+                "name": "mysql-legacy-tls",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_0",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-102",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-private",
+                "name": "mysql-private",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "resourceId": "mysql-public",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-public",
+                "name": "mysql-public",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Enabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-103",
+    "cases": [
+      {
+        "name": "pass infra encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-double-enc",
+                "name": "mysql-double-enc",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail infra encryption disabled",
+        "expected": "fail",
+        "resourceId": "mysql-single-enc",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-single-enc",
+                "name": "mysql-single-enc",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Disabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-104",
+    "cases": [
+      {
+        "name": "pass geo redundant backup enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-geo",
+                "name": "mysql-geo",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 14,
+                  "geoRedundantBackup": "Enabled",
+                  "storageMB": 51200
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail geo redundant backup disabled",
+        "expected": "fail",
+        "resourceId": "mysql-local-backup",
+        "records": [
+          {
+            "collectorId": "azure.mysql.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/aaaa/resourceGroups/rg1/providers/Microsoft.DBforMySQL/servers/mysql-local-backup",
+                "name": "mysql-local-backup",
+                "location": "eastus",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "Disabled",
+                "infrastructureEncryption": "Enabled",
+                "storageProfile": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Disabled",
+                  "storageMB": 51200
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

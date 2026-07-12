@@ -1,0 +1,210 @@
+controls:
+  - id: CR-AZURE-MYSQL-100
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL server enforces SSL connections
+    description: >
+      Verifies each Azure Database for MySQL Single Server has sslEnforcement
+      set to Enabled so only encrypted connections are accepted.
+    rationale: >
+      With SSL enforcement disabled, clients can connect over plaintext,
+      exposing credentials and query data to network interception and
+      man-in-the-middle attacks.
+    severity: high
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: mysql_server_ssl_enforcement_enabled
+      license: Apache-2.0
+    collector: azure.mysql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: sslEnforcement
+      value: Enabled
+    failMessage: MySQL server does not enforce SSL connections.
+    passMessage: MySQL server enforces SSL connections.
+    remediation:
+      summary: Enable SSL enforcement on the MySQL server.
+      steps:
+        - Set the server's SSL enforcement to Enabled (operator action).
+        - Update clients to connect using SSL/TLS with the Azure CA certificate.
+      verifyCommand: az mysql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.1
+    references:
+      - https://learn.microsoft.com/azure/mysql/single-server/concepts-ssl-connection-security
+  - id: CR-AZURE-MYSQL-101
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL server enforces TLS 1.2 or higher
+    description: >
+      Verifies the minimalTlsVersion on each MySQL Single Server is TLS1_2,
+      rejecting connections negotiated with older TLS protocol versions.
+    rationale: >
+      Legacy TLS versions (1.0/1.1) are vulnerable to downgrade and interception
+      attacks; requiring TLS 1.2 protects database sessions in transit.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: mysql_server_minimal_tls_version_12
+      license: Apache-2.0
+    collector: azure.mysql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: minimalTlsVersion
+      value: TLS1_2
+    failMessage: MySQL server allows TLS below 1.2.
+    passMessage: MySQL server requires TLS 1.2.
+    remediation:
+      summary: Set the minimal TLS version to TLS1_2.
+      steps:
+        - Update the server's minimal TLS version to TLS1_2 (operator action).
+        - Confirm clients support TLS 1.2 before enforcing.
+      verifyCommand: az mysql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.2
+    references:
+      - https://learn.microsoft.com/azure/mysql/single-server/concepts-ssl-connection-security
+  - id: CR-AZURE-MYSQL-102
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL server public network access is disabled
+    description: >
+      Verifies each MySQL Single Server has publicNetworkAccess set to Disabled
+      so the server is reachable only over private connectivity.
+    rationale: >
+      A publicly reachable MySQL endpoint exposes the authentication surface to
+      the entire internet, enabling credential-stuffing, brute forcing and
+      vulnerability scanning.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: mysql_server_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.mysql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: MySQL server allows public network access.
+    passMessage: MySQL server public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Create private endpoints for consuming applications.
+        - Set the server's public network access to Disabled (operator action).
+      verifyCommand: az mysql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.1
+    references:
+      - https://learn.microsoft.com/azure/mysql/single-server/concepts-data-access-security-private-link
+  - id: CR-AZURE-MYSQL-103
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL server has infrastructure (double) encryption enabled
+    description: >
+      Verifies each MySQL Single Server has infrastructureEncryption set to
+      Enabled, adding a second layer of data-at-rest encryption.
+    rationale: >
+      Infrastructure encryption adds a second FIPS 140-2 encryption layer
+      beneath the default service-managed encryption, mitigating the risk of a
+      single encryption-layer compromise for sensitive workloads.
+    severity: medium
+    categories:
+      - database
+      - encryption
+    source:
+      engine: prowler
+      id: mysql_server_infrastructure_encryption_enabled
+      license: Apache-2.0
+    collector: azure.mysql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: infrastructureEncryption
+      value: Enabled
+    failMessage: MySQL server does not have infrastructure encryption enabled.
+    passMessage: MySQL server has infrastructure encryption enabled.
+    remediation:
+      summary: Enable infrastructure encryption at server creation.
+      steps:
+        - Infrastructure encryption must be enabled when the server is created;
+          re-create the server with infrastructure encryption enabled and
+          migrate data (operator action).
+      verifyCommand: az mysql server list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/mysql/single-server/concepts-infrastructure-double-encryption
+  - id: CR-AZURE-MYSQL-104
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL server geo-redundant backup is enabled
+    description: >
+      Verifies each MySQL Single Server has storageProfile.geoRedundantBackup
+      set to Enabled so backups are replicated to a paired region.
+    rationale: >
+      Without geo-redundant backups, a regional outage or disaster can render
+      backups inaccessible, preventing recovery of the database in a paired
+      region.
+    severity: low
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: mysql_server_geo_redundant_backup_enabled
+      license: Apache-2.0
+    collector: azure.mysql.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: storageProfile.geoRedundantBackup
+      value: Enabled
+    failMessage: MySQL server geo-redundant backup is disabled.
+    passMessage: MySQL server geo-redundant backup is enabled.
+    remediation:
+      summary: Enable geo-redundant backup on the MySQL server.
+      steps:
+        - Geo-redundant backup is selected at server creation for Single Server;
+          re-create the server with geo-redundant backup enabled and migrate
+          data (operator action).
+      verifyCommand: az mysql server list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/mysql/single-server/concepts-backup

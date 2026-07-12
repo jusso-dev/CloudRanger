@@ -1,0 +1,120 @@
+controls:
+  - id: CR-AWS-EMR-001
+    version: 1.0.0
+    provider: aws
+    service: emr
+    title: EMR block public access is enabled
+    description: The account-level EMR block public access configuration for the
+      region has BlockPublicSecurityGroupRules set to true.
+    rationale: Without EMR block public access, a cluster can be launched with a
+      security group that opens ports to the internet, exposing master and core
+      nodes to attackers.
+    severity: high
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: emr_cluster_account_public_block_enabled
+      license: Apache-2.0
+    collector: aws.emr.get_block_public_access_configuration
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: BlockPublicAccessConfiguration.BlockPublicSecurityGroupRules
+      value: true
+    failMessage: EMR block public access is disabled for this region.
+    passMessage: EMR block public access is enabled for this region.
+    remediation:
+      summary: Enable EMR block public access for the region.
+      steps:
+        - In the EMR console under Block public access, enable the setting.
+        - Or run aws emr put-block-public-access-configuration with
+          BlockPublicSecurityGroupRules set to true.
+      verifyCommand: aws emr get-block-public-access-configuration --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-block-public-access.html
+  - id: CR-AWS-EMR-002
+    version: 1.0.0
+    provider: aws
+    service: emr
+    title: EMR block public access permits no world-open port ranges
+    description: When EMR block public access is enabled, its list of permitted
+      public security group rule ranges only allows SSH (port 22).
+    rationale: Permitting additional public port ranges under block public access
+      re-opens the very exposure the feature is meant to prevent, allowing
+      clusters to be reachable from the internet on those ports.
+    severity: medium
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: emr_cluster_account_public_block_enabled
+      license: Apache-2.0
+    collector: aws.emr.get_block_public_access_configuration
+    resourcesPath: $
+    resourceIdField: $scope
+    applicableWhen:
+      op: equals
+      path: BlockPublicAccessConfiguration.BlockPublicSecurityGroupRules
+      value: true
+    passWhen:
+      op: noneItem
+      path: BlockPublicAccessConfiguration.PermittedPublicSecurityGroupRuleRanges
+      condition:
+        op: notEquals
+        path: MinRange
+        value: 22
+    failMessage: EMR block public access permits public port ranges other than SSH (22).
+    passMessage: EMR block public access only permits SSH (22).
+    remediation:
+      summary: Restrict permitted public security group rule ranges to port 22.
+      steps:
+        - Review PermittedPublicSecurityGroupRuleRanges in the block public
+          access configuration.
+        - Remove any range other than MinRange/MaxRange 22 via
+          put-block-public-access-configuration.
+      verifyCommand: aws emr get-block-public-access-configuration --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-block-public-access.html
+  - id: CR-AWS-EMR-003
+    version: 1.0.0
+    provider: aws
+    service: emr
+    title: No EMR cluster is in a TERMINATED_WITH_ERRORS state
+    description: No listed EMR cluster has a Status.State of TERMINATED_WITH_ERRORS.
+    rationale: A cluster that terminated with errors indicates a failed or
+      interrupted job or misconfiguration; unnoticed failures undermine data
+      pipeline reliability and can leave partial or inconsistent results.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: emr_cluster_publicly_accesible
+      license: Apache-2.0
+    collector: aws.emr.list_clusters
+    resourcesPath: Clusters
+    resourceIdField: Id
+    resourceNameField: Name
+    passWhen:
+      op: notEquals
+      path: Status.State
+      value: TERMINATED_WITH_ERRORS
+    failMessage: EMR cluster terminated with errors.
+    passMessage: EMR cluster is not in a terminated-with-errors state.
+    remediation:
+      summary: Investigate and remediate the failed cluster.
+      steps:
+        - Review Status.StateChangeReason for the terminating error.
+        - Fix the underlying configuration or job and relaunch the cluster.
+      verifyCommand: aws emr list-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-cluster-status.html
