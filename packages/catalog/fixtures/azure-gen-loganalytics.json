@@ -1,0 +1,202 @@
+[
+  {
+    "controlId": "CR-AZURE-LOGANALYTICS-100",
+    "cases": [
+      {
+        "name": "pass ingestion disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-secure",
+                "name": "law-secure",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "11111111-1111-1111-1111-111111111111",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Disabled",
+                "publicNetworkAccessForQuery": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail ingestion enabled",
+        "expected": "fail",
+        "resourceId": "law-open",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-open",
+                "name": "law-open",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "22222222-2222-2222-2222-222222222222",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 120,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Disabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-LOGANALYTICS-101",
+    "cases": [
+      {
+        "name": "pass query disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-secure",
+                "name": "law-secure",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "11111111-1111-1111-1111-111111111111",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Disabled",
+                "publicNetworkAccessForQuery": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail query enabled",
+        "expected": "fail",
+        "resourceId": "law-open",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-open",
+                "name": "law-open",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "22222222-2222-2222-2222-222222222222",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Disabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-LOGANALYTICS-102",
+    "cases": [
+      {
+        "name": "pass retention 90",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-secure",
+                "name": "law-secure",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "11111111-1111-1111-1111-111111111111",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Disabled",
+                "publicNetworkAccessForQuery": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass retention 365",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-long",
+                "name": "law-long",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "33333333-3333-3333-3333-333333333333",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 365,
+                "publicNetworkAccessForIngestion": "Disabled",
+                "publicNetworkAccessForQuery": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail retention 30",
+        "expected": "fail",
+        "resourceId": "law-short",
+        "records": [
+          {
+            "collectorId": "azure.loganalytics.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-logs/providers/Microsoft.OperationalInsights/workspaces/law-short",
+                "name": "law-short",
+                "location": "eastus",
+                "resourceGroup": "rg-logs",
+                "provisioningState": "Succeeded",
+                "customerId": "44444444-4444-4444-4444-444444444444",
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

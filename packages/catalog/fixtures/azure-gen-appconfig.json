@@ -1,0 +1,219 @@
+[
+  {
+    "controlId": "CR-AZURE-APPCONFIG-100",
+    "cases": [
+      {
+        "name": "public network access disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-prod",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-prod",
+                "location": "eastus",
+                "endpoint": "https://appconf-prod.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "softDeleteRetentionInDays": 7,
+                "enablePurgeProtection": true,
+                "encryption": {
+                  "keyVaultProperties": {
+                    "keyIdentifier": "https://kv.vault.azure.net/keys/appconf/abc123",
+                    "identityClientId": null
+                  }
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network access enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-open",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-open",
+                "location": "eastus",
+                "endpoint": "https://appconf-open.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "encryption": {
+                  "keyVaultProperties": null
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network access unset (null) fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-null",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-null",
+                "location": "eastus",
+                "endpoint": "https://appconf-null.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": null,
+                "disableLocalAuth": false,
+                "encryption": {
+                  "keyVaultProperties": null
+                },
+                "sku": {
+                  "name": "Free"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPCONFIG-101",
+    "cases": [
+      {
+        "name": "local auth disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-prod",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-prod",
+                "location": "eastus",
+                "endpoint": "https://appconf-prod.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "encryption": {
+                  "keyVaultProperties": {
+                    "keyIdentifier": "https://kv.vault.azure.net/keys/appconf/abc123"
+                  }
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "local auth enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-keys",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-keys",
+                "location": "eastus",
+                "endpoint": "https://appconf-keys.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "encryption": {
+                  "keyVaultProperties": null
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APPCONFIG-102",
+    "cases": [
+      {
+        "name": "customer-managed key configured passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-cmk",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-cmk",
+                "location": "eastus",
+                "endpoint": "https://appconf-cmk.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Disabled",
+                "disableLocalAuth": true,
+                "encryption": {
+                  "keyVaultProperties": {
+                    "keyIdentifier": "https://kv-prod.vault.azure.net/keys/appconf-key/9f8e7d6c",
+                    "identityClientId": "11111111-2222-3333-4444-555555555555"
+                  }
+                },
+                "identity": {
+                  "type": "SystemAssigned"
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "platform-managed key only fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.appconfig.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "appconf-pmk",
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.AppConfiguration/configurationStores/appconf-pmk",
+                "location": "eastus",
+                "endpoint": "https://appconf-pmk.azconfig.io",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "encryption": {
+                  "keyVaultProperties": null
+                },
+                "sku": {
+                  "name": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

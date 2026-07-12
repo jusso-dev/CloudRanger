@@ -1,0 +1,17 @@
+collectors:
+  - id: gcp.pubsub.topics_list
+    provider: gcp
+    service: pubsub
+    description: All Pub/Sub topics (metadata) in the project.
+    kind: single
+    command: gcloud pubsub topics list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; each element is a Topic resource
+      mirroring the Pub/Sub REST Topic resource. Fields include: name
+      (projects/<project>/topics/<id>), kmsKeyName (fully-qualified Cloud KMS
+      key when CMEK is enabled, absent otherwise), messageStoragePolicy (object
+      with allowedPersistenceRegions array), messageRetentionDuration (duration
+      string like "604800s", absent when not configured), schemaSettings
+      (schema, encoding), and labels. Requires pubsub.topics.list.

@@ -1,0 +1,195 @@
+[
+  {
+    "controlId": "CR-GCP-BIGQUERY-100",
+    "cases": [
+      {
+        "name": "pass - dataset has default CMEK",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "analytics",
+            "exitCode": 0,
+            "output": {
+              "kind": "bigquery#dataset",
+              "id": "my-project:analytics",
+              "datasetReference": {
+                "datasetId": "analytics",
+                "projectId": "my-project"
+              },
+              "location": "US",
+              "defaultEncryptionConfiguration": {
+                "kmsKeyName": "projects/my-project/locations/us/keyRings/bq-ring/cryptoKeys/bq-key"
+              },
+              "access": [
+                {
+                  "role": "OWNER",
+                  "specialGroup": "projectOwners"
+                },
+                {
+                  "role": "READER",
+                  "userByEmail": "analyst@example.com"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - no default encryption configuration (Google-managed only)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "raw_logs",
+            "exitCode": 0,
+            "output": {
+              "kind": "bigquery#dataset",
+              "id": "my-project:raw_logs",
+              "datasetReference": {
+                "datasetId": "raw_logs",
+                "projectId": "my-project"
+              },
+              "location": "US",
+              "access": [
+                {
+                  "role": "OWNER",
+                  "specialGroup": "projectOwners"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "error - permission denied on describe",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "restricted",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.alpha.bq.datasets.describe) PERMISSION_DENIED: Access Denied: Dataset my-project:restricted: Permission bigquery.datasets.get denied"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-BIGQUERY-101",
+    "cases": [
+      {
+        "name": "pass - only specific principals granted",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "analytics",
+            "exitCode": 0,
+            "output": {
+              "kind": "bigquery#dataset",
+              "id": "my-project:analytics",
+              "datasetReference": {
+                "datasetId": "analytics",
+                "projectId": "my-project"
+              },
+              "location": "US",
+              "access": [
+                {
+                  "role": "OWNER",
+                  "specialGroup": "projectOwners"
+                },
+                {
+                  "role": "READER",
+                  "specialGroup": "projectReaders"
+                },
+                {
+                  "role": "WRITER",
+                  "groupByEmail": "data-team@example.com"
+                },
+                {
+                  "role": "READER",
+                  "userByEmail": "analyst@example.com"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - shared with allAuthenticatedUsers via specialGroup",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "public_ds",
+            "exitCode": 0,
+            "output": {
+              "kind": "bigquery#dataset",
+              "id": "my-project:public_ds",
+              "datasetReference": {
+                "datasetId": "public_ds",
+                "projectId": "my-project"
+              },
+              "location": "US",
+              "access": [
+                {
+                  "role": "OWNER",
+                  "specialGroup": "projectOwners"
+                },
+                {
+                  "role": "READER",
+                  "specialGroup": "allAuthenticatedUsers"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - shared with allUsers via iamMember",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "wide_open",
+            "exitCode": 0,
+            "output": {
+              "kind": "bigquery#dataset",
+              "id": "my-project:wide_open",
+              "datasetReference": {
+                "datasetId": "wide_open",
+                "projectId": "my-project"
+              },
+              "location": "US",
+              "access": [
+                {
+                  "role": "OWNER",
+                  "specialGroup": "projectOwners"
+                },
+                {
+                  "role": "READER",
+                  "iamMember": "allUsers"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "error - permission denied on describe",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.bigquery.dataset_describe",
+            "resourceKey": "restricted",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.alpha.bq.datasets.describe) PERMISSION_DENIED: Access Denied: Dataset my-project:restricted: Permission bigquery.datasets.get denied"
+          }
+        ]
+      }
+    ]
+  }
+]

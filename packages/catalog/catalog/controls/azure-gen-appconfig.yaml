@@ -1,0 +1,114 @@
+controls:
+  - id: CR-AZURE-APPCONFIG-100
+    version: 1.0.0
+    provider: azure
+    service: appconfig
+    title: App Configuration store disables public network access
+    description: Verifies publicNetworkAccess is Disabled so the store is reachable
+      only via private endpoints.
+    rationale: >
+      An App Configuration store with public network access enabled is reachable
+      from the internet; combined with a leaked access key or lax auth this is a
+      direct path to read application configuration and connection strings.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: appconfiguration_configuration_stores_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.appconfig.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: App Configuration store allows public network access.
+    passMessage: App Configuration store has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the App Configuration store.
+        - Disable public network access on the store (operator action).
+      verifyCommand: az appconfig list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-app-configuration/concept-private-endpoint
+  - id: CR-AZURE-APPCONFIG-101
+    version: 1.0.0
+    provider: azure
+    service: appconfig
+    title: App Configuration store disables local (key-based) authentication
+    description: Verifies disableLocalAuth is true so only Microsoft Entra ID (RBAC)
+      authentication is permitted.
+    rationale: >
+      Access keys grant full data-plane access to all configuration and cannot
+      be scoped; they are frequently embedded in code or leaked. Disabling local
+      auth forces auditable Entra ID identities with RBAC.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: appconfiguration_configuration_stores_local_authentication_disabled
+      license: Apache-2.0
+    collector: azure.appconfig.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: disableLocalAuth
+      value: true
+    failMessage: App Configuration store allows key-based (local) authentication.
+    passMessage: App Configuration store requires Entra ID authentication.
+    remediation:
+      summary: Set disableLocalAuth to true.
+      steps:
+        - Migrate clients to Microsoft Entra ID token authentication with RBAC.
+        - Disable local (key-based) authentication on the store (operator
+          action).
+      verifyCommand: az appconfig list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-app-configuration/concept-enable-rbac
+  - id: CR-AZURE-APPCONFIG-102
+    version: 1.0.0
+    provider: azure
+    service: appconfig
+    title: App Configuration store uses a customer-managed key for encryption
+    description: Verifies encryption.keyVaultProperties references a Key Vault key
+      so data is encrypted with a customer-managed key (CMK) rather than only
+      the platform-managed key.
+    rationale: >
+      Default encryption uses a Microsoft-managed key. A customer-managed key in
+      Key Vault gives the organization control over the key lifecycle (rotation,
+      revocation, access policy), which is required by many compliance
+      baselines.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: appconfiguration_configuration_stores_customer_managed_key_enabled
+      license: Apache-2.0
+    collector: azure.appconfig.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: exists
+      path: encryption.keyVaultProperties.keyIdentifier
+    failMessage: App Configuration store uses only the platform-managed key (no CMK).
+    passMessage: App Configuration store is encrypted with a customer-managed key.
+    remediation:
+      summary: Configure a customer-managed key from Key Vault on the store.
+      steps:
+        - Create or select a Key Vault key and grant the store's managed
+          identity wrap/unwrap permissions.
+        - Set the store's encryption.keyVaultProperties to the key identifier
+          (operator action).
+      verifyCommand: az appconfig list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-app-configuration/concept-customer-managed-keys

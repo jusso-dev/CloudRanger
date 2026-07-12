@@ -1,0 +1,86 @@
+controls:
+  - id: CR-AWS-WAFV2-001
+    version: 1.0.0
+    provider: aws
+    service: wafv2
+    title: At least one regional WAFv2 web ACL exists
+    description: The region has at least one WAFv2 web ACL defined at REGIONAL scope
+      so that regional resources such as ALBs and API Gateway stages can be
+      protected.
+    rationale: Without any regional web ACL, layer-7 resources like Application Load
+      Balancers and API Gateway have no WAF protection available in the region,
+      leaving them exposed to common web exploits (SQL injection, XSS) and bot
+      or volumetric floods.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+      - resilience
+    source:
+      engine: prowler
+      id: wafv2_webacl_with_rules
+      license: Apache-2.0
+    collector: aws.wafv2.list_web_acls
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: lengthGt
+      path: WebACLs
+      value: 0
+    failMessage: No regional WAFv2 web ACL exists in this region.
+    passMessage: At least one regional WAFv2 web ACL exists in this region.
+    remediation:
+      summary: Create a regional WAFv2 web ACL and associate it with your regional
+        resources.
+      steps:
+        - Create a WAFv2 web ACL with scope REGIONAL containing at least one
+          managed or custom rule group.
+        - Associate the web ACL with the ALB, API Gateway stage or other
+          supported regional resources you need to protect.
+      verifyCommand: aws wafv2 list-web-acls --scope REGIONAL --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/waf/latest/developerguide/web-acl.html
+      - https://docs.aws.amazon.com/cli/latest/reference/wafv2/list-web-acls.html
+  - id: CR-AWS-WAFV2-002
+    version: 1.0.0
+    provider: aws
+    service: wafv2
+    title: Regional web ACLs have a meaningful description
+    description: Every regional WAFv2 web ACL has a non-empty Description so its
+      purpose and protected resources are documented.
+    rationale: Web ACLs left with no description are hard to attribute during
+      incident response and change review, making it easy to leave orphaned or
+      misconfigured ACLs in place that silently fail to protect resources.
+    severity: informational
+    categories:
+      - network
+      - governance
+    source:
+      engine: prowler
+      id: wafv2_webacl_with_rules
+      license: Apache-2.0
+    collector: aws.wafv2.list_web_acls
+    resourcesPath: WebACLs
+    resourceIdField: ARN
+    resourceNameField: Name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Description
+        - op: not
+          expr:
+            op: isEmpty
+            path: Description
+    failMessage: Web ACL has no description documenting its purpose.
+    passMessage: Web ACL has a documented description.
+    remediation:
+      summary: Add a description to the web ACL.
+      steps:
+        - Update the web ACL to include a Description explaining its purpose and
+          which resources it protects.
+      verifyCommand: aws wafv2 list-web-acls --scope REGIONAL --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/waf/latest/developerguide/web-acl.html

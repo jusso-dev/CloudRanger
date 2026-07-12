@@ -1,0 +1,20 @@
+collectors:
+  - id: azure.loganalytics.workspaces_list
+    provider: azure
+    service: loganalytics
+    description: >
+      All Azure Monitor Log Analytics workspaces in the subscription, including
+      public network access settings for ingestion and query and data retention.
+    kind: single
+    command: az monitor log-analytics workspace list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription (Microsoft.OperationalInsights/
+      workspaces/read). 'az monitor log-analytics workspace list' returns a JSON
+      ARRAY at the root; use resourcesPath "$". The SDK flattens ARM properties
+      to the top level of each workspace object, so fields are camelCase at the
+      root of each item: publicNetworkAccessForIngestion,
+      publicNetworkAccessForQuery (string "Enabled"/"Disabled"), retentionInDays
+      (integer), sku.name, customerId, provisioningState. Returns [] when no
+      workspaces exist.

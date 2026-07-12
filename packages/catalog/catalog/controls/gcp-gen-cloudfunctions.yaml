@@ -1,0 +1,197 @@
+controls:
+  - id: CR-GCP-FUNCTIONS-100
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function restricts ingress to internal or load-balancer traffic
+    description: Each Cloud Function sets ingressSettings to ALLOW_INTERNAL_ONLY or
+      ALLOW_INTERNAL_AND_GCLB so that the function endpoint is not directly
+      reachable from the public internet.
+    rationale: With ingressSettings ALLOW_ALL (the default) the function's HTTPS
+      endpoint is reachable from anywhere on the internet, widening the attack
+      surface and exposing the trigger URL to unauthenticated network probing,
+      credential brute-forcing and abuse of any function that does not strictly
+      enforce authentication.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfunctions_function_ingress_traffic_restricted
+      license: Apache-2.0
+    collector: gcp.functions.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: ingressSettings
+      values:
+        - ALLOW_INTERNAL_ONLY
+        - ALLOW_INTERNAL_AND_GCLB
+    failMessage: Cloud Function ingressSettings allows all traffic (ALLOW_ALL or
+      unset), exposing the endpoint to the public internet.
+    passMessage: Cloud Function restricts ingress to internal or load-balancer traffic.
+    remediation:
+      summary: Set the function ingress to internal-only or internal-and-GCLB.
+      steps:
+        - Identify functions whose ingressSettings is ALLOW_ALL or unset.
+        - Redeploy the function with gcloud functions deploy FUNCTION
+          --ingress-settings internal-only (or
+          internal-and-cloud-load-balancing).
+        - Front any function that must serve external traffic with an external
+          HTTP(S) load balancer plus Cloud Armor instead of ALLOW_ALL.
+      verifyCommand: gcloud functions list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/networking/network-settings
+      - https://cloud.google.com/sdk/gcloud/reference/functions/deploy
+  - id: CR-GCP-FUNCTIONS-101
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function routes egress through a Serverless VPC connector
+    description: Each Cloud Function has a vpcConnector configured so that outbound
+      traffic is routed through a Serverless VPC Access connector rather than
+      the shared public egress path.
+    rationale: Without a VPC connector the function cannot reach private resources
+      over internal IPs and its egress is not subject to VPC firewall rules,
+      Cloud NAT controls or private connectivity, making it harder to enforce
+      network segmentation and to reach databases and internal APIs securely.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: cloudfunctions_function_vpc_connector_configured
+      license: Apache-2.0
+    collector: gcp.functions.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: vpcConnector
+    failMessage: Cloud Function has no Serverless VPC connector (vpcConnector is
+      unset); its egress bypasses VPC network controls.
+    passMessage: Cloud Function routes egress through a Serverless VPC connector.
+    remediation:
+      summary: Attach a Serverless VPC Access connector to the function.
+      steps:
+        - Create a Serverless VPC Access connector in the function's region with
+          gcloud compute networks vpc-access connectors create.
+        - Redeploy the function with gcloud functions deploy FUNCTION
+          --vpc-connector CONNECTOR.
+        - Optionally set --egress-settings all-traffic to route all egress
+          through the VPC and its firewall rules.
+      verifyCommand: gcloud functions list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/networking/connecting-vpc
+      - https://cloud.google.com/vpc/docs/serverless-vpc-access
+  - id: CR-GCP-FUNCTIONS-102
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function does not run as a default service account
+    description: Each Cloud Function runs as a dedicated, user-managed runtime
+      service account (serviceAccountEmail) rather than the default App Engine
+      or Compute Engine service account.
+    rationale: The default App Engine and Compute Engine service accounts are
+      granted the broad Editor role on the project by default. A function
+      running as one of these accounts that is compromised, or that contains a
+      vulnerable dependency, can read and modify almost every resource in the
+      project, violating least privilege.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cloudfunctions_function_no_default_service_account
+      license: Apache-2.0
+    collector: gcp.functions.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: serviceAccountEmail
+        - op: not
+          expr:
+            op: endsWith
+            path: serviceAccountEmail
+            value: "@appspot.gserviceaccount.com"
+        - op: not
+          expr:
+            op: endsWith
+            path: serviceAccountEmail
+            value: -compute@developer.gserviceaccount.com
+    failMessage: Cloud Function runs as a default service account (App Engine or
+      Compute Engine), which holds broad project-wide privileges.
+    passMessage: Cloud Function runs as a dedicated, non-default service account.
+    remediation:
+      summary: Assign a dedicated least-privilege runtime service account.
+      steps:
+        - Create a dedicated service account and grant it only the roles the
+          function needs.
+        - Redeploy the function with gcloud functions deploy FUNCTION
+          --service-account SA_EMAIL.
+        - Remove the broad Editor grants from the default App Engine and Compute
+          Engine service accounts.
+      verifyCommand: gcloud functions list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/securing/function-identity
+      - https://cloud.google.com/iam/docs/service-account-overview#default
+  - id: CR-GCP-FUNCTIONS-103
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function is in a healthy (active) state
+    description: Each Cloud Function reports an ACTIVE state (gen2 field state) or
+      ACTIVE status (gen1 field status), indicating it deployed successfully and
+      is not in a failed or offline condition.
+    rationale: A function stuck in FAILED, OFFLINE or DEPLOY_IN_PROGRESS is not
+      serving traffic reliably; a silently failed deployment can disable a
+      security or remediation function (for example an event-driven
+      auto-remediation or log sink processor) without any obvious signal,
+      undermining resilience.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cloudfunctions_function_active
+      license: Apache-2.0
+    collector: gcp.functions.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: status
+          value: ACTIVE
+        - op: equals
+          path: state
+          value: ACTIVE
+    failMessage: Cloud Function is not in an ACTIVE state (it may be FAILED, OFFLINE
+      or mid deployment).
+    passMessage: Cloud Function is in a healthy ACTIVE state.
+    remediation:
+      summary: Investigate and redeploy the unhealthy function.
+      steps:
+        - Review the function's deploy logs in Cloud Logging for the failure
+          cause.
+        - Fix the underlying issue (source, permissions, quota, trigger) and
+          redeploy with gcloud functions deploy.
+        - Confirm the function returns to ACTIVE before relying on it.
+      verifyCommand: gcloud functions list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions#CloudFunctionStatus
+      - https://cloud.google.com/functions/docs/reference/rest/v2/projects.locations.functions#State

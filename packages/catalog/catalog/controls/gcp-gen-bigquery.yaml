@@ -1,0 +1,126 @@
+controls:
+  - id: CR-GCP-BIGQUERY-100
+    version: 1.0.0
+    provider: gcp
+    service: bigquery
+    title: BigQuery dataset uses a customer-managed encryption key (CMEK)
+    description: The dataset defines defaultEncryptionConfiguration.kmsKeyName so
+      new tables are encrypted with a customer-managed Cloud KMS key rather than
+      Google-managed keys.
+    rationale: Without CMEK, data at rest is encrypted only with Google-managed
+      keys, leaving key rotation, revocation, and access separation outside the
+      customer's control; a compromised project cannot cut off access to the
+      data by disabling a key.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: bigquery_dataset_cmk_encryption
+      license: Apache-2.0
+    collector: gcp.bigquery.dataset_describe
+    resourceIdField: $resourceKey
+    resourceNameField: id
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: defaultEncryptionConfiguration.kmsKeyName
+        - op: contains
+          path: defaultEncryptionConfiguration.kmsKeyName
+          value: cryptoKeys/
+    onError:
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: Not found
+        status: not_applicable
+        message: Dataset no longer exists.
+    failMessage: Dataset has no default CMEK; tables fall back to Google-managed
+      encryption keys.
+    passMessage: Dataset default encryption uses a customer-managed Cloud KMS key.
+    remediation:
+      summary: Set a default Cloud KMS key on the dataset.
+      steps:
+        - Create or identify a Cloud KMS key and grant the BigQuery service
+          account the Encrypter/Decrypter role.
+        - Update the dataset default encryption via 'gcloud alpha bq datasets
+          update <dataset> --default-kms-key <keyResource>' (or bq update
+          --default_kms_key).
+        - Recreate or re-load existing tables so they adopt the customer-managed
+          key.
+      verifyCommand: gcloud alpha bq datasets describe <dataset> --project <project>
+        --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "7.2"
+    references:
+      - https://cloud.google.com/bigquery/docs/customer-managed-encryption
+      - https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets
+  - id: CR-GCP-BIGQUERY-101
+    version: 1.0.0
+    provider: gcp
+    service: bigquery
+    title: BigQuery dataset is not shared with allUsers or allAuthenticatedUsers
+    description: No access[] entry grants dataset access to the public (iamMember
+      allUsers) or to any authenticated Google identity (specialGroup
+      allAuthenticatedUsers).
+    rationale: Granting a dataset to allUsers or allAuthenticatedUsers exposes
+      potentially sensitive tables to anyone on the internet or any Google
+      account holder, a common source of large-scale data exposure.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+      - storage
+    source:
+      engine: prowler
+      id: bigquery_dataset_public_access
+      license: Apache-2.0
+    collector: gcp.bigquery.dataset_describe
+    resourceIdField: $resourceKey
+    resourceNameField: id
+    passWhen:
+      op: noneItem
+      path: access
+      condition:
+        op: or
+        exprs:
+          - op: equals
+            path: specialGroup
+            value: allAuthenticatedUsers
+          - op: equals
+            path: iamMember
+            value: allUsers
+          - op: equals
+            path: iamMember
+            value: allAuthenticatedUsers
+    onError:
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: Not found
+        status: not_applicable
+        message: Dataset no longer exists.
+    failMessage: Dataset access grants public or all-authenticated-users access.
+    passMessage: Dataset is not shared with allUsers or allAuthenticatedUsers.
+    remediation:
+      summary: Remove public and all-authenticated-users grants from the dataset.
+      steps:
+        - Review the dataset access entries with 'gcloud alpha bq datasets
+          describe <dataset> --format json'.
+        - Remove any access entry whose specialGroup is allAuthenticatedUsers or
+          whose iamMember is allUsers/allAuthenticatedUsers.
+        - Re-grant access only to specific users, groups, or service accounts
+          that require it.
+      verifyCommand: gcloud alpha bq datasets describe <dataset> --project <project>
+        --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "7.1"
+    references:
+      - https://cloud.google.com/bigquery/docs/control-access-to-resources-iam
+      - https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets

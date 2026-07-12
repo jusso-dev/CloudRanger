@@ -1,0 +1,200 @@
+controls:
+  - id: CR-AWS-ACM-001
+    version: 1.0.0
+    provider: aws
+    service: acm
+    title: ACM certificate has certificate transparency logging enabled
+    description: The certificate's Options.CertificateTransparencyLoggingPreference
+      is not DISABLED, so issuance is recorded in public Certificate
+      Transparency logs.
+    rationale: Disabling Certificate Transparency logging hides certificate issuance
+      from public CT logs, weakening the ability of domain owners and browsers
+      to detect mis-issued or rogue certificates for the domain.
+    severity: low
+    categories:
+      - logging
+      - encryption
+    source:
+      engine: prowler
+      id: acm_certificates_transparency_logs_enabled
+      license: Apache-2.0
+    collector: aws.acm.describe_certificate
+    resourceIdField: $resourceKey
+    resourceNameField: Certificate.DomainName
+    passWhen:
+      op: notEquals
+      path: Certificate.Options.CertificateTransparencyLoggingPreference
+      value: DISABLED
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Certificate no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: ACM certificate has certificate transparency logging disabled.
+    passMessage: ACM certificate has certificate transparency logging enabled.
+    remediation:
+      summary: Re-issue the certificate with transparency logging enabled.
+      steps:
+        - ACM certificate transparency logging cannot be changed after issuance;
+          request a new certificate with the default (ENABLED) transparency
+          logging preference.
+        - When requesting via CLI omit --options
+          CertificateTransparencyLoggingPreference=DISABLED, or set it to
+          ENABLED.
+        - Replace the old certificate on associated load balancers, CloudFront
+          distributions, and API Gateway custom domains, then delete the old
+          one.
+      verifyCommand: aws acm describe-certificate --certificate-arn <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/acm/latest/userguide/acm-concepts.html#concept-transparency
+  - id: CR-AWS-ACM-002
+    version: 1.0.0
+    provider: aws
+    service: acm
+    title: ACM certificate does not use a wildcard domain name
+    description: The certificate's primary DomainName does not begin with a wildcard
+      ("*") label.
+    rationale: A wildcard certificate covers every subdomain of a domain, so
+      compromise of its private key on any single host exposes all subdomains;
+      scoping certificates to specific hostnames limits blast radius.
+    severity: low
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: acm_certificates_with_secure_key_algorithms
+      license: Apache-2.0
+    collector: aws.acm.describe_certificate
+    resourceIdField: $resourceKey
+    resourceNameField: Certificate.DomainName
+    passWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: Certificate.DomainName
+        value: "*"
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Certificate no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: ACM certificate uses a wildcard domain name.
+    passMessage: ACM certificate uses a specific (non-wildcard) domain name.
+    remediation:
+      summary: Replace wildcard certificates with per-host certificates.
+      steps:
+        - Request individual ACM certificates scoped to the specific hostnames
+          that require TLS instead of a single wildcard certificate.
+        - Attach the scoped certificates to the relevant endpoints and remove
+          the wildcard certificate once no longer referenced.
+      verifyCommand: aws acm describe-certificate --certificate-arn <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html
+  - id: CR-AWS-ACM-003
+    version: 1.0.0
+    provider: aws
+    service: acm
+    title: ACM certificate is eligible for managed renewal
+    description: The certificate's RenewalEligibility is ELIGIBLE, indicating ACM
+      can automatically renew it before expiry.
+    rationale: Certificates that are ineligible for managed renewal (for example
+      imported certificates or those no longer associated with an in-use AWS
+      resource) will expire without automatic renewal, risking sudden TLS
+      outages.
+    severity: medium
+    categories:
+      - resilience
+      - encryption
+    source:
+      engine: prowler
+      id: acm_certificates_expiration_check
+      license: Apache-2.0
+    collector: aws.acm.describe_certificate
+    resourceIdField: $resourceKey
+    resourceNameField: Certificate.DomainName
+    passWhen:
+      op: equals
+      path: Certificate.RenewalEligibility
+      value: ELIGIBLE
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Certificate no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: ACM certificate is not eligible for managed renewal and may expire
+      without automatic renewal.
+    passMessage: ACM certificate is eligible for ACM managed renewal.
+    remediation:
+      summary: Make the certificate eligible for managed renewal.
+      steps:
+        - Ensure the certificate is issued by ACM (not imported) and remains
+          associated with an in-use AWS resource such as an ELB, CloudFront
+          distribution, or API Gateway domain.
+        - For imported certificates, plan manual re-import before expiry or
+          migrate to an ACM-issued certificate.
+      verifyCommand: aws acm describe-certificate --certificate-arn <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/acm/latest/userguide/managed-renewal.html
+  - id: CR-AWS-ACM-004
+    version: 1.0.0
+    provider: aws
+    service: acm
+    title: ACM certificate uses a strong key algorithm
+    description: The certificate's KeyAlgorithm is one of the currently recommended
+      strong algorithms (RSA-2048, RSA-3072, RSA-4096, EC_prime256v1,
+      EC_secp384r1).
+    rationale: Weak or deprecated key algorithms (for example RSA-1024) can be
+      brute-forced or factored, allowing an attacker to impersonate the endpoint
+      or decrypt traffic; strong RSA and ECDSA keys preserve TLS confidentiality
+      and integrity.
+    severity: medium
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: acm_certificates_with_secure_key_algorithms
+      license: Apache-2.0
+    collector: aws.acm.describe_certificate
+    resourceIdField: $resourceKey
+    resourceNameField: Certificate.DomainName
+    passWhen:
+      op: in
+      path: Certificate.KeyAlgorithm
+      values:
+        - RSA-2048
+        - RSA-3072
+        - RSA-4096
+        - EC_prime256v1
+        - EC_secp384r1
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Certificate no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: ACM certificate uses a weak or unsupported key algorithm.
+    passMessage: ACM certificate uses a strong key algorithm.
+    remediation:
+      summary: Re-issue the certificate with a strong key algorithm.
+      steps:
+        - Request a replacement certificate specifying a strong key algorithm
+          (for example --key-algorithm RSA_2048 or --key-algorithm
+          EC_prime256v1).
+        - Attach the new certificate to associated resources and delete the weak
+          certificate once unreferenced.
+      verifyCommand: aws acm describe-certificate --certificate-arn <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html

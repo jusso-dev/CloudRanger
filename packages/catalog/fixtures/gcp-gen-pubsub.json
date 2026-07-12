@@ -1,0 +1,118 @@
+[
+  {
+    "controlId": "CR-GCP-PUBSUB-100",
+    "cases": [
+      {
+        "name": "pass CMEK key set",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/cmek-topic",
+                "kmsKeyName": "projects/proj-1/locations/us/keyRings/kr/cryptoKeys/pubsub-key",
+                "messageRetentionDuration": "604800s"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no kmsKeyName",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/plain-topic",
+                "messageStoragePolicy": {
+                  "allowedPersistenceRegions": ["us-central1"]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-PUBSUB-101",
+    "cases": [
+      {
+        "name": "pass retention configured",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/retained-topic",
+                "messageRetentionDuration": "604800s"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no retention",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/no-retention-topic",
+                "kmsKeyName": "projects/proj-1/locations/us/keyRings/kr/cryptoKeys/pubsub-key"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-PUBSUB-102",
+    "cases": [
+      {
+        "name": "pass storage policy set",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/pinned-topic",
+                "messageStoragePolicy": {
+                  "allowedPersistenceRegions": ["europe-west1", "europe-west4"]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no storage policy",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.pubsub.topics_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-1/topics/unpinned-topic",
+                "messageRetentionDuration": "604800s"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

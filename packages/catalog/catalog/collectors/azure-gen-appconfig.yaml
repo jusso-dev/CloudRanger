@@ -1,0 +1,17 @@
+collectors:
+  - id: azure.appconfig.list
+    provider: azure
+    service: appconfig
+    description: All Azure App Configuration stores in the subscription.
+    kind: single
+    command: az appconfig list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription (and the Microsoft.AppConfiguration
+      resource provider registered). The az appconfig command group flattens the
+      ARM Microsoft.AppConfiguration/configurationStores properties bag to
+      top-level fields on each store object (publicNetworkAccess,
+      disableLocalAuth, encryption.keyVaultProperties,
+      softDeleteRetentionInDays, enablePurgeProtection). publicNetworkAccess may
+      be null when never set, which is treated as not explicitly Disabled.

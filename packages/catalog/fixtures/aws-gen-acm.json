@@ -1,0 +1,240 @@
+[
+  {
+    "controlId": "CR-AWS-ACM-001",
+    "cases": [
+      {
+        "name": "transparency logging enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+                "DomainName": "www.example.com",
+                "SubjectAlternativeNames": ["www.example.com"],
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "transparency logging disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/bbbbbbbb-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/bbbbbbbb-1111-2222-3333-444444444444",
+                "DomainName": "api.example.com",
+                "SubjectAlternativeNames": ["api.example.com"],
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "DISABLED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "certificate deleted between list and describe",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/cccccccc-1111-2222-3333-444444444444",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the DescribeCertificate operation: Could not find certificate arn:aws:acm:us-east-1:111122223333:certificate/cccccccc-1111-2222-3333-444444444444 in account 111122223333"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ACM-002",
+    "cases": [
+      {
+        "name": "specific domain passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+                "DomainName": "www.example.com",
+                "SubjectAlternativeNames": ["www.example.com"],
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "wildcard domain fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/dddddddd-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/dddddddd-1111-2222-3333-444444444444",
+                "DomainName": "*.example.com",
+                "SubjectAlternativeNames": ["*.example.com", "example.com"],
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ACM-003",
+    "cases": [
+      {
+        "name": "eligible for renewal passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+                "DomainName": "www.example.com",
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "ineligible imported certificate fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/eeeeeeee-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/eeeeeeee-1111-2222-3333-444444444444",
+                "DomainName": "legacy.example.com",
+                "Status": "ISSUED",
+                "Type": "IMPORTED",
+                "KeyAlgorithm": "RSA-2048",
+                "RenewalEligibility": "INELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ACM-004",
+    "cases": [
+      {
+        "name": "strong ec key passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/aaaaaaaa-1111-2222-3333-444444444444",
+                "DomainName": "www.example.com",
+                "Status": "ISSUED",
+                "Type": "AMAZON_ISSUED",
+                "KeyAlgorithm": "EC_prime256v1",
+                "RenewalEligibility": "ELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "weak rsa1024 key fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.acm.describe_certificate",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:acm:us-east-1:111122223333:certificate/ffffffff-1111-2222-3333-444444444444",
+            "exitCode": 0,
+            "output": {
+              "Certificate": {
+                "CertificateArn": "arn:aws:acm:us-east-1:111122223333:certificate/ffffffff-1111-2222-3333-444444444444",
+                "DomainName": "old.example.com",
+                "Status": "ISSUED",
+                "Type": "IMPORTED",
+                "KeyAlgorithm": "RSA-1024",
+                "RenewalEligibility": "INELIGIBLE",
+                "Options": {
+                  "CertificateTransparencyLoggingPreference": "ENABLED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "controlId": "CR-AWS-WAFV2-001",
+    "cases": [
+      {
+        "name": "pass one regional web acl exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.wafv2.list_web_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NextMarker": null,
+              "WebACLs": [
+                {
+                  "Name": "prod-alb-waf",
+                  "Id": "a1b2c3d4-1111-2222-3333-444455556666",
+                  "Description": "Protects production ALB",
+                  "LockToken": "8f2c1a90",
+                  "ARN": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/prod-alb-waf/a1b2c3d4-1111-2222-3333-444455556666"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no regional web acls",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.wafv2.list_web_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NextMarker": null,
+              "WebACLs": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-WAFV2-002",
+    "cases": [
+      {
+        "name": "pass web acl has description",
+        "expected": "pass",
+        "resourceId": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/prod-alb-waf/a1b2c3d4-1111-2222-3333-444455556666",
+        "records": [
+          {
+            "collectorId": "aws.wafv2.list_web_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NextMarker": null,
+              "WebACLs": [
+                {
+                  "Name": "prod-alb-waf",
+                  "Id": "a1b2c3d4-1111-2222-3333-444455556666",
+                  "Description": "Protects production ALB",
+                  "LockToken": "8f2c1a90",
+                  "ARN": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/prod-alb-waf/a1b2c3d4-1111-2222-3333-444455556666"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail web acl has empty description",
+        "expected": "fail",
+        "resourceId": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/undoc-waf/bbbbcccc-7777-8888-9999-000011112222",
+        "records": [
+          {
+            "collectorId": "aws.wafv2.list_web_acls",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "NextMarker": null,
+              "WebACLs": [
+                {
+                  "Name": "undoc-waf",
+                  "Id": "bbbbcccc-7777-8888-9999-000011112222",
+                  "Description": "",
+                  "LockToken": "1122abcd",
+                  "ARN": "arn:aws:wafv2:us-east-1:111122223333:regional/webacl/undoc-waf/bbbbcccc-7777-8888-9999-000011112222"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+collectors:
+  - id: gcp.functions.list
+    provider: gcp
+    service: cloudfunctions
+    description: Lists all Cloud Functions in the project (across all regions) with
+      their configuration, including ingress settings, VPC connector, service
+      account, runtime and environment (gen1 vs gen2).
+    kind: single
+    command: gcloud functions list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: 'Returns a JSON array at the root, one object per function; use
+      resourcesPath "$". Requires cloudfunctions.functions.list permission.
+      Shape differs between generations: 1st gen (environment GEN_1) functions
+      expose configuration at the top level - ingressSettings, vpcConnector,
+      vpcConnectorEgressSettings, availableMemoryMb, httpsTrigger,
+      serviceAccountEmail. 2nd gen (environment GEN_2) functions nest most
+      configuration under serviceConfig (serviceConfig.ingressSettings,
+      serviceConfig.vpcConnector, serviceConfig.serviceAccountEmail). For a
+      mixed inventory the top-level ingressSettings/vpcConnector/
+      serviceAccountEmail fields are the gen1 shape returned by this command;
+      ingressSettings enum values are ALLOW_ALL, ALLOW_INTERNAL_ONLY,
+      ALLOW_INTERNAL_AND_GCLB. ingressSettings and vpcConnector may be absent
+      when never configured (absence means default ALLOW_ALL / no connector).'

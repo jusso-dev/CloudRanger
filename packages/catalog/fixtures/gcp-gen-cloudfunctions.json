@@ -1,0 +1,330 @@
+[
+  {
+    "controlId": "CR-GCP-FUNCTIONS-100",
+    "cases": [
+      {
+        "name": "pass internal only",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-internal",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-internal",
+                "status": "ACTIVE",
+                "entryPoint": "handler",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "httpsTrigger": {
+                  "url": "https://us-central1-p1.cloudfunctions.net/fn-internal",
+                  "securityLevel": "SECURE_ALWAYS"
+                },
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "vpcConnector": "projects/p1/locations/us-central1/connectors/conn1",
+                "availableMemoryMb": 256,
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass internal and gclb",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-gclb",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-gclb",
+                "status": "ACTIVE",
+                "runtime": "nodejs20",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_AND_GCLB",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail allow all",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-open",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-open",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "httpsTrigger": {
+                  "url": "https://us-central1-p1.cloudfunctions.net/fn-open"
+                },
+                "ingressSettings": "ALLOW_ALL",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail ingress unset",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-noingress",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-noingress",
+                "status": "ACTIVE",
+                "runtime": "go121",
+                "environment": "GEN_1",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FUNCTIONS-101",
+    "cases": [
+      {
+        "name": "pass vpc connector set",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-vpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-vpc",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "vpcConnector": "projects/p1/locations/us-central1/connectors/conn1",
+                "vpcConnectorEgressSettings": "ALL_TRAFFIC",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no vpc connector",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-novpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-novpc",
+                "status": "ACTIVE",
+                "runtime": "nodejs20",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_ALL",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FUNCTIONS-102",
+    "cases": [
+      {
+        "name": "pass dedicated sa",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-dedsa",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-dedsa",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail appspot default sa",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-appspot",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-appspot",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "serviceAccountEmail": "p1@appspot.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail compute default sa",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-compute",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-compute",
+                "status": "ACTIVE",
+                "runtime": "nodejs20",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "serviceAccountEmail": "123456789-compute@developer.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail sa unset",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-nosa",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-nosa",
+                "status": "ACTIVE",
+                "runtime": "go121",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FUNCTIONS-103",
+    "cases": [
+      {
+        "name": "pass gen1 active status",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-active1",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-active1",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass gen2 active state",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-active2",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-active2",
+                "environment": "GEN_2",
+                "state": "ACTIVE",
+                "serviceConfig": {
+                  "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                  "vpcConnector": "projects/p1/locations/us-central1/connectors/conn1",
+                  "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com",
+                  "uri": "https://fn-active2-abc-uc.a.run.app"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail gen2 failed state",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-failed",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-failed",
+                "environment": "GEN_2",
+                "state": "FAILED",
+                "serviceConfig": {
+                  "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                  "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail gen1 offline status",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-offline",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-offline",
+                "status": "OFFLINE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

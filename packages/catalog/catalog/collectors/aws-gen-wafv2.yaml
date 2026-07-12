@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.wafv2.list_web_acls
+    provider: aws
+    service: wafv2
+    description: Lists the regional WAFv2 web ACLs in a region. Root object has a
+      WebACLs array of {Name, Id, Description, LockToken, ARN} plus an optional
+      NextMarker for pagination.
+    kind: single
+    command: aws wafv2 list-web-acls --scope REGIONAL --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires wafv2:ListWebACLs. Scope REGIONAL covers ALB, API Gateway,
+      AppSync, Cognito and App Runner protection (CLOUDFRONT scope is a separate
+      global call). WebACLs is an empty array when no regional web ACL exists.
+      NextMarker is present only when results are paginated.

@@ -1,0 +1,40 @@
+collectors:
+  - id: gcp.bigquery.datasets_list
+    provider: gcp
+    service: bigquery
+    description: Lists BigQuery datasets in the project (summary rows from the
+      bigquery/v2 datasets.list API).
+    kind: single
+    command: gcloud alpha bq datasets list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Requires the bigquery.datasets.get/list permission
+      (roles/bigquery.metadataViewer or higher). gcloud "list" returns a JSON
+      ARRAY at the root; each element is a Datasets.list resource with
+      datasetReference.datasetId, datasetReference.projectId, id (formatted
+      "project:dataset"), and location. The list rows do NOT include access[] or
+      defaultEncryptionConfiguration; use gcp.bigquery.dataset_describe for
+      those. The "alpha" surface tracks the stable bigquery/v2 API resource
+      shape.
+  - id: gcp.bigquery.dataset_describe
+    provider: gcp
+    service: bigquery
+    description: Full metadata for one BigQuery dataset (bigquery/v2 datasets.get),
+      including access[] and defaultEncryptionConfiguration.
+    kind: per_resource
+    command: gcloud alpha bq datasets describe {resource} --project {project}
+      --format json
+    regional: false
+    parent:
+      collector: gcp.bigquery.datasets_list
+      itemsPath: $
+      resourceField: datasetReference.datasetId
+    outputFormat: json
+    notes: 'Returns the full Dataset resource. access[] entries carry a role plus
+      exactly one member field: userByEmail, groupByEmail, domain, specialGroup
+      (values include
+      projectOwners/projectReaders/projectWriters/allAuthenticatedUsers),
+      iamMember (where public "allUsers" appears), view, dataset, or routine.
+      defaultEncryptionConfiguration.kmsKeyName is present only when a CMEK is
+      set (Google default encryption omits the field). Requires
+      bigquery.datasets.get on the dataset.'

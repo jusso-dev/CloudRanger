@@ -1,0 +1,125 @@
+controls:
+  - id: CR-GCP-PUBSUB-100
+    version: 1.0.0
+    provider: gcp
+    service: pubsub
+    title: Pub/Sub topic is encrypted with a customer-managed key (CMEK)
+    description: >
+      Verifies the topic specifies a Cloud KMS customer-managed encryption key
+      (kmsKeyName) so message data at rest is protected with a key you control
+      rather than only the Google-managed default key.
+    rationale: >
+      Without CMEK, Pub/Sub encrypts messages with a Google-managed key you
+      cannot rotate, audit, or revoke. CMEK lets you disable the key to
+      immediately cut access to buffered message data, an important control for
+      topics carrying sensitive events.
+    severity: medium
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: pubsub_topic_customer_managed_encryption
+      license: Apache-2.0
+    collector: gcp.pubsub.topics_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: kmsKeyName
+    failMessage: Topic uses Google-managed encryption; no CMEK (kmsKeyName) configured.
+    passMessage: Topic is encrypted with a customer-managed KMS key.
+    remediation:
+      summary: Recreate the topic with a customer-managed KMS key.
+      steps:
+        - Create a Cloud KMS key and grant the Pub/Sub service agent the Cloud
+          KMS CryptoKey Encrypter/Decrypter role on it.
+        - Set the topic's --topic-encryption-key to the KMS key resource name
+          (CMEK is applied at topic creation).
+      verifyCommand: gcloud pubsub topics list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/pubsub/docs/encryption
+  - id: CR-GCP-PUBSUB-101
+    version: 1.0.0
+    provider: gcp
+    service: pubsub
+    title: Pub/Sub topic has message retention configured
+    description: >
+      Verifies the topic sets a messageRetentionDuration so published messages
+      are retained for a defined window, enabling replay and recovery.
+    rationale: >
+      Without topic-level message retention, messages are only kept for
+      subscriptions and are lost once acknowledged, so a new or reset
+      subscription cannot replay past events. A retention window supports
+      recovery, backfill, and investigation after downstream failures.
+    severity: low
+    categories:
+      - resilience
+      - logging
+    source:
+      engine: prowler
+      id: pubsub_topic_message_retention_enabled
+      license: Apache-2.0
+    collector: gcp.pubsub.topics_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: messageRetentionDuration
+    failMessage: Topic has no messageRetentionDuration configured.
+    passMessage: Topic has a message retention duration configured.
+    remediation:
+      summary: Configure a message retention duration on the topic.
+      steps:
+        - Decide on a retention window appropriate for replay and recovery needs
+          (up to 31 days).
+        - Update the topic with --message-retention-duration set to that value.
+      verifyCommand: gcloud pubsub topics list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/pubsub/docs/replay-overview
+  - id: CR-GCP-PUBSUB-102
+    version: 1.0.0
+    provider: gcp
+    service: pubsub
+    title: Pub/Sub topic restricts message storage to allowed regions
+    description: >
+      Verifies the topic defines a messageStoragePolicy with an explicit list of
+      allowedPersistenceRegions so message data residency is constrained.
+    rationale: >
+      With no message storage policy, Pub/Sub may persist messages in any Google
+      Cloud region, which can violate data-residency or sovereignty
+      requirements. Pinning allowed persistence regions enforces where message
+      data is stored.
+    severity: low
+    categories:
+      - governance
+      - network
+    source:
+      engine: prowler
+      id: pubsub_topic_message_storage_policy_enforced
+      license: Apache-2.0
+    collector: gcp.pubsub.topics_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: not
+      expr:
+        op: isEmpty
+        path: messageStoragePolicy.allowedPersistenceRegions
+    failMessage: Topic has no message storage policy restricting persistence regions.
+    passMessage: Topic restricts message storage to an explicit set of regions.
+    remediation:
+      summary: Set a message storage policy limiting persistence regions.
+      steps:
+        - Determine the regions permitted by your data-residency policy.
+        - Update the topic with --message-storage-policy-allowed-regions set to
+          those regions.
+      verifyCommand: gcloud pubsub topics list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/pubsub/docs/resource-location-restriction

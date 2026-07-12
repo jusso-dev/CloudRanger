@@ -1,0 +1,33 @@
+collectors:
+  - id: aws.acm.list_certificates
+    provider: aws
+    service: acm
+    description: Lists ACM certificates in a region, returning summary records with
+      the certificate ARN and domain name.
+    kind: single
+    command: aws acm list-certificates --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a top-level "CertificateSummaryList" array. Each item has
+      "CertificateArn" and "DomainName". Requires acm:ListCertificates. Empty
+      array when no certificates exist in the region.
+  - id: aws.acm.describe_certificate
+    provider: aws
+    service: acm
+    description: Retrieves the full detail record for one ACM certificate, including
+      domain, key algorithm, renewal eligibility, and transparency logging
+      options.
+    kind: per_resource
+    command: aws acm describe-certificate --certificate-arn {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.acm.list_certificates
+      itemsPath: CertificateSummaryList
+      resourceField: CertificateArn
+    outputFormat: json
+    notes: Returns a top-level "Certificate" object holding CertificateArn,
+      DomainName, KeyAlgorithm, RenewalEligibility, Status, Type, and
+      Options.CertificateTransparencyLoggingPreference. Requires
+      acm:DescribeCertificate. Raises ResourceNotFoundException if the
+      certificate was deleted between listing and describing.

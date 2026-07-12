@@ -1,0 +1,125 @@
+controls:
+  - id: CR-AZURE-LOGANALYTICS-100
+    version: 1.0.0
+    provider: azure
+    service: loganalytics
+    title: Log Analytics workspace disables public network access for ingestion
+    description: >
+      Verifies publicNetworkAccessForIngestion is Disabled so log data can only
+      be ingested over private endpoints via Azure Monitor Private Link Scope.
+    rationale: >
+      A workspace that accepts ingestion from any network can receive data from
+      the public internet; combined with a leaked ingestion key or shared
+      workspace ID this is a path for tampering with or poisoning security logs.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+      - logging
+    source:
+      engine: prowler
+      id: monitor_log_analytics_workspace_public_network_access_for_ingestion_disabled
+      license: Apache-2.0
+    collector: azure.loganalytics.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccessForIngestion
+      value: Disabled
+    failMessage: Log Analytics workspace allows public network access for ingestion.
+    passMessage: Log Analytics workspace restricts ingestion to private networks.
+    remediation:
+      summary: Set publicNetworkAccessForIngestion to Disabled and use Private Link.
+      steps:
+        - Create an Azure Monitor Private Link Scope (AMPLS) and associate the
+          workspace.
+        - Set the workspace network access for ingestion to Disabled (operator
+          action).
+      verifyCommand: az monitor log-analytics workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-monitor/logs/private-link-security
+  - id: CR-AZURE-LOGANALYTICS-101
+    version: 1.0.0
+    provider: azure
+    service: loganalytics
+    title: Log Analytics workspace disables public network access for query
+    description: >
+      Verifies publicNetworkAccessForQuery is Disabled so log data can only be
+      queried over private endpoints via Azure Monitor Private Link Scope.
+    rationale: >
+      A workspace queryable from any network exposes potentially sensitive log
+      data (audit trails, identities, resource details) to internet-facing
+      requests that present valid tokens, widening the exfiltration surface.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+      - logging
+    source:
+      engine: prowler
+      id: monitor_log_analytics_workspace_public_network_access_for_query_disabled
+      license: Apache-2.0
+    collector: azure.loganalytics.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccessForQuery
+      value: Disabled
+    failMessage: Log Analytics workspace allows public network access for query.
+    passMessage: Log Analytics workspace restricts query to private networks.
+    remediation:
+      summary: Set publicNetworkAccessForQuery to Disabled and use Private Link.
+      steps:
+        - Create an Azure Monitor Private Link Scope (AMPLS) and associate the
+          workspace.
+        - Set the workspace network access for query to Disabled (operator
+          action).
+      verifyCommand: az monitor log-analytics workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-monitor/logs/private-link-security
+  - id: CR-AZURE-LOGANALYTICS-102
+    version: 1.0.0
+    provider: azure
+    service: loganalytics
+    title: Log Analytics workspace retains data for at least 90 days
+    description: >
+      Verifies retentionInDays is at least 90 so logs are available long enough
+      for incident investigation and compliance review.
+    rationale: >
+      Short retention means security-relevant logs are purged before slow-burn
+      or later-discovered incidents can be investigated, undermining forensics
+      and breach analysis.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitor_log_analytics_workspace_data_retention_at_least_90_days
+      license: Apache-2.0
+    collector: azure.loganalytics.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: gte
+      path: retentionInDays
+      value: 90
+    failMessage: Log Analytics workspace retains data for fewer than 90 days.
+    passMessage: Log Analytics workspace retains data for at least 90 days.
+    remediation:
+      summary: Set the workspace retentionInDays to 90 or more.
+      steps:
+        - Increase the workspace data retention to at least 90 days (operator
+          action).
+        - Consider archiving to a Storage account for longer retention needs.
+      verifyCommand: az monitor log-analytics workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-monitor/logs/data-retention-configure
