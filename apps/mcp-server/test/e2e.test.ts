@@ -1,12 +1,21 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { loadDefaultCatalog } from "@cloudranger/catalog";
 import { CloudRangerStore } from "@cloudranger/db";
 import { createServer } from "../src/server.js";
 
+// Point the operator custom catalog dir at an isolated temp dir so the
+// catalog_add_custom_control test does not pollute the real ~/.cloudranger,
+// and bundled-control counts stay deterministic.
+const customDir = mkdtempSync(join(tmpdir(), "cr-mcp-catalog-"));
+process.env.CLOUDRANGER_CUSTOM_CATALOG = customDir;
+
 let client: Client;
 let store: CloudRangerStore;
+let loadDefaultCatalog: typeof import("@cloudranger/catalog").loadDefaultCatalog;
 
 async function call(name: string, args: Record<string, unknown> = {}): Promise<any> {
   const result = (await client.callTool({ name, arguments: args })) as any;
@@ -17,6 +26,7 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<a
 }
 
 beforeAll(async () => {
+  ({ loadDefaultCatalog } = await import("@cloudranger/catalog"));
   store = new CloudRangerStore(":memory:");
   const server = createServer({ store, catalog: loadDefaultCatalog(), actor: "test-agent" });
   client = new Client({ name: "cloudranger-test", version: "0.0.0" });
@@ -24,13 +34,15 @@ beforeAll(async () => {
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 });
 
+afterAll(() => rmSync(customDir, { recursive: true, force: true }));
+
 describe("MCP scan loop", () => {
   let scanId: string;
   let fingerprint: string;
 
   it("lists catalog controls", async () => {
     const result = await call("catalog_list_controls", { provider: "aws", service: "s3" });
-    expect(result.total).toBe(3);
+    expect(result.total).toBe(4);
     expect(result.controls[0].source).toContain("prowler:");
   });
 
@@ -42,7 +54,7 @@ describe("MCP scan loop", () => {
       services: ["s3", "iam"],
     });
     scanId = result.scanId;
-    expect(result.controlCount).toBe(8);
+    expect(result.controlCount).toBe(9);
     expect(result.plan.steps.length).toBeGreaterThan(0);
     for (const step of result.plan.steps) {
       expect(step.command).toMatch(/^aws /);
@@ -202,6 +214,25 @@ describe("MCP scan loop", () => {
     expect(detail.history.map((e: any) => e.eventType)).toContain("resolved");
   });
 
+  it("lists packs and scans by pack", async () => {
+    const packs = await call("catalog_list_packs");
+    const ids = packs.packs.map((p: any) => p.id);
+    expect(ids).toContain("essential-baseline");
+    expect(packs.packs.every((p: any) => p.controlCount > 0)).toBe(true);
+
+    const scan = await call("scan_start", {
+      provider: "gcp",
+      scopeId: "my-project",
+      pack: "kubernetes",
+    });
+    expect(scan.controlCount).toBe(4);
+    expect(scan.plan.steps.map((s: any) => s.collectorId)).toEqual(["gcp.container.clusters_list"]);
+
+    await expect(
+      call("scan_start", { provider: "gcp", scopeId: "my-project", pack: "bogus" }),
+    ).rejects.toThrow(/unknown pack/);
+  });
+
   it("produces repeatable report data with metric definitions", async () => {
     const report = await call("report_data", { sinceDays: 7 });
     expect(report.metricDefinitions).toBeTruthy();
@@ -219,6 +250,94 @@ describe("MCP scan loop", () => {
     const failed = audit.entries.find((e: any) => e.tool === "findings_set_status" && !e.success);
     expect(failed).toBeTruthy();
     expect(audit.entries.every((e: any) => e.actor === "test-agent")).toBe(true);
+  });
+
+  it("generates a control template and adds a validated custom control", async () => {
+    const template = await call("catalog_generate_control_template", {
+      provider: "aws",
+      collectorId: "aws.s3.get_bucket_versioning",
+    });
+    expect(template.template).toContain("CUSTOM-AWS-MYSERVICE-001");
+    expect(
+      template.availableCollectors.some((c: any) => c.id === "aws.s3.get_bucket_versioning"),
+    ).toBe(true);
+
+    const before = (await call("catalog_list_controls", { provider: "aws" })).total;
+    const added = await call("catalog_add_custom_control", {
+      filename: "custom-s3-mfa-delete",
+      yaml: `controls:
+  - id: CUSTOM-AWS-S3-001
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: S3 bucket has MFA Delete enabled
+    description: Verifies MFA Delete on bucket versioning.
+    rationale: MFA Delete requires a second factor to destroy versions.
+    severity: low
+    categories: [custom, resilience]
+    source: { engine: custom, id: org-s3-17, license: Apache-2.0 }
+    collector: aws.s3.get_bucket_versioning
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: MFADelete, value: Enabled }
+    failMessage: Bucket does not have MFA Delete enabled.
+    passMessage: Bucket has MFA Delete enabled.
+    remediation:
+      summary: Enable MFA Delete via the root user with an MFA device.
+      steps: [Enable MFA Delete on bucket versioning.]
+    compliance: []
+    references: [https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiFactorAuthenticationDelete.html]`,
+    });
+    expect(added.controls).toEqual(["CUSTOM-AWS-S3-001"]);
+    expect(added.overridden).toEqual([]);
+    const after = (await call("catalog_list_controls", { provider: "aws" })).total;
+    expect(after).toBe(before + 1);
+
+    // Custom control is immediately usable in a scan and evaluates deterministically.
+    const scan = await call("scan_start", {
+      provider: "aws",
+      scopeId: "123456789012",
+      controlIds: ["CUSTOM-AWS-S3-001"],
+      regions: ["ap-southeast-2"],
+    });
+    await call("evidence_submit", {
+      scanId: scan.scanId,
+      records: [
+        { collectorId: "aws.s3.list_buckets", exitCode: 0, output: { Buckets: [{ Name: "b" }] } },
+        {
+          collectorId: "aws.s3.get_bucket_versioning",
+          resourceKey: "b",
+          exitCode: 0,
+          output: { Status: "Enabled", MFADelete: "Disabled" },
+        },
+      ],
+    });
+    const evaluated = await call("scan_evaluate", { scanId: scan.scanId });
+    expect(evaluated.summary.fail).toBe(1);
+  });
+
+  it("rejects an unsafe custom collector", async () => {
+    await expect(
+      call("catalog_add_custom_control", {
+        filename: "evil",
+        yaml: `collectors:
+  - id: aws.evil.wipe
+    provider: aws
+    service: evil
+    description: nope
+    kind: single
+    command: aws ec2 terminate-instances --instance-ids i-1
+    regional: false
+    outputFormat: json`,
+      }),
+    ).rejects.toThrow(/unsafe command|validation failed/);
+  });
+
+  it("lists custom-control tools", async () => {
+    const tools = await client.listTools();
+    const names = tools.tools.map((t) => t.name);
+    expect(names).toContain("catalog_generate_control_template");
+    expect(names).toContain("catalog_add_custom_control");
+    expect(names).toContain("catalog_list_packs");
   });
 
   it("exposes resources and prompts", async () => {

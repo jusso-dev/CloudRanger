@@ -100,7 +100,7 @@ export const collectorSchema = z
 
 export const controlSchema = z
   .object({
-    id: z.string().regex(/^CR-(AWS|AZURE|GCP)-[A-Z0-9]+-\d{3}$/),
+    id: z.string().regex(/^(CR|CUSTOM)-(AWS|AZURE|GCP)-[A-Z0-9]+-\d{3}$/),
     version: z.string().regex(/^\d+\.\d+\.\d+$/),
     provider: providerSchema,
     service: z.string().min(1),

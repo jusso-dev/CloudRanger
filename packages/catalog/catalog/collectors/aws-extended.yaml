@@ -1,0 +1,117 @@
+# AWS wave-2 collectors: storage/data services, account-level S3 posture.
+collectors:
+  - id: aws.ec2.describe_volumes
+    provider: aws
+    service: ec2
+    description: EBS volumes in one region.
+    kind: single
+    command: aws ec2 describe-volumes --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.ec2.describe_snapshots_self
+    provider: aws
+    service: ec2
+    description: EBS snapshots owned by this account in one region.
+    kind: single
+    command: aws ec2 describe-snapshots --owner-ids self --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.efs.describe_file_systems
+    provider: aws
+    service: efs
+    description: EFS file systems in one region.
+    kind: single
+    command: aws efs describe-file-systems --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.dynamodb.list_tables
+    provider: aws
+    service: dynamodb
+    description: DynamoDB table names in one region.
+    kind: single
+    command: aws dynamodb list-tables --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.dynamodb.describe_continuous_backups
+    provider: aws
+    service: dynamodb
+    description: Point-in-time recovery status for one DynamoDB table.
+    kind: per_resource
+    command: aws dynamodb describe-continuous-backups --table-name {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.dynamodb.list_tables
+      itemsPath: TableNames
+      resourceField: $
+    outputFormat: json
+    notes: "TableNames is an array of strings; each string is the {resource}."
+
+  - id: aws.sns.list_topics
+    provider: aws
+    service: sns
+    description: SNS topic ARNs in one region.
+    kind: single
+    command: aws sns list-topics --region {region} --output json
+    regional: true
+    outputFormat: json
+
+  - id: aws.sns.get_topic_attributes
+    provider: aws
+    service: sns
+    description: Attributes for one SNS topic.
+    kind: per_resource
+    command: aws sns get-topic-attributes --topic-arn {resource} --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.sns.list_topics
+      itemsPath: Topics
+      resourceField: TopicArn
+    outputFormat: json
+
+  - id: aws.sqs.list_queues
+    provider: aws
+    service: sqs
+    description: SQS queue URLs in one region.
+    kind: single
+    command: aws sqs list-queues --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: "Returns an empty object when there are no queues."
+
+  - id: aws.sqs.get_queue_attributes
+    provider: aws
+    service: sqs
+    description: Attributes for one SQS queue.
+    kind: per_resource
+    command: aws sqs get-queue-attributes --queue-url {resource} --attribute-names All --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.sqs.list_queues
+      itemsPath: QueueUrls
+      resourceField: $
+    outputFormat: json
+    notes: "QueueUrls is an array of strings; each string is the {resource}."
+
+  - id: aws.secretsmanager.list_secrets
+    provider: aws
+    service: secretsmanager
+    description: Secrets Manager secret metadata in one region (no secret values).
+    kind: single
+    command: aws secretsmanager list-secrets --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: "Metadata only. Never collect secret values."
+
+  - id: aws.s3control.get_account_public_access_block
+    provider: aws
+    service: s3
+    description: Account-level S3 public access block configuration.
+    kind: single
+    command: aws s3control get-public-access-block --account-id {account} --output json
+    regional: false
+    outputFormat: json
+    notes: "Errors with NoSuchPublicAccessBlockConfiguration when unset — submit the error; the control treats it as fail."

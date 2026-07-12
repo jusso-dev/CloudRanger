@@ -40,6 +40,13 @@ Reporting: report_data returns transparent metrics with definitions. Use it
 as the single source of numbers so reports are repeatable run-to-run; you own
 narrative, formatting and audience adaptation.
 
+Custom controls: use control packs (catalog_list_packs) to scan by theme, and
+author org-specific controls with catalog_generate_control_template +
+catalog_add_custom_control (or the author_custom_control prompt). Custom
+controls are deterministic like bundled ones — ground every expression in real
+CLI output and keep any custom collector read-only. Never turn control
+authoring into LLM-judged pass/fail.
+
 Scheduling: CloudRanger does not schedule scans. If the operator wants
 recurring scans, set them up in your own scheduling facility (e.g. scheduled
 agent runs) that call this workflow.`;

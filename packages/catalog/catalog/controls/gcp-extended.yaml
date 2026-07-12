@@ -1,0 +1,303 @@
+# GCP wave-2 controls, ported from Prowler and Trivy/tfsec (both Apache-2.0).
+controls:
+  - id: CR-GCP-GKE-001
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster uses private nodes
+    description: Verifies cluster nodes have no public IPs (private nodes enabled).
+    rationale: >
+      Public node IPs expose every node's kubelet and workloads to internet
+      scanning; private nodes confine them to the VPC.
+    severity: high
+    categories: [kubernetes, public-exposure]
+    source: { engine: trivy, id: avd-gcp-0059-gke-enable-private-cluster, license: Apache-2.0 }
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: privateClusterConfig.enablePrivateNodes, value: true }
+    failMessage: GKE cluster nodes have public IP addresses.
+    passMessage: GKE cluster uses private nodes.
+    remediation:
+      summary: Recreate node pools in a private cluster configuration.
+      steps:
+        - Plan migration to a private cluster (private nodes require cluster-level config).
+        - Provide egress via Cloud NAT for image pulls.
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["7.13"] }
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters
+
+  - id: CR-GCP-GKE-002
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster has a network policy mechanism
+    description: >
+      Verifies NetworkPolicy enforcement (or Dataplane V2, which enforces it
+      natively) is enabled.
+    rationale: >
+      Without network policy, every pod can reach every other pod — one
+      compromised workload can pivot cluster-wide.
+    severity: medium
+    categories: [kubernetes, network]
+    source: { engine: trivy, id: avd-gcp-0056-gke-enable-network-policy, license: Apache-2.0 }
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr: { op: equals, path: autopilot.enabled, value: true }
+    passWhen:
+      op: or
+      exprs:
+        - { op: equals, path: networkPolicy.enabled, value: true }
+        - { op: equals, path: networkConfig.datapathProvider, value: ADVANCED_DATAPATH }
+    failMessage: GKE cluster has no network policy enforcement.
+    passMessage: GKE cluster enforces network policy.
+    remediation:
+      summary: Enable Dataplane V2 (preferred) or the NetworkPolicy addon.
+      steps:
+        - New clusters - enable Dataplane V2.
+        - Existing clusters - enable the network policy addon (node pools restart).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["7.4"] }
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/network-policy
+
+  - id: CR-GCP-GKE-003
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE control plane restricts authorized networks
+    description: Verifies master authorized networks are enabled on the cluster API server.
+    rationale: >
+      Without authorized networks the control plane accepts connections from
+      any internet address, leaving only credentials between an attacker and
+      the API.
+    severity: medium
+    categories: [kubernetes, public-exposure]
+    source: { engine: trivy, id: avd-gcp-0061-gke-enable-master-networks, license: Apache-2.0 }
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: masterAuthorizedNetworksConfig.enabled, value: true }
+    failMessage: GKE control plane has no authorized-network restriction.
+    passMessage: GKE control plane restricts authorized networks.
+    remediation:
+      summary: Enable master authorized networks with tight CIDR ranges.
+      steps:
+        - Enable master authorized networks listing only management ranges (operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["7.15"] }
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/authorized-networks
+
+  - id: CR-GCP-GKE-004
+    version: 1.0.0
+    provider: gcp
+    service: gke
+    title: GKE cluster uses shielded nodes
+    description: Verifies shielded GKE nodes are enabled.
+    rationale: >
+      Shielded nodes provide verifiable node identity and boot integrity,
+      blocking a class of node-impersonation attacks.
+    severity: medium
+    categories: [kubernetes, integrity]
+    source: { engine: trivy, id: avd-gcp-0055-gke-node-shielding-enabled, license: Apache-2.0 }
+    collector: gcp.container.clusters_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: shieldedNodes.enabled, value: true }
+    failMessage: GKE cluster does not use shielded nodes.
+    passMessage: GKE cluster uses shielded nodes.
+    remediation:
+      summary: Enable shielded nodes on the cluster.
+      steps:
+        - Enable shielded nodes (node pools recreate on next update; operator action).
+      verifyCommand: gcloud container clusters list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["7.9"] }
+    references:
+      - https://cloud.google.com/kubernetes-engine/docs/how-to/shielded-gke-nodes
+
+  - id: CR-GCP-COMPUTE-005
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Project enforces OS Login
+    description: Verifies enable-oslogin is set true in project-wide compute metadata.
+    rationale: >
+      OS Login binds SSH access to IAM identities with centralised lifecycle
+      and audit, replacing scattered per-instance SSH keys.
+    severity: medium
+    categories: [compute, identity]
+    source: { engine: prowler, id: compute_project_os_login_enabled, license: Apache-2.0 }
+    collector: gcp.compute.project_info
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: commonInstanceMetadata.items
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: key, value: enable-oslogin }
+          - { op: in, path: value, values: ["TRUE", "true", "True", "1", true] }
+    failMessage: Project does not enforce OS Login.
+    passMessage: Project enforces OS Login.
+    remediation:
+      summary: Set enable-oslogin=TRUE in project metadata.
+      steps:
+        - Add enable-oslogin TRUE to project-wide metadata (operator action).
+        - Grant users roles/compute.osLogin or osAdminLogin as appropriate.
+      verifyCommand: gcloud compute project-info describe --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.4"] }
+    references:
+      - https://cloud.google.com/compute/docs/oslogin
+
+  - id: CR-GCP-COMPUTE-006
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance blocks project-wide SSH keys
+    description: Verifies block-project-ssh-keys is true on each instance.
+    rationale: >
+      Project-wide SSH keys grant everyone holding them access to every
+      instance that accepts them; blocking them enforces per-instance or
+      OS Login access.
+    severity: medium
+    categories: [compute, identity]
+    source:
+      {
+        engine: prowler,
+        id: compute_instance_block_project_wide_ssh_keys_disabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr: { op: startsWith, path: name, value: gke- }
+    passWhen:
+      op: anyItem
+      path: metadata.items
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: key, value: block-project-ssh-keys }
+          - { op: in, path: value, values: ["TRUE", "true", "True", "1", true] }
+    failMessage: Instance accepts project-wide SSH keys.
+    passMessage: Instance blocks project-wide SSH keys.
+    remediation:
+      summary: Set block-project-ssh-keys=TRUE in instance metadata.
+      steps:
+        - Update instance metadata (operator action); prefer OS Login project-wide.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["4.3"] }
+    references:
+      - https://cloud.google.com/compute/docs/connect/restrict-ssh-keys
+
+  - id: CR-GCP-NETWORK-002
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Subnet has VPC flow logs enabled
+    description: Verifies flow logs are enabled on each VPC subnet.
+    rationale: >
+      Without flow logs there is no network telemetry for incident
+      investigation or exfiltration detection in that subnet.
+    severity: medium
+    categories: [network, logging]
+    source: { engine: prowler, id: compute_subnet_flow_logs_enabled, license: Apache-2.0 }
+    collector: gcp.compute.subnets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: enableFlowLogs, value: true }
+    failMessage: Subnet does not have flow logs enabled.
+    passMessage: Subnet has flow logs enabled.
+    remediation:
+      summary: Enable flow logs (with sampling to control cost).
+      steps:
+        - Enable flow logs per subnet, e.g. 0.5 sampling and 5-minute aggregation (operator action).
+      verifyCommand: gcloud compute networks subnets list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["3.8"] }
+    references:
+      - https://cloud.google.com/vpc/docs/flow-logs
+
+  - id: CR-GCP-DNS-001
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: Public DNS zone has DNSSEC enabled
+    description: Verifies DNSSEC is on for public Cloud DNS managed zones.
+    rationale: >
+      Without DNSSEC, responses for your domains can be spoofed, redirecting
+      users and services to attacker infrastructure.
+    severity: medium
+    categories: [network, integrity]
+    source: { engine: trivy, id: avd-gcp-0013-dns-enable-dnssec, license: Apache-2.0 }
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen: { op: equals, path: visibility, value: public }
+    passWhen: { op: equals, path: dnssecConfig.state, value: "on" }
+    failMessage: Public DNS zone does not have DNSSEC enabled.
+    passMessage: Public DNS zone has DNSSEC.
+    remediation:
+      summary: Enable DNSSEC on the zone and publish the DS record at the registrar.
+      steps:
+        - Enable DNSSEC (operator action), then add the DS record with your registrar to complete the chain of trust.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["3.3"] }
+    references:
+      - https://cloud.google.com/dns/docs/dnssec
+
+  - id: CR-GCP-IAM-003
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No service account holds owner or editor on the project
+    description: >
+      Verifies project IAM bindings grant no basic owner/editor role to
+      service accounts.
+    rationale: >
+      A service account with owner/editor makes every workload running as it
+      a project-admin credential; compromise of one pod or function becomes
+      full project compromise.
+    severity: high
+    categories: [identity, least-privilege]
+    source: { engine: prowler, id: iam_sa_no_administrative_privileges, license: Apache-2.0 }
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - { op: in, path: role, values: [roles/owner, roles/editor] }
+          - {
+              op: anyItem,
+              path: members,
+              condition: { op: startsWith, path: $, value: "serviceAccount:" },
+            }
+    failMessage: A service account holds roles/owner or roles/editor on the project.
+    passMessage: No service account holds basic admin roles.
+    remediation:
+      summary: Replace basic roles on service accounts with least-privilege predefined roles.
+      steps:
+        - Identify what each affected service account actually does.
+        - Grant specific predefined roles, then remove owner/editor (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - { framework: cis-gcp-foundation, version: "3.0", controls: ["1.5"] }
+    references:
+      - https://cloud.google.com/iam/docs/best-practices-service-accounts

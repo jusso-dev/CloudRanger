@@ -1,0 +1,376 @@
+[
+  {
+    "controlId": "CR-AZURE-STORAGE-006",
+    "cases": [
+      {
+        "name": "passes with infrastructure encryption",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              { "name": "doubleenc", "encryption": { "requireInfrastructureEncryption": true } }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without infrastructure encryption",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              { "name": "singleenc", "encryption": { "requireInfrastructureEncryption": false } }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-007",
+    "cases": [
+      {
+        "name": "passes when replication disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "safestore", "allowCrossTenantReplication": false }]
+          }
+        ]
+      },
+      {
+        "name": "passes when property absent (modern default)",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "newstore" }]
+          }
+        ]
+      },
+      {
+        "name": "fails when replication allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [{ "name": "xtenant", "allowCrossTenantReplication": true }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-003",
+    "cases": [
+      {
+        "name": "fails with SQL Server port open to internet",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-sql",
+                "name": "nsg-sql",
+                "securityRules": [
+                  {
+                    "name": "allow-mssql",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "1433",
+                    "sourceAddressPrefix": "Internet"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with postgres in range from any",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-pg",
+                "name": "nsg-pg",
+                "securityRules": [
+                  {
+                    "name": "allow-db",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "*",
+                    "destinationPortRanges": ["5430-5440"],
+                    "sourceAddressPrefix": "*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes with db ports restricted to vnet",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg-app",
+                "name": "nsg-app",
+                "securityRules": [
+                  {
+                    "name": "allow-sql-app",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "1433",
+                    "sourceAddressPrefix": "10.1.0.0/16"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-003",
+    "cases": [
+      {
+        "name": "passes with default deny",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-locked",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-locked",
+              "properties": { "networkAcls": { "defaultAction": "Deny" } }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with default allow",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-open",
+            "exitCode": 0,
+            "output": {
+              "name": "kv-open",
+              "properties": { "networkAcls": { "defaultAction": "Allow" } }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with no network acls",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-bare",
+            "exitCode": 0,
+            "output": { "name": "kv-bare", "properties": { "enableSoftDelete": true } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-001",
+    "cases": [
+      {
+        "name": "passes with RBAC",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerService/managedClusters/aks-rbac",
+                "name": "aks-rbac",
+                "enableRbac": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without RBAC",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerService/managedClusters/aks-open",
+                "name": "aks-open",
+                "enableRbac": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-002",
+    "cases": [
+      {
+        "name": "passes private cluster",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerService/managedClusters/aks-private",
+                "name": "aks-private",
+                "apiServerAccessProfile": { "enablePrivateCluster": true }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails public API server",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerService/managedClusters/aks-public",
+                "name": "aks-public",
+                "apiServerAccessProfile": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-001",
+    "cases": [
+      {
+        "name": "passes with admin disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/goodacr",
+                "name": "goodacr",
+                "adminUserEnabled": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with admin enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/badacr",
+                "name": "badacr",
+                "adminUserEnabled": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APP-002",
+    "cases": [
+      {
+        "name": "passes at TLS 1.2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-modern",
+            "exitCode": 0,
+            "output": { "minTlsVersion": "1.2", "ftpsState": "Disabled" }
+          }
+        ]
+      },
+      {
+        "name": "fails at TLS 1.0",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-legacy",
+            "exitCode": 0,
+            "output": { "minTlsVersion": "1.0", "ftpsState": "AllAllowed" }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APP-003",
+    "cases": [
+      {
+        "name": "passes FtpsOnly",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-ftps",
+            "exitCode": 0,
+            "output": { "minTlsVersion": "1.2", "ftpsState": "FtpsOnly" }
+          }
+        ]
+      },
+      {
+        "name": "fails AllAllowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.webapp.config_show",
+            "resourceKey": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/app-ftp",
+            "exitCode": 0,
+            "output": { "minTlsVersion": "1.2", "ftpsState": "AllAllowed" }
+          }
+        ]
+      }
+    ]
+  }
+]

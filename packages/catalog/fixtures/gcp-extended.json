@@ -1,0 +1,338 @@
+[
+  {
+    "controlId": "CR-GCP-GKE-001",
+    "cases": [
+      {
+        "name": "passes private nodes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "prod-cluster", "privateClusterConfig": { "enablePrivateNodes": true } }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails public nodes",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "legacy-cluster" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-002",
+    "cases": [
+      {
+        "name": "passes with network policy addon",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "np-cluster", "networkPolicy": { "enabled": true } }]
+          }
+        ]
+      },
+      {
+        "name": "passes with Dataplane V2",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "dpv2-cluster",
+                "networkConfig": { "datapathProvider": "ADVANCED_DATAPATH" }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without policy enforcement",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "flat-cluster", "networkPolicy": { "enabled": false } }]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for autopilot",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "auto-cluster", "autopilot": { "enabled": true } }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-003",
+    "cases": [
+      {
+        "name": "passes with authorized networks",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "gated-cluster",
+                "masterAuthorizedNetworksConfig": {
+                  "enabled": true,
+                  "cidrBlocks": [{ "cidrBlock": "203.0.113.0/24" }]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails without authorized networks",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "open-cluster" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GKE-004",
+    "cases": [
+      {
+        "name": "passes shielded nodes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "shielded-cluster", "shieldedNodes": { "enabled": true } }]
+          }
+        ]
+      },
+      {
+        "name": "fails without shielded nodes",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.container.clusters_list",
+            "exitCode": 0,
+            "output": [{ "name": "plain-cluster", "shieldedNodes": {} }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-005",
+    "cases": [
+      {
+        "name": "passes with OS Login enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": {
+              "name": "my-project",
+              "commonInstanceMetadata": { "items": [{ "key": "enable-oslogin", "value": "TRUE" }] }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without OS Login",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": { "name": "my-project", "commonInstanceMetadata": { "items": [] } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-006",
+    "cases": [
+      {
+        "name": "passes when blocking project keys",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "locked-vm",
+                "metadata": { "items": [{ "key": "block-project-ssh-keys", "value": "true" }] }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails when accepting project keys",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "open-vm", "metadata": { "items": [] } }]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for GKE nodes",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [{ "name": "gke-pool-node-1", "metadata": { "items": [] } }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-NETWORK-002",
+    "cases": [
+      {
+        "name": "passes with flow logs",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [{ "name": "prod-subnet", "enableFlowLogs": true }]
+          }
+        ]
+      },
+      {
+        "name": "fails without flow logs",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.subnets_list",
+            "exitCode": 0,
+            "output": [{ "name": "quiet-subnet", "enableFlowLogs": false }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-001",
+    "cases": [
+      {
+        "name": "passes public zone with DNSSEC",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              { "name": "example-zone", "visibility": "public", "dnssecConfig": { "state": "on" } }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails public zone without DNSSEC",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "insecure-zone",
+                "visibility": "public",
+                "dnssecConfig": { "state": "off" }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable for private zones",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [{ "name": "internal-zone", "visibility": "private" }]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-003",
+    "cases": [
+      {
+        "name": "fails when SA has editor",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/editor",
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com",
+                    "user:dev@example.com"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when SAs have scoped roles",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                { "role": "roles/owner", "members": ["user:admin@example.com"] },
+                {
+                  "role": "roles/storage.objectAdmin",
+                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

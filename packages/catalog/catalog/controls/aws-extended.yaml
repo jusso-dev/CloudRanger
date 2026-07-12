@@ -1,0 +1,372 @@
+# AWS wave-2 controls, ported from Prowler (Apache-2.0).
+controls:
+  - id: CR-AWS-EC2-005
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: Default security group restricts all traffic
+    description: Verifies each default security group has no ingress or egress rules.
+    rationale: >
+      Resources launched without an explicit security group land in the
+      default group; leaving rules there grants unintended network access.
+    severity: medium
+    categories: [network, governance]
+    source: { engine: prowler, id: ec2_securitygroup_default_restrict_traffic, license: Apache-2.0 }
+    collector: aws.ec2.describe_security_groups
+    resourcesPath: SecurityGroups
+    resourceIdField: GroupId
+    resourceNameField: GroupName
+    applicableWhen: { op: equals, path: GroupName, value: default }
+    passWhen:
+      op: and
+      exprs:
+        - { op: isEmpty, path: IpPermissions }
+        - { op: isEmpty, path: IpPermissionsEgress }
+    failMessage: Default security group has active rules.
+    passMessage: Default security group restricts all traffic.
+    remediation:
+      summary: Remove all rules from default security groups; use purpose-built groups.
+      steps:
+        - Identify resources still relying on the default group and move them to dedicated groups.
+        - Delete all ingress and egress rules on the default group (operator action).
+      verifyCommand: aws ec2 describe-security-groups --region <region> --output json
+    compliance:
+      - { framework: cis-aws-foundations, version: "3.0", controls: ["5.4"] }
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/default-security-group.html
+
+  - id: CR-AWS-EC2-006
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS volume is encrypted
+    description: Verifies each EBS volume has encryption at rest enabled.
+    rationale: >
+      Unencrypted volumes expose data through snapshots, detached volumes and
+      decommissioned hardware.
+    severity: medium
+    categories: [compute, encryption]
+    source: { engine: prowler, id: ec2_ebs_volume_encryption, license: Apache-2.0 }
+    collector: aws.ec2.describe_volumes
+    resourcesPath: Volumes
+    resourceIdField: VolumeId
+    passWhen: { op: equals, path: Encrypted, value: true }
+    failMessage: EBS volume is not encrypted.
+    passMessage: EBS volume is encrypted.
+    remediation:
+      summary: Recreate the volume from an encrypted snapshot copy.
+      steps:
+        - Snapshot the volume, copy the snapshot with encryption enabled, recreate and swap.
+        - Enable EBS encryption-by-default to prevent recurrence.
+      verifyCommand: aws ec2 describe-volumes --region <region> --output json
+    compliance:
+      - { framework: cis-aws-foundations, version: "3.0", controls: ["2.2.1"] }
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html
+
+  - id: CR-AWS-EC2-007
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EBS snapshot is encrypted
+    description: Verifies each account-owned EBS snapshot is encrypted.
+    rationale: >
+      Snapshots are full disk images; unencrypted snapshots are a portable
+      copy of everything on the volume.
+    severity: medium
+    categories: [compute, encryption]
+    source: { engine: prowler, id: ec2_ebs_snapshots_encrypted, license: Apache-2.0 }
+    collector: aws.ec2.describe_snapshots_self
+    resourcesPath: Snapshots
+    resourceIdField: SnapshotId
+    passWhen: { op: equals, path: Encrypted, value: true }
+    failMessage: EBS snapshot is not encrypted.
+    passMessage: EBS snapshot is encrypted.
+    remediation:
+      summary: Copy the snapshot with encryption and delete the unencrypted original.
+      steps:
+        - Copy the snapshot with encryption enabled.
+        - Update AMIs/launch templates referencing the old snapshot, then delete it (operator action).
+      verifyCommand: aws ec2 describe-snapshots --owner-ids self --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.DS] }
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html
+
+  - id: CR-AWS-EC2-008
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance has no public IP
+    description: Verifies running instances do not have a public IPv4 address.
+    rationale: >
+      Directly internet-addressable instances bypass load balancer and WAF
+      layers and are exposed to internet-wide scanning.
+    severity: medium
+    categories: [compute, public-exposure]
+    source: { engine: prowler, id: ec2_instance_public_ip, license: Apache-2.0 }
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    applicableWhen:
+      op: notIn
+      path: State.Name
+      values: [terminated, shutting-down]
+    passWhen: { op: notExists, path: PublicIpAddress }
+    failMessage: Instance has a public IP address.
+    passMessage: Instance has no public IP.
+    remediation:
+      summary: Front the workload with a load balancer; move the instance to a private subnet.
+      steps:
+        - Confirm the instance does not intentionally serve directly (bastion, NAT).
+        - Re-launch in a private subnet or disassociate the Elastic IP (operator action).
+      verifyCommand: aws ec2 describe-instances --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html
+
+  - id: CR-AWS-S3-004
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: Account-level S3 public access block is fully enabled
+    description: Verifies the account-wide S3 public access block enables all four settings.
+    rationale: >
+      The account-level block protects every current and future bucket even
+      when bucket-level settings are missed.
+    severity: high
+    categories: [storage, public-exposure]
+    source: { engine: prowler, id: s3_account_level_public_access_blocks, license: Apache-2.0 }
+    collector: aws.s3control.get_account_public_access_block
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - { op: equals, path: PublicAccessBlockConfiguration.BlockPublicAcls, value: true }
+        - { op: equals, path: PublicAccessBlockConfiguration.IgnorePublicAcls, value: true }
+        - { op: equals, path: PublicAccessBlockConfiguration.BlockPublicPolicy, value: true }
+        - { op: equals, path: PublicAccessBlockConfiguration.RestrictPublicBuckets, value: true }
+    onError:
+      - contains: NoSuchPublicAccessBlockConfiguration
+        status: fail
+        message: No account-level public access block is configured.
+      - contains: AccessDenied
+        status: error
+    failMessage: Account-level S3 public access block is not fully enabled.
+    passMessage: Account-level S3 public access block is fully enabled.
+    remediation:
+      summary: Enable all four account-level public access block settings.
+      steps:
+        - Confirm no bucket intentionally serves public content (or exempt via bucket policy review first).
+        - Enable the account-level public access block (operator action).
+      verifyCommand: aws s3control get-public-access-block --account-id <account-id> --output json
+    compliance:
+      - { framework: cis-aws-foundations, version: "3.0", controls: ["2.1.4"] }
+    references:
+      - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
+
+  - id: CR-AWS-EFS-001
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system is encrypted at rest
+    description: Verifies each EFS file system has encryption at rest enabled.
+    rationale: >
+      EFS encryption cannot be enabled after creation; unencrypted file
+      systems hold shared data in plaintext at rest.
+    severity: medium
+    categories: [storage, encryption]
+    source: { engine: prowler, id: efs_encryption_at_rest_enabled, license: Apache-2.0 }
+    collector: aws.efs.describe_file_systems
+    resourcesPath: FileSystems
+    resourceIdField: FileSystemId
+    passWhen: { op: equals, path: Encrypted, value: true }
+    failMessage: EFS file system is not encrypted at rest.
+    passMessage: EFS file system is encrypted at rest.
+    remediation:
+      summary: Migrate data to a new encrypted file system.
+      steps:
+        - Create an encrypted EFS file system.
+        - Copy data with AWS DataSync, cut over mounts, retire the old file system (operator action).
+      verifyCommand: aws efs describe-file-systems --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.DS] }
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/encryption.html
+
+  - id: CR-AWS-DYNAMODB-001
+    version: 1.0.0
+    provider: aws
+    service: dynamodb
+    title: DynamoDB table has point-in-time recovery
+    description: Verifies each table has point-in-time recovery (PITR) enabled.
+    rationale: >
+      PITR is the only continuous-backup mechanism for DynamoDB; without it,
+      corruption or deletion is unrecoverable beyond on-demand backups.
+    severity: medium
+    categories: [database, resilience]
+    source: { engine: prowler, id: dynamodb_tables_pitr_enabled, license: Apache-2.0 }
+    collector: aws.dynamodb.describe_continuous_backups
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus
+      value: ENABLED
+    failMessage: DynamoDB table does not have point-in-time recovery enabled.
+    passMessage: DynamoDB table has point-in-time recovery.
+    remediation:
+      summary: Enable PITR on the table.
+      steps:
+        - Enable point-in-time recovery (operator action; incurs backup storage cost).
+      verifyCommand: aws dynamodb describe-continuous-backups --table-name <table> --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.IP] }
+    references:
+      - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/PointInTimeRecovery.html
+
+  - id: CR-AWS-SNS-001
+    version: 1.0.0
+    provider: aws
+    service: sns
+    title: SNS topic is encrypted with KMS
+    description: Verifies each SNS topic has a KMS key configured for encryption at rest.
+    rationale: >
+      Topics buffer message payloads; without KMS encryption those payloads
+      rest unencrypted inside the service.
+    severity: medium
+    categories: [messaging, encryption]
+    source: { engine: prowler, id: sns_topics_kms_encryption_at_rest_enabled, license: Apache-2.0 }
+    collector: aws.sns.get_topic_attributes
+    resourceIdField: $resourceKey
+    passWhen: { op: exists, path: Attributes.KmsMasterKeyId }
+    failMessage: SNS topic has no KMS encryption key.
+    passMessage: SNS topic is KMS-encrypted.
+    remediation:
+      summary: Set a KMS key on the topic.
+      steps:
+        - Assign a customer-managed KMS key to the topic (operator action).
+        - Grant publishers/subscribers kms permissions for the key.
+      verifyCommand: aws sns get-topic-attributes --topic-arn <arn> --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.DS] }
+    references:
+      - https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html
+
+  - id: CR-AWS-SQS-001
+    version: 1.0.0
+    provider: aws
+    service: sqs
+    title: SQS queue has server-side encryption
+    description: Verifies each queue uses SQS-managed SSE or a KMS key.
+    rationale: >
+      Queue messages frequently carry sensitive payloads; SSE protects them
+      at rest inside the service.
+    severity: medium
+    categories: [messaging, encryption]
+    source: { engine: prowler, id: sqs_queues_server_side_encryption_enabled, license: Apache-2.0 }
+    collector: aws.sqs.get_queue_attributes
+    resourceIdField: $resourceKey
+    passWhen:
+      op: or
+      exprs:
+        - { op: equals, path: Attributes.SqsManagedSseEnabled, value: true }
+        - { op: exists, path: Attributes.KmsMasterKeyId }
+    failMessage: SQS queue has no server-side encryption.
+    passMessage: SQS queue is encrypted at rest.
+    remediation:
+      summary: Enable SQS-managed SSE (free) or a KMS key on the queue.
+      steps:
+        - Enable SSE-SQS on the queue (operator action).
+      verifyCommand: aws sqs get-queue-attributes --queue-url <url> --attribute-names All --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.DS] }
+    references:
+      - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-server-side-encryption.html
+
+  - id: CR-AWS-SECRETS-001
+    version: 1.0.0
+    provider: aws
+    service: secretsmanager
+    title: Secrets Manager secret has rotation enabled
+    description: Verifies each secret has automatic rotation configured (metadata only).
+    rationale: >
+      Unrotated secrets accumulate leak exposure indefinitely; rotation bounds
+      the useful lifetime of a compromised secret.
+    severity: medium
+    categories: [secrets, credentials]
+    source: { engine: prowler, id: secretsmanager_automatic_rotation_enabled, license: Apache-2.0 }
+    collector: aws.secretsmanager.list_secrets
+    resourcesPath: SecretList
+    resourceIdField: ARN
+    resourceNameField: Name
+    passWhen: { op: equals, path: RotationEnabled, value: true }
+    failMessage: Secret does not have automatic rotation enabled.
+    passMessage: Secret has automatic rotation enabled.
+    remediation:
+      summary: Configure a rotation lambda/schedule for the secret.
+      steps:
+        - Attach a rotation function and schedule appropriate to the secret type (operator action).
+        - For credentials that cannot rotate automatically, document compensating controls.
+      verifyCommand: aws secretsmanager list-secrets --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets.html
+
+  - id: CR-AWS-RDS-005
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS automatic minor version upgrades are enabled
+    description: Verifies each RDS instance enables automatic minor engine upgrades.
+    rationale: >
+      Minor engine versions carry security patches; disabling auto-upgrade
+      leaves known vulnerabilities unpatched.
+    severity: low
+    categories: [database, patching]
+    source: { engine: prowler, id: rds_instance_minor_version_upgrade_enabled, license: Apache-2.0 }
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    passWhen: { op: equals, path: AutoMinorVersionUpgrade, value: true }
+    failMessage: RDS instance does not auto-apply minor version upgrades.
+    passMessage: RDS instance auto-applies minor version upgrades.
+    remediation:
+      summary: Enable auto minor version upgrade.
+      steps:
+        - Modify the instance with --auto-minor-version-upgrade (applies in the maintenance window).
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.IP] }
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Upgrading.html
+
+  - id: CR-AWS-RDS-006
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS instance is Multi-AZ
+    description: Verifies each RDS instance is deployed Multi-AZ.
+    rationale: >
+      Single-AZ databases have no automatic failover; an AZ event becomes a
+      full outage with potential data loss to the last backup.
+    severity: low
+    categories: [database, resilience]
+    source: { engine: prowler, id: rds_instance_multi_az, license: Apache-2.0 }
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    passWhen: { op: equals, path: MultiAZ, value: true }
+    failMessage: RDS instance is not Multi-AZ.
+    passMessage: RDS instance is Multi-AZ.
+    remediation:
+      summary: Convert production instances to Multi-AZ.
+      steps:
+        - Modify the instance to Multi-AZ (brief I/O suspension during conversion).
+        - Accept single-AZ for dev/test via a documented risk acceptance instead.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.IP] }
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html

@@ -86,12 +86,18 @@ CloudRanger deliberately has no scheduler. Use your agent's scheduling facility 
 | `report_data`                                   | Repeatable metrics JSON with definitions                                      |
 | `audit_search`                                  | Hash-chained audit log of every tool call                                     |
 
-Prompts: `run_full_scan`, `daily_security_review`, `executive_brief`, `investigate_finding`, `remediation_plan`.
+Custom controls: `catalog_generate_control_template`, `catalog_add_custom_control`, `catalog_list_packs`.
+
+Prompts: `run_full_scan`, `daily_security_review`, `executive_brief`, `investigate_finding`, `remediation_plan`, `author_custom_control`.
 Resources: `cloudranger://guides/safety`, `cloudranger://guides/workflow`, `cloudranger://catalog/summary`.
 
 ## Control catalog
 
-49 seed controls (22 AWS, 13 Azure, 14 GCP) across identity, storage, network exposure, databases, encryption, logging and detection — each with severity, rationale, remediation steps, compliance mappings (CIS section references, NIST CSF), upstream attribution and deterministic fixtures (118 test cases). The porting pipeline is designed to scale toward the full upstream catalogs; see [docs/roadmap.md](docs/roadmap.md).
+79 seed controls (34 AWS, 22 Azure, 23 GCP) across identity, storage, network exposure, databases, encryption, logging/detection, containers/Kubernetes and resilience — each with severity, rationale, remediation steps, compliance mappings (CIS section references, NIST CSF), upstream attribution and deterministic fixtures (200+ test cases). The porting pipeline (`scripts/prowler-import.mjs`) scaffolds stubs from a local Prowler checkout to scale toward the full upstream catalogs; see [docs/roadmap.md](docs/roadmap.md).
+
+**Control packs** group controls by theme for targeted scans: `essential-baseline`, `public-exposure`, `identity`, `encryption`, `logging-detection`, `resilience`, `kubernetes`. Pass `pack: "public-exposure"` to `scan_start`.
+
+**Custom controls** live in `~/.cloudranger/catalog/` and merge over the bundled catalog (matching IDs override). Author them with the CLI or have an agent generate one — the engine still decides pass/fail deterministically. See [docs/rules/custom-controls.md](docs/rules/custom-controls.md).
 
 ```bash
 node apps/cli/dist/main.js catalog list
@@ -105,6 +111,8 @@ node apps/cli/dist/main.js catalog test
 cloudranger findings --state open,reopened --severity critical,high
 cloudranger report --since-days 30
 cloudranger scans
+cloudranger controls template --provider aws       # scaffold a custom control
+cloudranger controls add my-control.yaml           # validate + install it
 cloudranger audit verify        # verify the audit hash chain
 cloudranger db-path
 ```

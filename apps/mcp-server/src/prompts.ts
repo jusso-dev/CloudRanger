@@ -111,4 +111,28 @@ Clearly separate deterministic engine results from your inference throughout.`),
 4. Sequence: quick low-risk wins first, then changes needing maintenance windows, then structural work.
 5. End with: after operator changes are applied, re-run the affected controls via a targeted scan (scan_start with controlIds) so findings resolve through verified passing evaluations — never mark things resolved manually.`),
   );
+
+  server.registerPrompt(
+    "author_custom_control",
+    {
+      title: "Author a custom control",
+      description: "Draft, ground, validate and install a new deterministic control",
+      argsSchema: {
+        provider: z.string().describe("aws | azure | gcp"),
+        intent: z.string().describe("What the control should check, in plain language"),
+      },
+    },
+    ({ provider, intent }) =>
+      user(`Author a new CloudRanger control for ${provider}: "${intent}".
+
+Rules: the control must be DETERMINISTIC — evaluated by the engine from CLI JSON, never by you. Do not invent field names.
+
+1. catalog_generate_control_template { provider: "${provider}" } to get the schema, the expression-operator reference, and the list of available read-only collectors.
+2. Pick an existing collector whose output contains the fields you need (catalog_get_control on a similar control shows real evidence shapes). If none fits, define a NEW read-only collector in the same document — command must be list/describe/get/show only, or it will be rejected.
+3. Ground the passWhen expression in ACTUAL output: run the collector's read-only command yourself once, inspect the JSON, and write the expression against the real field paths and value types you observe. Note whether booleans come back as true or "true", etc.
+4. Choose id CUSTOM-${provider.toUpperCase()}-<SERVICE>-001 (reusing an existing CR- id intentionally overrides the bundled control — only do that deliberately). Set a defensible severity and honest remediation steps (operator executes them; you never do).
+5. catalog_add_custom_control { filename, yaml } to validate and install. Fix any schema/safety errors it reports.
+6. Recommend the operator add fixture cases (pass + fail) under packages/catalog/fixtures and run "cloudranger catalog test" so the control is regression-protected.
+Report the control id, what it checks, the evidence it relies on, and your grounding evidence.`),
+  );
 }

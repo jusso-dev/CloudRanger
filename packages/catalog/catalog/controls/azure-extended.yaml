@@ -1,0 +1,290 @@
+# Azure wave-2 controls, ported from Prowler and Trivy (both Apache-2.0).
+controls:
+  - id: CR-AZURE-STORAGE-006
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account has infrastructure encryption
+    description: Verifies double (infrastructure-level) encryption is enabled.
+    rationale: >
+      Infrastructure encryption adds a second, independently-keyed encryption
+      layer for data at rest — required by some regulated baselines.
+    severity: low
+    categories: [storage, encryption]
+    source:
+      { engine: prowler, id: storage_infrastructure_encryption_is_enabled, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen: { op: equals, path: encryption.requireInfrastructureEncryption, value: true }
+    failMessage: Storage account does not use infrastructure encryption.
+    passMessage: Storage account uses infrastructure encryption.
+    remediation:
+      summary: Recreate the account with infrastructure encryption (creation-time setting).
+      steps:
+        - For regulated data, migrate to a new account created with --require-infrastructure-encryption.
+        - Otherwise consider a documented risk acceptance; single-layer SSE remains in place.
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.2"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/common/infrastructure-encryption-enable
+
+  - id: CR-AZURE-STORAGE-007
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account disallows cross-tenant replication
+    description: Verifies object replication cannot target another Entra tenant.
+    rationale: >
+      Cross-tenant replication is a data exfiltration channel if an account
+      is compromised or misconfigured.
+    severity: medium
+    categories: [storage, data-protection]
+    source: { engine: prowler, id: storage_cross_tenant_replication_disabled, license: Apache-2.0 }
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: or
+      exprs:
+        - { op: equals, path: allowCrossTenantReplication, value: false }
+        - { op: notExists, path: allowCrossTenantReplication }
+    failMessage: Storage account allows cross-tenant replication.
+    passMessage: Cross-tenant replication is disallowed.
+    remediation:
+      summary: Set allowCrossTenantReplication to false.
+      steps:
+        - Confirm no legitimate cross-tenant replication policies exist, then disable (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["3.14"] }
+    references:
+      - https://learn.microsoft.com/azure/storage/blobs/object-replication-prevent-cross-tenant-policies
+
+  - id: CR-AZURE-NETWORK-003
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows database ports from the internet
+    description: >
+      Verifies no inbound allow rule exposes SQL Server (1433), MySQL (3306)
+      or PostgreSQL (5432) to Any/Internet sources.
+    rationale: >
+      Internet-reachable database ports invite credential attacks and
+      exploitation of unpatched engines.
+    severity: high
+    categories: [network, public-exposure, database]
+    source: { engine: steampipe, id: azure_compliance.control.cis_v210_6_3, license: Apache-2.0 }
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - { op: equals, path: access, value: Allow }
+          - { op: equals, path: direction, value: Inbound }
+          - { op: in, path: protocol, values: [Tcp, "*"] }
+          - op: or
+            exprs:
+              - { op: portStringIncludes, path: destinationPortRange, value: 1433 }
+              - { op: portStringIncludes, path: destinationPortRanges, value: 1433 }
+              - { op: portStringIncludes, path: destinationPortRange, value: 3306 }
+              - { op: portStringIncludes, path: destinationPortRanges, value: 3306 }
+              - { op: portStringIncludes, path: destinationPortRange, value: 5432 }
+              - { op: portStringIncludes, path: destinationPortRanges, value: 5432 }
+          - op: or
+            exprs:
+              - { op: isPublicCidr, path: sourceAddressPrefix }
+              - {
+                  op: anyItem,
+                  path: sourceAddressPrefixes,
+                  condition: { op: isPublicCidr, path: $ },
+                }
+    failMessage: NSG allows database ports (1433/3306/5432) from the internet.
+    passMessage: No internet-open database ports.
+    remediation:
+      summary: Restrict database ports to application subnets or private endpoints.
+      steps:
+        - Move databases behind private endpoints where possible.
+        - Replace Any/Internet sources with application subnet ranges (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["6.3"] }
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+
+  - id: CR-AZURE-KEYVAULT-003
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault network default action is deny
+    description: Verifies the vault firewall denies by default.
+    rationale: >
+      A default-allow vault is reachable from any network; secrets access
+      should require both identity and network position.
+    severity: medium
+    categories: [keys, network]
+    source: { engine: trivy, id: avd-azu-0013-keyvault-specify-network-acl, license: Apache-2.0 }
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: properties.networkAcls.defaultAction, value: Deny }
+    failMessage: Key vault network default action is not Deny.
+    passMessage: Key vault firewall denies by default.
+    remediation:
+      summary: Set the vault firewall default action to Deny and allowlist consumers.
+      steps:
+        - Enumerate legitimate consumers (VNets, trusted services).
+        - Set defaultAction=Deny with explicit rules (operator action).
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["8.6"] }
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/network-security
+
+  - id: CR-AZURE-AKS-001
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has RBAC enabled
+    description: Verifies Kubernetes RBAC is enabled on each AKS cluster.
+    rationale: >
+      Without RBAC every authenticated identity has cluster-admin-equivalent
+      access; RBAC is the foundation of Kubernetes authorization.
+    severity: high
+    categories: [kubernetes, identity]
+    source: { engine: prowler, id: aks_clusters_rbac_enabled, license: Apache-2.0 }
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: equals, path: enableRbac, value: true }
+    failMessage: AKS cluster does not have RBAC enabled.
+    passMessage: AKS cluster has RBAC enabled.
+    remediation:
+      summary: Recreate the cluster with RBAC (cannot be enabled in place).
+      steps:
+        - Plan a cluster rebuild with RBAC and Azure AD integration enabled.
+      verifyCommand: az aks list --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://learn.microsoft.com/azure/aks/azure-ad-rbac
+
+  - id: CR-AZURE-AKS-002
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS API server is not public
+    description: Verifies the cluster API server is private (private cluster mode).
+    rationale: >
+      A public Kubernetes API endpoint exposes authentication and any control
+      plane CVE to the internet.
+    severity: medium
+    categories: [kubernetes, public-exposure]
+    source: { engine: trivy, id: avd-azu-0041-aks-private-cluster, license: Apache-2.0 }
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: equals, path: apiServerAccessProfile.enablePrivateCluster, value: true }
+    failMessage: AKS API server is publicly reachable.
+    passMessage: AKS cluster is private.
+    remediation:
+      summary: Use private cluster mode, or at minimum authorized IP ranges.
+      steps:
+        - New workloads - deploy private clusters.
+        - Existing clusters - configure --api-server-authorized-ip-ranges as an interim control.
+      verifyCommand: az aks list --output json
+    compliance:
+      - { framework: nist-csf, controls: [PR.AC] }
+    references:
+      - https://learn.microsoft.com/azure/aks/private-clusters
+
+  - id: CR-AZURE-ACR-001
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container registry admin account is disabled
+    description: Verifies the ACR built-in admin user is disabled.
+    rationale: >
+      The admin account is a shared, non-attributable credential with full
+      push/pull rights — a standing secret waiting to leak.
+    severity: high
+    categories: [containers, identity]
+    source: { engine: trivy, id: avd-azu-0046-acr-admin-account-disabled, license: Apache-2.0 }
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: not, expr: { op: equals, path: adminUserEnabled, value: true } }
+    failMessage: ACR admin user is enabled.
+    passMessage: ACR admin user is disabled.
+    remediation:
+      summary: Disable the admin user; use Entra ID identities and tokens.
+      steps:
+        - Migrate consumers to managed identity or repository-scoped tokens.
+        - Disable the admin user (operator action).
+      verifyCommand: az acr list --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["9.6"] }
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-authentication
+
+  - id: CR-AZURE-APP-002
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service requires TLS 1.2 or higher
+    description: Verifies each web app's minimum inbound TLS version is at least 1.2.
+    rationale: >
+      Legacy TLS on public web apps exposes sessions to downgrade and
+      interception attacks.
+    severity: medium
+    categories: [appservice, encryption-in-transit]
+    source: { engine: prowler, id: app_minimum_tls_version_12, license: Apache-2.0 }
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen: { op: in, path: minTlsVersion, values: ["1.2", "1.3"] }
+    failMessage: Web app allows TLS below 1.2.
+    passMessage: Web app requires TLS 1.2+.
+    remediation:
+      summary: Set the minimum TLS version to 1.2.
+      steps:
+        - Update the app's TLS settings (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["9.3"] }
+    references:
+      - https://learn.microsoft.com/azure/app-service/configure-ssl-bindings
+
+  - id: CR-AZURE-APP-003
+    version: 1.0.0
+    provider: azure
+    service: appservice
+    title: App Service FTP deployments are disabled or FTPS-only
+    description: Verifies ftpsState is Disabled or FtpsOnly on each web app.
+    rationale: >
+      Plain FTP transmits deployment credentials and content unencrypted.
+    severity: medium
+    categories: [appservice, encryption-in-transit]
+    source: { engine: prowler, id: app_ftp_deployment_disabled, license: Apache-2.0 }
+    collector: azure.webapp.config_show
+    resourceIdField: $resourceKey
+    passWhen: { op: in, path: ftpsState, values: [Disabled, FtpsOnly] }
+    failMessage: Web app allows plain FTP deployments.
+    passMessage: FTP deployments are disabled or FTPS-only.
+    remediation:
+      summary: Set FTP state to Disabled (preferred) or FtpsOnly.
+      steps:
+        - Migrate deployments to zip deploy / GitHub Actions / OneDeploy.
+        - Disable FTP on the app (operator action).
+      verifyCommand: az webapp config show --ids <app-resource-id> --output json
+    compliance:
+      - { framework: cis-azure-foundations, version: "2.1", controls: ["9.7"] }
+    references:
+      - https://learn.microsoft.com/azure/app-service/deploy-ftp

@@ -1,0 +1,491 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-005",
+    "cases": [
+      {
+        "name": "passes when default SG has no rules",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-def",
+                  "GroupName": "default",
+                  "IpPermissions": [],
+                  "IpPermissionsEgress": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when default SG has rules",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-def2",
+                  "GroupName": "default",
+                  "IpPermissions": [
+                    { "IpProtocol": "-1", "UserIdGroupPairs": [{ "GroupId": "sg-def2" }] }
+                  ],
+                  "IpPermissionsEgress": [
+                    { "IpProtocol": "-1", "IpRanges": [{ "CidrIp": "0.0.0.0/0" }] }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable to non-default groups",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-app",
+                  "GroupName": "app-servers",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [{ "CidrIp": "0.0.0.0/0" }]
+                    }
+                  ],
+                  "IpPermissionsEgress": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-006",
+    "cases": [
+      {
+        "name": "passes encrypted volume",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_volumes",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "Volumes": [{ "VolumeId": "vol-enc", "Encrypted": true }] }
+          }
+        ]
+      },
+      {
+        "name": "fails unencrypted volume",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_volumes",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "Volumes": [{ "VolumeId": "vol-plain", "Encrypted": false }] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-007",
+    "cases": [
+      {
+        "name": "passes encrypted snapshot",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshots_self",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "Snapshots": [{ "SnapshotId": "snap-enc", "Encrypted": true }] }
+          }
+        ]
+      },
+      {
+        "name": "fails unencrypted snapshot",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_snapshots_self",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "Snapshots": [{ "SnapshotId": "snap-plain", "Encrypted": false }] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-008",
+    "cases": [
+      {
+        "name": "passes instance without public IP",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-private",
+                      "State": { "Name": "running" },
+                      "PrivateIpAddress": "10.0.1.5"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails instance with public IP",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-public",
+                      "State": { "Name": "running" },
+                      "PublicIpAddress": "54.1.2.3"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-S3-004",
+    "cases": [
+      {
+        "name": "passes with all account-level settings",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.s3control.get_account_public_access_block",
+            "exitCode": 0,
+            "output": {
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "IgnorePublicAcls": true,
+                "BlockPublicPolicy": true,
+                "RestrictPublicBuckets": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when not configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.s3control.get_account_public_access_block",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (NoSuchPublicAccessBlockConfiguration) when calling the GetPublicAccessBlock operation"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-001",
+    "cases": [
+      {
+        "name": "passes encrypted file system",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "FileSystems": [{ "FileSystemId": "fs-enc", "Encrypted": true }] }
+          }
+        ]
+      },
+      {
+        "name": "fails unencrypted file system",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "FileSystems": [{ "FileSystemId": "fs-plain", "Encrypted": false }] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DYNAMODB-001",
+    "cases": [
+      {
+        "name": "passes with PITR enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_continuous_backups",
+            "region": "ap-southeast-2",
+            "resourceKey": "orders",
+            "exitCode": 0,
+            "output": {
+              "ContinuousBackupsDescription": {
+                "ContinuousBackupsStatus": "ENABLED",
+                "PointInTimeRecoveryDescription": { "PointInTimeRecoveryStatus": "ENABLED" }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with PITR disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_continuous_backups",
+            "region": "ap-southeast-2",
+            "resourceKey": "sessions",
+            "exitCode": 0,
+            "output": {
+              "ContinuousBackupsDescription": {
+                "ContinuousBackupsStatus": "ENABLED",
+                "PointInTimeRecoveryDescription": { "PointInTimeRecoveryStatus": "DISABLED" }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SNS-001",
+    "cases": [
+      {
+        "name": "passes with KMS key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sns.get_topic_attributes",
+            "region": "ap-southeast-2",
+            "resourceKey": "arn:aws:sns:ap-southeast-2:123456789012:alerts",
+            "exitCode": 0,
+            "output": {
+              "Attributes": {
+                "TopicArn": "arn:aws:sns:ap-southeast-2:123456789012:alerts",
+                "KmsMasterKeyId": "alias/aws/sns"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without KMS key",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sns.get_topic_attributes",
+            "region": "ap-southeast-2",
+            "resourceKey": "arn:aws:sns:ap-southeast-2:123456789012:plain",
+            "exitCode": 0,
+            "output": {
+              "Attributes": { "TopicArn": "arn:aws:sns:ap-southeast-2:123456789012:plain" }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SQS-001",
+    "cases": [
+      {
+        "name": "passes with SQS-managed SSE",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sqs.get_queue_attributes",
+            "region": "ap-southeast-2",
+            "resourceKey": "https://sqs.ap-southeast-2.amazonaws.com/123456789012/jobs",
+            "exitCode": 0,
+            "output": { "Attributes": { "SqsManagedSseEnabled": "true" } }
+          }
+        ]
+      },
+      {
+        "name": "passes with KMS key",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sqs.get_queue_attributes",
+            "region": "ap-southeast-2",
+            "resourceKey": "https://sqs.ap-southeast-2.amazonaws.com/123456789012/kms-q",
+            "exitCode": 0,
+            "output": {
+              "Attributes": { "SqsManagedSseEnabled": "false", "KmsMasterKeyId": "alias/aws/sqs" }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails with no encryption",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sqs.get_queue_attributes",
+            "region": "ap-southeast-2",
+            "resourceKey": "https://sqs.ap-southeast-2.amazonaws.com/123456789012/plain-q",
+            "exitCode": 0,
+            "output": { "Attributes": { "SqsManagedSseEnabled": "false" } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SECRETS-001",
+    "cases": [
+      {
+        "name": "passes with rotation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.secretsmanager.list_secrets",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecretList": [
+                {
+                  "ARN": "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:db-rotating",
+                  "Name": "db-rotating",
+                  "RotationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without rotation",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.secretsmanager.list_secrets",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecretList": [
+                {
+                  "ARN": "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:db-static",
+                  "Name": "db-static"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-005",
+    "cases": [
+      {
+        "name": "passes with auto minor upgrade",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                { "DBInstanceIdentifier": "db-auto", "AutoMinorVersionUpgrade": true }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails without auto minor upgrade",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                { "DBInstanceIdentifier": "db-manual", "AutoMinorVersionUpgrade": false }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-006",
+    "cases": [
+      {
+        "name": "passes Multi-AZ",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "DBInstances": [{ "DBInstanceIdentifier": "db-ha", "MultiAZ": true }] }
+          }
+        ]
+      },
+      {
+        "name": "fails single-AZ",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": { "DBInstances": [{ "DBInstanceIdentifier": "db-single", "MultiAZ": false }] }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -17,14 +17,14 @@ function loadAllFixtures() {
 describe("bundled catalog", () => {
   it("loads without validation issues", () => {
     expect(catalog.issues).toEqual([]);
-    expect(catalog.controls.length).toBeGreaterThanOrEqual(45);
-    expect(catalog.collectors.size).toBeGreaterThanOrEqual(30);
+    expect(catalog.controls.length).toBeGreaterThanOrEqual(75);
+    expect(catalog.collectors.size).toBeGreaterThanOrEqual(50);
   });
 
   it("covers all three providers", () => {
     for (const provider of ["aws", "azure", "gcp"] as const) {
       expect(catalog.controls.filter((c) => c.provider === provider).length).toBeGreaterThanOrEqual(
-        13,
+        20,
       );
     }
   });

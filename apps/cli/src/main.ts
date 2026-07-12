@@ -1,11 +1,22 @@
 #!/usr/bin/env node
-import { readFileSync, readdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
+import { basename } from "node:path";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { catalogDir, fixturesDir, loadDefaultCatalog } from "@cloudranger/catalog";
+import {
+  catalogDir,
+  customCatalogDir,
+  fixturesDir,
+  loadDefaultCatalog,
+} from "@cloudranger/catalog";
 import { CloudRangerStore } from "@cloudranger/db";
-import { fixtureFileSchema, runFixtureFile } from "@cloudranger/engine";
+import {
+  controlTemplate,
+  fixtureFileSchema,
+  runFixtureFile,
+  validateCatalogDocument,
+} from "@cloudranger/engine";
 
 const dbPath = () =>
   process.env.CLOUDRANGER_DB ?? join(homedir(), ".cloudranger", "cloudranger.db");
@@ -21,6 +32,10 @@ Usage:
   cloudranger scans                     List recent scans
   cloudranger audit [--limit 50]        Show recent audit entries
   cloudranger audit verify              Verify the audit hash chain
+  cloudranger controls template [--provider aws|azure|gcp] [--collector <id>]
+                                        Print a custom-control YAML template
+  cloudranger controls add <file.yaml>  Validate + install a custom control
+  cloudranger controls dir              Print the custom catalog directory
   cloudranger mcp-config [--client claude-code|claude-desktop|codex]
   cloudranger db-path                   Print the database location
 
@@ -86,6 +101,53 @@ function main(): number {
         `${control.id}  ${control.severity.padEnd(13)} ${control.service.padEnd(12)} ${control.title}`,
       );
     }
+    return 0;
+  }
+
+  if (command === "controls" && subcommand === "template") {
+    const { values } = parseArgs({
+      args: rest,
+      options: { provider: { type: "string" }, collector: { type: "string" } },
+    });
+    const provider = (values.provider ?? "aws") as "aws" | "azure" | "gcp";
+    if (!["aws", "azure", "gcp"].includes(provider)) {
+      console.error("--provider must be aws, azure or gcp");
+      return 1;
+    }
+    console.log(controlTemplate({ provider, collectorId: values.collector }));
+    return 0;
+  }
+
+  if (command === "controls" && subcommand === "add") {
+    const file = rest[0];
+    if (!file) {
+      console.error("usage: cloudranger controls add <file.yaml>");
+      return 1;
+    }
+    const catalog = loadDefaultCatalog();
+    const result = validateCatalogDocument(readFileSync(file, "utf8"), catalog.collectors);
+    if (result.errors.length > 0) {
+      for (const error of result.errors) console.error(`ERROR ${error}`);
+      return 1;
+    }
+    const dir = join(customCatalogDir(), "controls");
+    mkdirSync(dir, { recursive: true });
+    const dest = join(dir, basename(file));
+    copyFileSync(file, dest);
+    const merged = loadDefaultCatalog();
+    if (merged.issues.length > 0) {
+      for (const issue of merged.issues) console.error(`ISSUE ${issue.file}: ${issue.message}`);
+      return 1;
+    }
+    console.log(`installed: ${dest}`);
+    console.log(`controls: ${result.controls.map((c) => c.id).join(", ") || "(none)"}`);
+    console.log(`collectors: ${result.collectors.map((c) => c.id).join(", ") || "(none)"}`);
+    console.log(`catalog now has ${merged.controls.length} controls`);
+    return 0;
+  }
+
+  if (command === "controls" && subcommand === "dir") {
+    console.log(customCatalogDir());
     return 0;
   }
 

@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -17,6 +18,12 @@ export default tseslint.config(
   },
   {
     files: ["apps/cli/**"],
+    rules: { "no-console": "off" },
+  },
+  {
+    // Standalone Node scripts (plain .mjs, not part of a tsconfig project).
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
     rules: { "no-console": "off" },
   },
 );

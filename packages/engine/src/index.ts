@@ -25,3 +25,4 @@ export {
   type FixtureFile,
   type FixtureCaseResult,
 } from "./fixtures.js";
+export { validateCatalogDocument, controlTemplate, type CustomDocumentResult } from "./custom.js";

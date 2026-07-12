@@ -2,11 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildPlan,
+  controlTemplate,
   evaluateControls,
+  validateCatalogDocument,
   validateParamValue,
   type LoadedCatalog,
   type Provider,
 } from "@cloudranger/engine";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { PACKS, customCatalogDir, resolvePack } from "@cloudranger/catalog";
 import { CloudRangerStore } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
@@ -114,6 +119,104 @@ export function createServer(deps: ServerDeps): McpServer {
     }),
   );
 
+  server.registerTool(
+    "catalog_list_packs",
+    {
+      title: "List control packs",
+      description:
+        "Named control selections (baseline, public-exposure, identity, encryption, logging-detection, resilience, kubernetes) usable as the pack argument to scan_start.",
+      inputSchema: {},
+      annotations: readOnly,
+    },
+    audited("catalog_list_packs", () => ({
+      packs: PACKS.map((pack) => ({
+        ...pack,
+        controlCount: resolvePack(catalog.controls, pack.id).length,
+      })),
+    })),
+  );
+
+  server.registerTool(
+    "catalog_generate_control_template",
+    {
+      title: "Generate a custom control template",
+      description:
+        "YAML template for authoring a custom control (plus optional custom collector), with the full expression-operator reference inline. Fill it in — grounding passWhen in real CLI JSON output you have observed — then submit via catalog_add_custom_control or save with the CLI (cloudranger controls add).",
+      inputSchema: {
+        provider: providerParam,
+        collectorId: z
+          .string()
+          .optional()
+          .describe("Existing collector to evaluate (see catalog_get_control for examples)"),
+      },
+      annotations: readOnly,
+    },
+    audited(
+      "catalog_generate_control_template",
+      (args: { provider: Provider; collectorId?: string }) => {
+        if (args.collectorId && !catalog.collectors.has(args.collectorId)) {
+          throw new Error(`unknown collector: ${args.collectorId}`);
+        }
+        return {
+          template: controlTemplate(args),
+          availableCollectors: [...catalog.collectors.values()]
+            .filter((c) => c.provider === args.provider)
+            .map((c) => ({ id: c.id, kind: c.kind, description: c.description })),
+          guidance:
+            "Base passWhen on actual CLI JSON output you have run and observed — do not guess field names. Custom collectors must be read-only (list/describe/get/show) or they will be rejected. Use id prefix CUSTOM- for your own controls; reusing an existing CR- id intentionally overrides the bundled control.",
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    "catalog_add_custom_control",
+    {
+      title: "Add or override a control (custom catalog)",
+      description:
+        "Validate a custom control YAML document (controls: and optional collectors: lists) and persist it to the operator's custom catalog directory. Matching IDs override bundled definitions. The document is schema-validated and every command must pass read-only safety validation. Takes effect immediately for new scans.",
+      inputSchema: {
+        yaml: z.string().max(50_000).describe("The full YAML document"),
+        filename: z
+          .string()
+          .regex(/^[a-z0-9-]+$/)
+          .describe("File name (kebab-case, no extension) to store it under"),
+      },
+      annotations: { ...readOnly, readOnlyHint: false },
+    },
+    audited("catalog_add_custom_control", (args: { yaml: string; filename: string }) => {
+      const result = validateCatalogDocument(args.yaml, catalog.collectors);
+      if (result.errors.length > 0) {
+        throw new Error(`validation failed: ${result.errors.join(" | ")}`);
+      }
+      const dir = join(customCatalogDir(), "controls");
+      mkdirSync(dir, { recursive: true });
+      const path = join(dir, `${args.filename}.yaml`);
+      writeFileSync(path, args.yaml, "utf8");
+      // Apply to the live catalog: overrides replace, new entries append.
+      for (const collector of result.collectors) {
+        catalog.collectors.set(collector.id, collector);
+      }
+      const overridden: string[] = [];
+      for (const control of result.controls) {
+        const index = catalog.controls.findIndex((c) => c.id === control.id);
+        if (index >= 0) {
+          catalog.controls[index] = control;
+          overridden.push(control.id);
+        } else {
+          catalog.controls.push(control);
+        }
+      }
+      return {
+        saved: path,
+        controls: result.controls.map((c) => c.id),
+        collectors: result.collectors.map((c) => c.id),
+        overridden,
+        note: "Custom control is active now and will load automatically on future server starts. Add fixture cases and test with: cloudranger catalog test",
+      };
+    }),
+  );
+
   // ---------- scans ----------
 
   server.registerTool(
@@ -139,6 +242,10 @@ export function createServer(deps: ServerDeps): McpServer {
           .optional()
           .describe("Restrict to these services (e.g. s3, iam)"),
         controlIds: z.array(z.string()).optional().describe("Restrict to these control IDs"),
+        pack: z
+          .string()
+          .optional()
+          .describe("Restrict to a named control pack (see catalog_list_packs)"),
       },
       annotations: { ...readOnly, readOnlyHint: false },
     },
@@ -150,13 +257,16 @@ export function createServer(deps: ServerDeps): McpServer {
         regions?: string[];
         services?: string[];
         controlIds?: string[];
+        pack?: string;
       }) => {
         if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
         const regions = args.regions ?? [];
         if (args.provider === "aws" && regions.length === 0) {
           throw new Error("AWS scans require at least one region");
         }
-        let controls = catalog.controls.filter((c) => c.provider === args.provider);
+        let controls = args.pack
+          ? resolvePack(catalog.controls, args.pack, args.provider)
+          : catalog.controls.filter((c) => c.provider === args.provider);
         if (args.services?.length)
           controls = controls.filter((c) => args.services!.includes(c.service));
         if (args.controlIds?.length)

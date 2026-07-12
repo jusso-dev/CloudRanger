@@ -1,0 +1,37 @@
+# GCP wave-2 collectors: GKE, project metadata, subnets, DNS.
+collectors:
+  - id: gcp.container.clusters_list
+    provider: gcp
+    service: gke
+    description: All GKE clusters in the project.
+    kind: single
+    command: gcloud container clusters list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.compute.project_info
+    provider: gcp
+    service: compute
+    description: Project-wide compute metadata (OS Login, SSH keys).
+    kind: single
+    command: gcloud compute project-info describe --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.compute.subnets_list
+    provider: gcp
+    service: compute
+    description: All VPC subnets in the project.
+    kind: single
+    command: gcloud compute networks subnets list --project {project} --format json
+    regional: false
+    outputFormat: json
+
+  - id: gcp.dns.managed_zones_list
+    provider: gcp
+    service: dns
+    description: All Cloud DNS managed zones in the project.
+    kind: single
+    command: gcloud dns managed-zones list --project {project} --format json
+    regional: false
+    outputFormat: json

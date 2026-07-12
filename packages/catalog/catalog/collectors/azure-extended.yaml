@@ -1,0 +1,32 @@
+# Azure wave-2 collectors: AKS, ACR, per-app web config.
+collectors:
+  - id: azure.aks.list
+    provider: azure
+    service: aks
+    description: All AKS clusters in the subscription.
+    kind: single
+    command: az aks list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.acr.list
+    provider: azure
+    service: acr
+    description: All container registries in the subscription.
+    kind: single
+    command: az acr list --output json
+    regional: false
+    outputFormat: json
+
+  - id: azure.webapp.config_show
+    provider: azure
+    service: appservice
+    description: Site configuration for one web app (TLS version, FTP state).
+    kind: per_resource
+    command: az webapp config show --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.webapp.list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json

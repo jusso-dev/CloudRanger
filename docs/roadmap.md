@@ -1,22 +1,27 @@
 # Roadmap
 
-Phase 0/1 (this repo, done): engine, safety layer, seed catalog (49
-controls, 118 fixtures), SQLite lifecycle store, MCP server (stdio), CLI,
-docs, threat model.
+Phase 0/1 (done): engine, safety layer, seed catalog, SQLite lifecycle store,
+MCP server (stdio), CLI, docs, threat model.
 
-## Phase 2 — Catalog scale-out (porting pipeline)
+Phase 2 partial (done): 79 controls (34 AWS / 22 Azure / 23 GCP, 200+
+fixtures), control packs, custom-control authoring (CLI + MCP tools + prompt),
+operator custom catalog directory with override semantics, Prowler metadata
+importer (`scripts/prowler-import.mjs`).
 
-1. Prowler metadata importer: script that maps upstream `metadata.json`
-   (severity, service, remediation, compliance) into control YAML stubs for
-   human completion. **~top-priority issue.**
-2. AWS depth: ELB/CloudFront TLS + logging, Lambda posture, EKS/ECR, SNS/SQS
-   encryption, Secrets Manager rotation metadata, IAM policy analysis
-   (wildcards, admin), organisations posture. Target 100+ AWS controls.
-3. Azure depth: Entra ID via `az ad` (app credential expiry, ownerless SPs),
-   Defender plan status, activity-log export, AKS/ACR, Postgres/MySQL
-   flexible servers, per-app `az webapp config` collection. Target 100+.
-4. GCP depth: audit config, log sinks/metric filters, GKE posture, KMS
-   rotation, BigQuery dataset IAM, Essential Contacts. Target 100+.
+## Phase 2 — Catalog scale-out (porting pipeline), remaining
+
+1. ~~Prowler metadata importer.~~ **Done** — `scripts/prowler-import.mjs`.
+   Next: wire it to a real Prowler checkout and complete the highest-value
+   stubs (collector + passWhen + fixtures) in bulk.
+2. AWS depth: ELB/CloudFront TLS + logging, Lambda posture, EKS, ECR image
+   scanning, IAM policy analysis (wildcards, admin, privilege escalation),
+   organisations/SCP posture, Config rules coverage. Target 100+ AWS.
+3. Azure depth: Entra ID via `az ad` (app credential expiry, ownerless SPs,
+   privileged role assignments), Defender plan status, activity-log export,
+   Postgres/MySQL flexible servers, Cosmos DB. Target 100+.
+4. GCP depth: audit config + log sinks/metric filters, KMS rotation,
+   BigQuery dataset IAM, Cloud Run ingress/auth, Essential Contacts,
+   org policies. Target 100+.
 5. Fixture recorder: `cloudranger fixtures capture` — sanitise real CLI
    output into fixture cases.
 6. Credential-report support (CSV evidence type) for the full CIS 1.x IAM
@@ -27,11 +32,14 @@ docs, threat model.
 7. Parameterised controls (org-tunable thresholds, e.g. key-age days).
 8. `relationshipExists`/graph evidence for cross-resource controls
    (public LB → unencrypted backend).
-9. Control packs (cis-baseline, public-exposure, essential-eight-technical)
-   as named selections for `scan_start`.
+9. ~~Control packs as named selections for `scan_start`.~~ **Done** — 7 packs.
+   Next: framework-aligned packs (cis-aws-3.0, essential-eight-technical) once
+   compliance rollup lands.
 10. Coverage-aware compliance rollup tool (`compliance_status` per
     framework with direct/partial/manual flags).
 11. Rule deprecation + version history retention on control updates.
+12. Custom-control fixture authoring via MCP (agent submits fixtures alongside
+    a custom control so it is regression-protected at install time).
 
 ## Phase 4 — Operations
 
