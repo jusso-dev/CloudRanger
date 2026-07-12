@@ -1,0 +1,139 @@
+controls:
+  - id: CR-AZURE-CONTAINERAPP-100
+    version: 1.0.0
+    provider: azure
+    service: containerapp
+    title: Container App ingress does not allow insecure (HTTP) traffic
+    description: For apps with ingress enabled, allowInsecure is false so plaintext
+      HTTP connections are redirected to HTTPS.
+    rationale: Allowing insecure ingress lets clients send credentials and data over
+      unencrypted HTTP, exposing them to interception and man-in-the-middle
+      attacks.
+    severity: high
+    categories:
+      - encryption
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: containerapps_env_using_http_allow_insecure_connections
+      license: Apache-2.0
+    collector: azure.containerapp.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: exists
+      path: properties.configuration.ingress
+    passWhen:
+      op: equals
+      path: properties.configuration.ingress.allowInsecure
+      value: false
+    failMessage: Container App ingress allows insecure HTTP connections
+      (allowInsecure is true).
+    passMessage: Container App ingress rejects insecure traffic and redirects HTTP to HTTPS.
+    remediation:
+      summary: Disable insecure ingress so HTTP is redirected to HTTPS.
+      steps:
+        - Run az containerapp ingress update to set allow-insecure to false for
+          the app.
+        - Verify clients connect over HTTPS only.
+      verifyCommand: az containerapp list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview
+      - https://learn.microsoft.com/en-us/cli/azure/containerapp/ingress
+  - id: CR-AZURE-CONTAINERAPP-101
+    version: 1.0.0
+    provider: azure
+    service: containerapp
+    title: Externally exposed Container App restricts inbound source IPs
+    description: Container Apps whose ingress is external define at least one IP
+      security restriction so the public endpoint is not open to all source
+      addresses.
+    rationale: An external ingress with no IP restrictions is reachable by any host
+      on the internet, widening the attack surface for exploitation and abuse.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: containerapps_ingress_ip_restrictions_enabled
+      license: Apache-2.0
+    collector: azure.containerapp.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: properties.configuration.ingress
+        - op: equals
+          path: properties.configuration.ingress.external
+          value: true
+    passWhen:
+      op: lengthGt
+      path: properties.configuration.ingress.ipSecurityRestrictions
+      value: 0
+    failMessage: Externally exposed Container App has no IP security restrictions;
+      its public endpoint accepts traffic from any source IP.
+    passMessage: Externally exposed Container App restricts inbound traffic with IP
+      security restrictions.
+    remediation:
+      summary: Add IP security restrictions to the external ingress.
+      steps:
+        - Run az containerapp ingress access-restriction set to add Allow rules
+          for trusted CIDR ranges.
+        - Confirm all other source addresses are denied by default.
+      verifyCommand: az containerapp list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/container-apps/ip-restrictions
+      - https://learn.microsoft.com/en-us/cli/azure/containerapp/ingress/access-restriction
+  - id: CR-AZURE-CONTAINERAPP-102
+    version: 1.0.0
+    provider: azure
+    service: containerapp
+    title: Container App uses a managed identity
+    description: The Container App has a system-assigned or user-assigned managed
+      identity configured (identity.type is not None).
+    rationale: Without a managed identity, apps typically embed secrets or
+      connection strings to reach other Azure services, increasing the risk of
+      credential leakage and hindering rotation.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: containerapps_managed_identity_in_use
+      license: Apache-2.0
+    collector: azure.containerapp.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: identity.type
+        - op: notEquals
+          path: identity.type
+          value: None
+    failMessage: Container App has no managed identity assigned (identity.type is
+      None or absent).
+    passMessage: Container App uses a managed identity for secretless access to
+      Azure services.
+    remediation:
+      summary: Assign a managed identity to the Container App.
+      steps:
+        - Run az containerapp identity assign with --system-assigned or a
+          user-assigned identity.
+        - Update the app to authenticate to dependent Azure services via the
+          managed identity.
+      verifyCommand: az containerapp list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/container-apps/managed-identity
+      - https://learn.microsoft.com/en-us/cli/azure/containerapp/identity

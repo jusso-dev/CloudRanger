@@ -1,0 +1,124 @@
+controls:
+  - id: CR-AZURE-FIREWALL-100
+    version: 1.0.0
+    provider: azure
+    service: firewall
+    title: Azure Firewall threat intelligence mode is Alert or Deny
+    description: Each Azure Firewall has threatIntelMode set to Alert or Deny so
+      traffic to and from known-malicious IPs and domains is inspected.
+    rationale: With threat intelligence Off, the firewall does not alert on or block
+      traffic to known-malicious endpoints, letting command-and-control and
+      exfiltration traffic pass undetected.
+    severity: medium
+    categories:
+      - network
+      - logging
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_azure_firewall_threat_intel_mode_enabled
+      license: Apache-2.0
+    collector: azure.network.firewalls_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: threatIntelMode
+      values:
+        - Alert
+        - Deny
+    failMessage: Azure Firewall threat intelligence mode is Off (or unset);
+      malicious IP/domain traffic is not inspected.
+    passMessage: Azure Firewall threat intelligence mode is Alert or Deny.
+    remediation:
+      summary: Set threat intelligence mode to Alert or Deny on the firewall.
+      steps:
+        - Open the Azure Firewall (or its Firewall Policy) in the portal.
+        - Under Threat intelligence, set the mode to Alert or Deny.
+      verifyCommand: az network firewall list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/firewall/threat-intel
+  - id: CR-AZURE-FIREWALL-101
+    version: 1.0.0
+    provider: azure
+    service: firewall
+    title: Azure Firewall has a Firewall Policy attached
+    description: Each Azure Firewall references a Firewall Policy (firewallPolicy.id
+      is present) rather than using legacy classic rule collections.
+    rationale: Classic rule-collection firewalls cannot use centralized policy, TLS
+      inspection, IDPS, or hierarchical management, causing rule drift and
+      weaker, inconsistently governed egress and ingress filtering.
+    severity: medium
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: network_azure_firewall_policy_attached
+      license: Apache-2.0
+    collector: azure.network.firewalls_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: firewallPolicy.id
+    failMessage: Azure Firewall has no Firewall Policy attached (using legacy
+      classic rule collections).
+    passMessage: Azure Firewall has a Firewall Policy attached.
+    remediation:
+      summary: Attach a Firewall Policy to the firewall.
+      steps:
+        - Create or select a Firewall Policy of the same or higher tier as the
+          firewall.
+        - Migrate classic rules into the policy and associate it with the
+          firewall.
+      verifyCommand: az network firewall list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/firewall/policy-overview
+  - id: CR-AZURE-FIREWALL-102
+    version: 1.0.0
+    provider: azure
+    service: firewall
+    title: Azure Firewall uses Standard or Premium tier
+    description: Each Azure Firewall's sku.tier is Standard or Premium so advanced
+      protection features (threat intel, and for Premium IDPS and TLS
+      inspection) are available.
+    rationale: The Basic tier lacks threat intelligence-based filtering and
+      throughput/feature guarantees, leaving production egress and ingress
+      traffic without the protections higher tiers provide.
+    severity: low
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: network_azure_firewall_sku_tier
+      license: Apache-2.0
+    collector: azure.network.firewalls_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: sku.tier
+      values:
+        - Standard
+        - Premium
+    failMessage: Azure Firewall SKU tier is Basic (or unset); advanced protection
+      features are unavailable.
+    passMessage: Azure Firewall uses Standard or Premium tier.
+    remediation:
+      summary: Deploy the firewall on Standard or Premium tier.
+      steps:
+        - Provision a new Azure Firewall on Standard or Premium tier (tier
+          cannot be upgraded in place from Basic).
+        - Migrate configuration and route tables to the new firewall, then
+          decommission the Basic firewall.
+      verifyCommand: az network firewall list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/firewall/choose-firewall-sku

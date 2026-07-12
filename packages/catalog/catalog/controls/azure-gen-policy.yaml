@@ -1,0 +1,98 @@
+controls:
+  - id: CR-AZURE-POLICY-100
+    version: 1.0.0
+    provider: azure
+    service: policy
+    title: At least one Azure Policy assignment exists on the subscription
+    description: >
+      The subscription has one or more Azure Policy assignments so that
+      governance, security and compliance guardrails are actively applied to
+      resources rather than the subscription being ungoverned.
+    rationale: >
+      A subscription with no policy assignments has no automated guardrails, so
+      insecure configurations (public storage, unencrypted disks, permissive
+      networking) can be deployed and persist undetected, dramatically widening
+      the attack surface and audit gaps.
+    severity: medium
+    categories:
+      - governance
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: policy_ensure_asc_enforcement_enabled
+      license: Apache-2.0
+    collector: azure.policy.assignments_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: "$"
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: id
+          - op: exists
+            path: name
+    failMessage: No Azure Policy assignments are configured on the subscription.
+    passMessage: At least one Azure Policy assignment is configured on the subscription.
+    remediation:
+      summary: Assign at least one Azure Policy or initiative to the subscription.
+      steps:
+        - In the Azure portal go to Policy > Assignments > Assign initiative and
+          assign a built-in initiative such as the Microsoft cloud security
+          benchmark at the subscription scope.
+        - Or run az policy assignment create --name <name> --policy-set-definition
+          <initiativeId> --scope /subscriptions/<subId>.
+      verifyCommand: az policy assignment list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure
+      - https://learn.microsoft.com/en-us/cli/azure/policy/assignment
+  - id: CR-AZURE-POLICY-101
+    version: 1.0.0
+    provider: azure
+    service: policy
+    title: At least one Azure Policy assignment enforces (not audit-only)
+    description: >
+      At least one policy assignment has enforcementMode set to "Default",
+      meaning its deny/deployIfNotExists effects are actively enforced rather
+      than every assignment being set to DoNotEnforce (evaluation only).
+    rationale: >
+      If every policy assignment is set to DoNotEnforce, policies only report
+      non-compliance and never block or remediate insecure deployments, so
+      violating resources are still created and the guardrails provide no real
+      protection against misconfiguration.
+    severity: medium
+    categories:
+      - governance
+      - resilience
+    source:
+      engine: prowler
+      id: policy_ensure_asc_enforcement_enabled
+      license: Apache-2.0
+    collector: azure.policy.assignments_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: "$"
+      condition:
+        op: equals
+        path: enforcementMode
+        value: Default
+    failMessage: No Azure Policy assignment is enforcing (all are audit-only or none exist).
+    passMessage: At least one Azure Policy assignment is enforcing (enforcementMode Default).
+    remediation:
+      summary: Set enforcementMode to Default on at least one policy assignment.
+      steps:
+        - In the Azure portal open the policy assignment, set Policy enforcement
+          to Enabled, and save.
+        - Or run az policy assignment update --name <name> --scope
+          /subscriptions/<subId> --enforcement-mode Default.
+      verifyCommand: az policy assignment list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure#enforcement-mode
+      - https://learn.microsoft.com/en-us/cli/azure/policy/assignment

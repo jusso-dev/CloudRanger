@@ -1,0 +1,22 @@
+collectors:
+  - id: azure.databricks.workspaces_list
+    provider: azure
+    service: databricks
+    description: All Azure Databricks workspaces in the subscription.
+    kind: single
+    command: az databricks workspace list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription and the databricks CLI extension (az
+      extension add --name databricks). Returns a JSON ARRAY at the root; each
+      element is a Microsoft.Databricks/workspaces ARM object with top-level
+      name, id, location, sku, managedResourceGroupId and a properties bag.
+      Workspace custom parameters live under properties.parameters as a map
+      where each entry is an object with a value (and type) field, e.g.
+      properties.parameters.enableNoPublicIp.value (bool) and
+      properties.parameters.encryption.value.keySource (Default |
+      Microsoft.Keyvault) for the managed-services CMK. The parameters map only
+      includes keys that were explicitly set at workspace creation, so
+      enableNoPublicIp / encryption may be absent on older or default
+      workspaces.

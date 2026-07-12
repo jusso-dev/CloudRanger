@@ -1,0 +1,84 @@
+controls:
+  - id: CR-GCP-DATAPROC-100
+    version: 1.0.0
+    provider: gcp
+    service: dataproc
+    title: Dataproc cluster encrypts disks with a customer-managed key (CMEK)
+    description: >
+      Verifies config.encryptionConfig.gcePdKmsKeyName is set so cluster
+      persistent/boot disks are encrypted with a customer-managed Cloud KMS key.
+    rationale: >
+      Without CMEK the cluster relies solely on Google-managed keys, so the
+      organization cannot enforce its own key rotation, access policy, or
+      revocation. If key control is required for compliance, a compromised or
+      over-broad Google-default key context cannot be independently revoked.
+    severity: medium
+    categories:
+      - encryption
+      - data-protection
+    source:
+      engine: prowler
+      id: dataproc_encrypted_with_cmks_disabled
+      license: Apache-2.0
+    collector: gcp.dataproc.clusters_list
+    resourcesPath: $
+    resourceIdField: clusterName
+    passWhen:
+      op: exists
+      path: config.encryptionConfig.gcePdKmsKeyName
+    failMessage: Dataproc cluster is not encrypted with a customer-managed KMS key (CMEK).
+    passMessage: Dataproc cluster disks are encrypted with a customer-managed KMS key.
+    remediation:
+      summary: Recreate the cluster with a CMEK KMS key for disk encryption.
+      steps:
+        - Create or select a Cloud KMS key and grant the Dataproc service agent
+          the cloudkms.cryptoKeyEncrypterDecrypter role on it.
+        - Recreate the cluster specifying the CMEK key so
+          config.encryptionConfig.gcePdKmsKeyName is populated (encryption
+          config cannot be changed on an existing cluster).
+      verifyCommand: gcloud dataproc clusters list --project <project> --region
+        <region> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/customer-managed-encryption
+  - id: CR-GCP-DATAPROC-101
+    version: 1.0.0
+    provider: gcp
+    service: dataproc
+    title: Dataproc cluster uses internal IPs only (no public IPs)
+    description: >
+      Verifies config.gceClusterConfig.internalIpOnly is true so cluster VMs
+      have no external IP addresses.
+    rationale: >
+      Cluster nodes with public IPs are directly reachable from the internet,
+      widening the attack surface for the Hadoop/Spark web UIs and SSH and
+      making a single node compromise an internet-facing initial-access path.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: dataproc_cluster_internal_ip_only
+      license: Apache-2.0
+    collector: gcp.dataproc.clusters_list
+    resourcesPath: $
+    resourceIdField: clusterName
+    passWhen:
+      op: equals
+      path: config.gceClusterConfig.internalIpOnly
+      value: true
+    failMessage: Dataproc cluster allows public IPs (internalIpOnly is not enabled).
+    passMessage: Dataproc cluster uses internal IPs only.
+    remediation:
+      summary: Recreate the cluster with internal-IP-only networking.
+      steps:
+        - Ensure the cluster subnet has Private Google Access enabled.
+        - Recreate the cluster with internal IP only so
+          config.gceClusterConfig.internalIpOnly is true (this cannot be toggled
+          on an existing cluster).
+      verifyCommand: gcloud dataproc clusters list --project <project> --region
+        <region> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/network

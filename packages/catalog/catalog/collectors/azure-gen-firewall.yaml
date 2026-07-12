@@ -1,0 +1,20 @@
+collectors:
+  - id: azure.network.firewalls_list
+    provider: azure
+    service: firewall
+    description: All Azure Firewall resources in the subscription with their SKU,
+      threat-intelligence mode, and attached firewall policy.
+    kind: single
+    command: az network firewall list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription
+      (Microsoft.Network/azureFirewalls/read). The Azure CLI flattens each
+      firewall's "properties" onto the object root, so fields appear as name,
+      location, threatIntelMode, sku.tier, sku.name, firewallPolicy.id,
+      ipConfigurations[]. threatIntelMode is one of Alert, Deny, or Off.
+      sku.tier is Basic, Standard, or Premium; sku.name is AZFW_VNet or
+      AZFW_Hub. firewallPolicy is present (with an id) only when a Firewall
+      Policy is attached; classic rule-collection firewalls have no
+      firewallPolicy. Returns an empty array [] if there are no firewalls.

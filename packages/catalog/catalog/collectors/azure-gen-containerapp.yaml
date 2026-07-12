@@ -1,0 +1,15 @@
+collectors:
+  - id: azure.containerapp.list
+    provider: azure
+    service: containerapp
+    description: Lists all Azure Container Apps in the subscription with their full
+      properties, including ingress configuration and managed identity.
+    kind: single
+    command: az containerapp list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root (use resourcesPath "$"). Requires the
+      Microsoft.App resource provider and reader access. Apps without ingress
+      enabled have properties.configuration.ingress set to null. Requires the
+      containerapp CLI extension (auto-installed on first use).

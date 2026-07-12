@@ -1,0 +1,13 @@
+collectors:
+  - id: azure.apim.list
+    provider: azure
+    service: apimanagement
+    description: All API Management services in the subscription with full
+      properties (customProperties, publicNetworkAccess, virtualNetworkType).
+    kind: single
+    command: az apim list --output json
+    regional: false
+    outputFormat: json
+    notes: Requires Reader on the subscription. 'az apim list' returns a JSON array
+      of Microsoft.ApiManagement/service resources; properties are camelCase and
+      customProperties is a string->string map.

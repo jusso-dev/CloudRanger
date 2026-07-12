@@ -1,0 +1,120 @@
+controls:
+  - id: CR-GCP-MONITORING-100
+    version: 1.0.0
+    provider: gcp
+    service: monitoring
+    title: At least one Cloud Monitoring alert policy exists
+    description: The project defines one or more Cloud Monitoring alert policies so
+      that log-based metrics and resource conditions can raise notifications.
+    rationale: With no alert policies, security-relevant conditions such as audit
+      configuration changes, ownership assignments, or firewall modifications
+      produce no notification, so suspicious activity goes unnoticed until it is
+      discovered manually or after an incident.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitoring_alert_policies_exists
+      license: Apache-2.0
+    collector: gcp.monitoring.alert_policies_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: exists
+        path: name
+    onError:
+      - contains: has not been used
+        status: fail
+        message: Cloud Monitoring API is not enabled; no alert policies can exist.
+      - contains: SERVICE_DISABLED
+        status: fail
+        message: Cloud Monitoring API is disabled; no alert policies can exist.
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: does not have permission
+        status: error
+    failMessage: No Cloud Monitoring alert policy is defined for the project.
+    passMessage: At least one Cloud Monitoring alert policy exists.
+    remediation:
+      summary: Create at least one Cloud Monitoring alert policy.
+      steps:
+        - Enable the Cloud Monitoring API (monitoring.googleapis.com) if it is
+          not already enabled.
+        - Define log-based metrics for security-relevant events (for example
+          project ownership or audit-config changes).
+        - Create an alert policy with a condition on those metrics and a
+          notification channel.
+      verifyCommand: gcloud alpha monitoring policies list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "2.4"
+    references:
+      - https://cloud.google.com/monitoring/alerts
+      - https://cloud.google.com/sdk/gcloud/reference/alpha/monitoring/policies/list
+      - https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies
+  - id: CR-GCP-MONITORING-101
+    version: 1.0.0
+    provider: gcp
+    service: monitoring
+    title: At least one Cloud Monitoring alert policy is enabled
+    description: The project has one or more alert policies whose enabled flag is
+      true, so that at least one policy is actively evaluating and can fire.
+    rationale: A disabled alert policy never evaluates its conditions and never
+      sends notifications. If every policy is disabled, the project has the
+      appearance of monitoring coverage while in practice no alerts will ever
+      fire on security-relevant conditions.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: monitoring_alert_policies_exists
+      license: Apache-2.0
+    collector: gcp.monitoring.alert_policies_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: equals
+        path: enabled
+        value: true
+    onError:
+      - contains: has not been used
+        status: fail
+        message: Cloud Monitoring API is not enabled; no enabled alert policies exist.
+      - contains: SERVICE_DISABLED
+        status: fail
+        message: Cloud Monitoring API is disabled; no enabled alert policies exist.
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: does not have permission
+        status: error
+    failMessage: No enabled Cloud Monitoring alert policy is defined for the project.
+    passMessage: At least one Cloud Monitoring alert policy is enabled.
+    remediation:
+      summary: Enable at least one Cloud Monitoring alert policy.
+      steps:
+        - Review existing alert policies and identify any that are disabled.
+        - Enable a policy that covers security-relevant conditions so it
+          evaluates and can send notifications.
+        - Attach an active notification channel to the enabled policy.
+      verifyCommand: gcloud alpha monitoring policies list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "2.4"
+    references:
+      - https://cloud.google.com/monitoring/alerts/using-alerting-ui
+      - https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies#AlertPolicy
+      - https://cloud.google.com/sdk/gcloud/reference/alpha/monitoring/policies/list

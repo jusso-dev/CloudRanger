@@ -1,0 +1,150 @@
+[
+  {
+    "controlId": "CR-GCP-ORGPOLICY-100",
+    "cases": [
+      {
+        "name": "serial port access disabled - enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/compute.disableSerialPortAccess",
+                "booleanPolicy": {
+                  "enforced": true
+                },
+                "etag": "BwXf1a2bcDE=",
+                "updateTime": "2026-01-14T10:22:31.123456Z"
+              },
+              {
+                "constraint": "constraints/compute.skipDefaultNetworkCreation",
+                "booleanPolicy": {
+                  "enforced": true
+                }
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "constraint present but not enforced",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/compute.disableSerialPortAccess",
+                "booleanPolicy": {}
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "no org policies set at all",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ORGPOLICY-101",
+    "cases": [
+      {
+        "name": "skip default network enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/compute.skipDefaultNetworkCreation",
+                "booleanPolicy": {
+                  "enforced": true
+                },
+                "etag": "BwXf9z8yxWV="
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "other policies set but not skipDefaultNetworkCreation",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/compute.disableSerialPortAccess",
+                "booleanPolicy": {
+                  "enforced": true
+                }
+              },
+              {
+                "constraint": "constraints/iam.disableServiceAccountKeyCreation",
+                "booleanPolicy": {
+                  "enforced": true
+                }
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ORGPOLICY-102",
+    "cases": [
+      {
+        "name": "restrict public ip enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/sql.restrictPublicIp",
+                "booleanPolicy": {
+                  "enforced": true
+                },
+                "updateTime": "2026-03-02T08:11:04.000Z"
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "restrict public ip explicitly not enforced",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.resourcemanager.org_policies_list",
+            "output": [
+              {
+                "constraint": "constraints/sql.restrictPublicIp",
+                "booleanPolicy": {
+                  "enforced": false
+                }
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  }
+]

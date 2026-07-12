@@ -1,0 +1,206 @@
+[
+  {
+    "controlId": "CR-AZURE-DATABRICKS-100",
+    "cases": [
+      {
+        "name": "pass no public ip enabled",
+        "expected": "pass",
+        "resourceId": "ws-secure",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-secure",
+                "name": "ws-secure",
+                "location": "eastus",
+                "sku": {
+                  "name": "premium"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-secure",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-1234.5.azuredatabricks.net",
+                  "parameters": {
+                    "enableNoPublicIp": {
+                      "type": "Bool",
+                      "value": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no public ip disabled",
+        "expected": "fail",
+        "resourceId": "ws-open",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-open",
+                "name": "ws-open",
+                "location": "eastus",
+                "sku": {
+                  "name": "standard"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-open",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-9999.5.azuredatabricks.net",
+                  "parameters": {
+                    "enableNoPublicIp": {
+                      "type": "Bool",
+                      "value": false
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail parameter absent defaults to public",
+        "expected": "fail",
+        "resourceId": "ws-legacy",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-legacy",
+                "name": "ws-legacy",
+                "location": "westus",
+                "sku": {
+                  "name": "premium"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-legacy",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-4321.5.azuredatabricks.net",
+                  "parameters": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DATABRICKS-101",
+    "cases": [
+      {
+        "name": "pass customer-managed key",
+        "expected": "pass",
+        "resourceId": "ws-cmk",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-cmk",
+                "name": "ws-cmk",
+                "location": "eastus",
+                "sku": {
+                  "name": "premium"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-cmk",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-1234.5.azuredatabricks.net",
+                  "parameters": {
+                    "encryption": {
+                      "type": "Object",
+                      "value": {
+                        "keySource": "Microsoft.Keyvault",
+                        "keyName": "databricks-cmk",
+                        "keyVaultUri": "https://kv-data.vault.azure.net/",
+                        "keyVersion": "abc123"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail default microsoft-managed key",
+        "expected": "fail",
+        "resourceId": "ws-default",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-default",
+                "name": "ws-default",
+                "location": "eastus",
+                "sku": {
+                  "name": "premium"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-default",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-5678.5.azuredatabricks.net",
+                  "parameters": {
+                    "encryption": {
+                      "type": "Object",
+                      "value": {
+                        "keySource": "Default"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail encryption parameter absent",
+        "expected": "fail",
+        "resourceId": "ws-noenc",
+        "records": [
+          {
+            "collectorId": "azure.databricks.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/1111/resourceGroups/rg-data/providers/Microsoft.Databricks/workspaces/ws-noenc",
+                "name": "ws-noenc",
+                "location": "westus",
+                "sku": {
+                  "name": "standard"
+                },
+                "managedResourceGroupId": "/subscriptions/1111/resourceGroups/databricks-rg-ws-noenc",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "workspaceUrl": "adb-7777.5.azuredatabricks.net",
+                  "parameters": {
+                    "enableNoPublicIp": {
+                      "type": "Bool",
+                      "value": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

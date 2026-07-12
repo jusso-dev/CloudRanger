@@ -1,0 +1,23 @@
+collectors:
+  - id: azure.recoveryservices.vaults_list
+    provider: azure
+    service: recoveryvault
+    description: All Azure Recovery Services (backup / site recovery) vaults in the
+      subscription.
+    kind: single
+    command: az recoveryservices vault list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. Returns a JSON ARRAY at the root of
+      Microsoft.RecoveryServices/vaults objects. Each item keeps the raw ARM
+      shape with a nested "properties" bag: properties.publicNetworkAccess
+      (Enabled|Disabled),
+      properties.redundancySettings.standardTierStorageRedundancy
+      (LocallyRedundant|GeoRedundant|ZoneRedundant),
+      properties.securitySettings.softDeleteSettings.softDeleteState
+      (Enabled|Disabled|AlwaysON|Invalid), and
+      properties.securitySettings.immutabilitySettings.state
+      (Disabled|Unlocked|Locked). Older vaults may omit redundancySettings /
+      securitySettings when never configured; the controls treat missing
+      settings as fail via explicit exists/equals checks.

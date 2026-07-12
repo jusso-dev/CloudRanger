@@ -1,0 +1,242 @@
+[
+  {
+    "controlId": "CR-AZURE-CONTAINERAPP-100",
+    "cases": [
+      {
+        "name": "pass - insecure disabled",
+        "expected": "pass",
+        "resourceId": "app-secure",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-secure",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": {
+                      "external": true,
+                      "allowInsecure": false,
+                      "targetPort": 8080,
+                      "transport": "auto",
+                      "fqdn": "app-secure.happysea.azurecontainerapps.io",
+                      "ipSecurityRestrictions": []
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - insecure allowed",
+        "expected": "fail",
+        "resourceId": "app-insecure",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-insecure",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": {
+                      "external": true,
+                      "allowInsecure": true,
+                      "targetPort": 80,
+                      "transport": "http",
+                      "fqdn": "app-insecure.happysea.azurecontainerapps.io",
+                      "ipSecurityRestrictions": []
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable - no ingress",
+        "expected": "not_applicable",
+        "resourceId": "app-no-ingress",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-no-ingress",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": null
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-CONTAINERAPP-101",
+    "cases": [
+      {
+        "name": "pass - external with IP restrictions",
+        "expected": "pass",
+        "resourceId": "app-restricted",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-restricted",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": {
+                      "external": true,
+                      "allowInsecure": false,
+                      "targetPort": 8080,
+                      "transport": "auto",
+                      "fqdn": "app-restricted.happysea.azurecontainerapps.io",
+                      "ipSecurityRestrictions": [
+                        {
+                          "name": "allow-office",
+                          "ipAddressRange": "203.0.113.0/24",
+                          "action": "Allow"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - external with no IP restrictions",
+        "expected": "fail",
+        "resourceId": "app-open",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-open",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": {
+                      "external": true,
+                      "allowInsecure": false,
+                      "targetPort": 8080,
+                      "transport": "auto",
+                      "fqdn": "app-open.happysea.azurecontainerapps.io",
+                      "ipSecurityRestrictions": []
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable - internal ingress only",
+        "expected": "not_applicable",
+        "resourceId": "app-internal",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-internal",
+                "type": "Microsoft.App/containerApps",
+                "properties": {
+                  "configuration": {
+                    "ingress": {
+                      "external": false,
+                      "allowInsecure": false,
+                      "targetPort": 8080,
+                      "transport": "auto",
+                      "fqdn": "app-internal.internal.happysea.azurecontainerapps.io",
+                      "ipSecurityRestrictions": []
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-CONTAINERAPP-102",
+    "cases": [
+      {
+        "name": "pass - system assigned identity",
+        "expected": "pass",
+        "resourceId": "app-mi",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-mi",
+                "type": "Microsoft.App/containerApps",
+                "identity": {
+                  "type": "SystemAssigned",
+                  "principalId": "11111111-2222-3333-4444-555555555555",
+                  "tenantId": "66666666-7777-8888-9999-000000000000"
+                },
+                "properties": {
+                  "configuration": {
+                    "ingress": null
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - identity type None",
+        "expected": "fail",
+        "resourceId": "app-nomi",
+        "records": [
+          {
+            "collectorId": "azure.containerapp.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-nomi",
+                "type": "Microsoft.App/containerApps",
+                "identity": {
+                  "type": "None"
+                },
+                "properties": {
+                  "configuration": {
+                    "ingress": null
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

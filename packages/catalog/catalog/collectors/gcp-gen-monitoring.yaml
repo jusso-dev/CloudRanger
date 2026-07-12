@@ -1,0 +1,17 @@
+collectors:
+  - id: gcp.monitoring.alert_policies_list
+    provider: gcp
+    service: monitoring
+    description: Lists Cloud Monitoring alert policies for the project. Each item is
+      an AlertPolicy resource (v3) with fields such as name, displayName,
+      enabled, conditions, and combiner.
+    kind: single
+    command: gcloud alpha monitoring policies list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Requires the monitoring.alertPolicies.list permission
+      (roles/monitoring.viewer). The command is currently under the gcloud alpha
+      surface; the underlying Cloud Monitoring v3 alertPolicies.list API and its
+      response schema are GA and stable. Root of --format json output is a JSON
+      ARRAY of AlertPolicy objects (empty array when none exist). If the
+      Monitoring API is disabled the call returns an API-not-enabled error.

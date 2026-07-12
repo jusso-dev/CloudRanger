@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.ec2.describe_flow_logs
+    provider: aws
+    service: ec2
+    description: VPC/subnet/ENI flow logs configured in one region.
+    kind: single
+    command: aws ec2 describe-flow-logs --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a FlowLogs array. Each item has FlowLogId, FlowLogStatus (ACTIVE
+      when logging), ResourceId (e.g. vpc-xxxx), TrafficType
+      (ALL/ACCEPT/REJECT), LogDestinationType (cloud-watch-logs or s3),
+      LogGroupName or LogDestination, DeliverLogsStatus (SUCCESS/FAILED), and
+      CreationTime. An empty FlowLogs array means no flow logs exist in the
+      region.

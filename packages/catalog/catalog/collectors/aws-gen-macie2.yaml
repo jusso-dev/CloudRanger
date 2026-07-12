@@ -1,0 +1,20 @@
+collectors:
+  - id: aws.macie2.get_macie_session
+    provider: aws
+    service: macie2
+    description: Retrieves the current status and configuration settings for the
+      Amazon Macie session (account/region scope), returning status (ENABLED or
+      PAUSED), findingPublishingFrequency, serviceRole, createdAt and updatedAt.
+      If Macie is not enabled in the region the CLI errors with an
+      AccessDeniedException whose message is "Macie is not enabled".
+    kind: single
+    command: aws macie2 get-macie-session --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires macie2:GetMacieSession. When Macie has never been enabled in the
+      region the CLI exits non-zero with "An error occurred
+      (AccessDeniedException) ... Macie is not enabled".
+      ResourceNotFoundException may also indicate the session does not exist. A
+      genuine AccessDenied on the GetMacieSession action (missing IAM
+      permission) should be treated as error rather than fail; distinguish it
+      from the "Macie is not enabled" message.

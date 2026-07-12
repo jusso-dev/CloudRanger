@@ -1,0 +1,110 @@
+[
+  {
+    "controlId": "CR-AWS-MACIE-001",
+    "cases": [
+      {
+        "name": "passes when Macie session status is ENABLED",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "createdAt": "2021-01-01T00:00:00+00:00",
+              "findingPublishingFrequency": "FIFTEEN_MINUTES",
+              "serviceRole": "arn:aws:iam::123456789012:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie",
+              "status": "ENABLED",
+              "updatedAt": "2021-06-01T00:00:00+00:00"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when session exists but status is PAUSED",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "createdAt": "2021-01-01T00:00:00+00:00",
+              "findingPublishingFrequency": "ONE_HOUR",
+              "serviceRole": "arn:aws:iam::123456789012:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie",
+              "status": "PAUSED",
+              "updatedAt": "2021-06-01T00:00:00+00:00"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when Macie is not enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetMacieSession operation: Macie is not enabled."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MACIE-002",
+    "cases": [
+      {
+        "name": "passes when session is ENABLED",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "createdAt": "2021-01-01T00:00:00+00:00",
+              "findingPublishingFrequency": "FIFTEEN_MINUTES",
+              "serviceRole": "arn:aws:iam::123456789012:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie",
+              "status": "ENABLED",
+              "updatedAt": "2021-06-01T00:00:00+00:00"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when session is PAUSED",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "createdAt": "2021-01-01T00:00:00+00:00",
+              "findingPublishingFrequency": "SIX_HOURS",
+              "serviceRole": "arn:aws:iam::123456789012:role/aws-service-role/macie.amazonaws.com/AWSServiceRoleForAmazonMacie",
+              "status": "PAUSED",
+              "updatedAt": "2021-06-01T00:00:00+00:00"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when Macie is not enabled",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.macie2.get_macie_session",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetMacieSession operation: Macie is not enabled."
+          }
+        ]
+      }
+    ]
+  }
+]

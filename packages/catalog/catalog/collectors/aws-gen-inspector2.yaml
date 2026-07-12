@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.inspector2.batch_get_account_status
+    provider: aws
+    service: inspector2
+    description: Amazon Inspector v2 activation status for the account in a region,
+      including per-resource-type (EC2, ECR, Lambda) scan states.
+    kind: single
+    command: aws inspector2 batch-get-account-status --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires inspector2:BatchGetAccountStatus. Returns accounts[] with
+      accountId, state.status (overall enablement) and resourceState.ec2.status
+      / resourceState.ecr.status / resourceState.lambda.status, each one of
+      ENABLED|DISABLED|SUSPENDED|ENABLING|DISABLING. AccessDenied when the
+      caller lacks Inspector permissions.

@@ -1,0 +1,195 @@
+controls:
+  - id: CR-GCP-KMS-120
+    version: 1.0.0
+    provider: gcp
+    service: kms
+    title: No Cloud KMS role is granted to anonymous or all-authenticated principals
+      at the project level
+    description: >
+      Verifies the project IAM policy grants no Cloud KMS role
+      (roles/cloudkms.*) to the special members allUsers or
+      allAuthenticatedUsers.
+    rationale: >
+      A KMS role granted to allUsers or allAuthenticatedUsers makes key
+      operations (and in some roles the key material lifecycle) reachable by
+      anonymous or any-Google-account identities, undermining the entire
+      cryptographic boundary the keys are meant to enforce.
+    severity: critical
+    categories:
+      - encryption
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: kms_key_not_publicly_accessible
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: startsWith
+            path: role
+            value: roles/cloudkms
+          - op: anyItem
+            path: members
+            condition:
+              op: in
+              path: $
+              values:
+                - allUsers
+                - allAuthenticatedUsers
+    failMessage: A Cloud KMS role is granted to allUsers or allAuthenticatedUsers at
+      the project level.
+    passMessage: No Cloud KMS role is publicly accessible at the project level.
+    remediation:
+      summary: Remove allUsers/allAuthenticatedUsers from every Cloud KMS role binding.
+      steps:
+        - Identify project IAM bindings whose role starts with roles/cloudkms.
+        - Remove the allUsers and allAuthenticatedUsers members from those
+          bindings and re-grant to specific principals (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.9"
+    references:
+      - https://cloud.google.com/kms/docs/reference/permissions-and-roles
+      - https://cloud.google.com/iam/docs/overview#allusers
+  - id: CR-GCP-KMS-121
+    version: 1.0.0
+    provider: gcp
+    service: kms
+    title: The Cloud KMS Admin role is not granted to a user or group at the project
+      level
+    description: >
+      Verifies the project IAM policy grants roles/cloudkms.admin to no user: or
+      group: principal, preserving separation of duties between key management
+      and key usage.
+    rationale: >
+      roles/cloudkms.admin allows creating, destroying, and re-granting access
+      to every key in the project; granting it broadly to users or groups breaks
+      separation of duties and lets a single compromised identity control or
+      destroy all cryptographic keys.
+    severity: high
+    categories:
+      - encryption
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: kms_key_not_publicly_accessible
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: role
+            value: roles/cloudkms.admin
+          - op: anyItem
+            path: members
+            condition:
+              op: or
+              exprs:
+                - op: startsWith
+                  path: $
+                  value: "user:"
+                - op: startsWith
+                  path: $
+                  value: "group:"
+    failMessage: The Cloud KMS Admin role is granted to a user or group at the
+      project level.
+    passMessage: No user or group holds the Cloud KMS Admin role at the project level.
+    remediation:
+      summary: Restrict roles/cloudkms.admin to dedicated key-management service
+        accounts.
+      steps:
+        - Remove roles/cloudkms.admin from user and group principals in the
+          project IAM policy.
+        - Grant key administration to a dedicated, tightly controlled service
+          account, and scope it to specific keyrings where possible (operator
+          action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.9"
+    references:
+      - https://cloud.google.com/kms/docs/reference/permissions-and-roles
+      - https://cloud.google.com/kms/docs/separation-of-duties
+  - id: CR-GCP-KMS-122
+    version: 1.0.0
+    provider: gcp
+    service: kms
+    title: CryptoKey encrypt/decrypt roles are not granted publicly at the project
+      level
+    description: >
+      Verifies the project IAM policy grants no CryptoKey usage role
+      (roles/cloudkms.cryptoKeyEncrypterDecrypter, cryptoKeyEncrypter,
+      cryptoKeyDecrypter, or signerVerifier) to allUsers or
+      allAuthenticatedUsers.
+    rationale: >
+      Public grants of encrypt/decrypt/sign roles let anonymous or
+      any-authenticated identities use the project's keys to decrypt protected
+      data or forge signatures, defeating the confidentiality and integrity the
+      keys provide even though the key material itself is never exposed.
+    severity: critical
+    categories:
+      - encryption
+      - public-exposure
+    source:
+      engine: prowler
+      id: kms_key_not_publicly_accessible
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: in
+            path: role
+            values:
+              - roles/cloudkms.cryptoKeyEncrypterDecrypter
+              - roles/cloudkms.cryptoKeyEncrypter
+              - roles/cloudkms.cryptoKeyDecrypter
+              - roles/cloudkms.signerVerifier
+          - op: anyItem
+            path: members
+            condition:
+              op: in
+              path: $
+              values:
+                - allUsers
+                - allAuthenticatedUsers
+    failMessage: A CryptoKey usage role is granted to allUsers or
+      allAuthenticatedUsers at the project level.
+    passMessage: No CryptoKey usage role is publicly accessible at the project level.
+    remediation:
+      summary: Remove public members from CryptoKey encrypt/decrypt/sign role bindings.
+      steps:
+        - Find project IAM bindings for
+          roles/cloudkms.cryptoKeyEncrypterDecrypter and related usage roles.
+        - Remove allUsers and allAuthenticatedUsers and re-grant only to the
+          specific service accounts that must use the keys (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.9"
+    references:
+      - https://cloud.google.com/kms/docs/reference/permissions-and-roles
+      - https://cloud.google.com/kms/docs/iam

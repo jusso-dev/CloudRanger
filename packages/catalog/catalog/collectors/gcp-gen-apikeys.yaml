@@ -1,0 +1,20 @@
+collectors:
+  - id: gcp.apikeys.list
+    provider: gcp
+    service: apikeys
+    description: All API keys in the project (metadata and restrictions, no key material).
+    kind: single
+    command: gcloud services api-keys list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; each element is an API Keys v2 Key
+      resource. Fields mirror the API Keys REST Key resource: name
+      (projects/PROJECT/locations/global/keys/KEY_ID), uid, displayName,
+      createTime, updateTime, etag, and an optional restrictions object.
+      restrictions may contain browserKeyRestrictions (allowedReferrers),
+      serverKeyRestrictions (allowedIps), androidKeyRestrictions,
+      iosKeyRestrictions, and apiTargets (array of {service, methods}).
+      keyString is NOT returned by list (only on create). Requires
+      serviceusage.apiKeys.list. Soft-deleted keys are excluded unless
+      --show-deleted is passed (not used here).

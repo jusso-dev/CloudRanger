@@ -1,0 +1,78 @@
+[
+  {
+    "controlId": "CR-AWS-ORGANIZATIONS-001",
+    "cases": [
+      {
+        "name": "pass all features enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.organizations.describe_organization",
+            "exitCode": 0,
+            "output": {
+              "Organization": {
+                "Id": "o-exampleorgid",
+                "Arn": "arn:aws:organizations::111111111111:organization/o-exampleorgid",
+                "FeatureSet": "ALL",
+                "MasterAccountArn": "arn:aws:organizations::111111111111:account/o-exampleorgid/111111111111",
+                "MasterAccountId": "111111111111",
+                "MasterAccountEmail": "bill@example.com",
+                "AvailablePolicyTypes": [
+                  {
+                    "Type": "SERVICE_CONTROL_POLICY",
+                    "Status": "ENABLED"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail consolidated billing only",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.organizations.describe_organization",
+            "exitCode": 0,
+            "output": {
+              "Organization": {
+                "Id": "o-exampleorgid",
+                "Arn": "arn:aws:organizations::111111111111:organization/o-exampleorgid",
+                "FeatureSet": "CONSOLIDATED_BILLING",
+                "MasterAccountArn": "arn:aws:organizations::111111111111:account/o-exampleorgid/111111111111",
+                "MasterAccountId": "111111111111",
+                "MasterAccountEmail": "bill@example.com",
+                "AvailablePolicyTypes": []
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail not in an organization",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.organizations.describe_organization",
+            "exitCode": 253,
+            "output": null,
+            "errorText": "An error occurred (AWSOrganizationsNotInUseException) when calling the DescribeOrganization operation: Your account is not a member of an organization."
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.organizations.describe_organization",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the DescribeOrganization operation: AccessDenied"
+          }
+        ]
+      }
+    ]
+  }
+]

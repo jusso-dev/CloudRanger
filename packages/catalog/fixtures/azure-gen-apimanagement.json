@@ -1,0 +1,104 @@
+[
+  {
+    "controlId": "CR-AZURE-APIM-101",
+    "cases": [
+      {
+        "name": "passes when public network access disabled",
+        "expected": "pass",
+        "resourceId": "apim-private",
+        "records": [
+          {
+            "collectorId": "azure.apim.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "apim-private",
+                "location": "westeurope",
+                "type": "Microsoft.ApiManagement/service",
+                "properties": {
+                  "publicNetworkAccess": "Disabled",
+                  "virtualNetworkType": "Internal",
+                  "customProperties": {}
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails when public network access enabled",
+        "expected": "fail",
+        "resourceId": "apim-public",
+        "records": [
+          {
+            "collectorId": "azure.apim.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "apim-public",
+                "location": "westeurope",
+                "type": "Microsoft.ApiManagement/service",
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "virtualNetworkType": "None",
+                  "customProperties": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APIM-102",
+    "cases": [
+      {
+        "name": "passes when integrated with VNet (External)",
+        "expected": "pass",
+        "resourceId": "apim-vnet",
+        "records": [
+          {
+            "collectorId": "azure.apim.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "apim-vnet",
+                "location": "eastus",
+                "type": "Microsoft.ApiManagement/service",
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "virtualNetworkType": "External",
+                  "customProperties": {}
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails when not in a VNet (None)",
+        "expected": "fail",
+        "resourceId": "apim-novnet",
+        "records": [
+          {
+            "collectorId": "azure.apim.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "apim-novnet",
+                "location": "eastus",
+                "type": "Microsoft.ApiManagement/service",
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "virtualNetworkType": "None",
+                  "customProperties": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

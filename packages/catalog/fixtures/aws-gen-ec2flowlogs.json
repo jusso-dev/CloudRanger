@@ -1,0 +1,178 @@
+[
+  {
+    "controlId": "CR-AWS-VPC-050",
+    "cases": [
+      {
+        "name": "pass - active flow log present",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-1",
+                  "FlowLogStatus": "ACTIVE",
+                  "ResourceId": "vpc-1",
+                  "TrafficType": "ALL",
+                  "LogDestinationType": "cloud-watch-logs",
+                  "DeliverLogsStatus": "SUCCESS"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - no flow logs",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - flow log FAILED",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-1",
+                  "FlowLogStatus": "FAILED",
+                  "ResourceId": "vpc-1",
+                  "TrafficType": "ALL",
+                  "LogDestinationType": "cloud-watch-logs",
+                  "DeliverLogsStatus": "FAILED"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-VPC-051",
+    "cases": [
+      {
+        "name": "pass - active flow log",
+        "expected": "pass",
+        "resourceId": "fl-0abc123",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-0abc123",
+                  "FlowLogStatus": "ACTIVE",
+                  "ResourceId": "vpc-0a1b2c3d",
+                  "TrafficType": "ALL",
+                  "LogDestinationType": "cloud-watch-logs",
+                  "DeliverLogsStatus": "SUCCESS",
+                  "CreationTime": "2025-01-10T12:00:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - flow log in FAILED state",
+        "expected": "fail",
+        "resourceId": "fl-0dead999",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-0dead999",
+                  "FlowLogStatus": "FAILED",
+                  "ResourceId": "vpc-0a1b2c3d",
+                  "TrafficType": "ALL",
+                  "LogDestinationType": "s3",
+                  "DeliverLogsStatus": "FAILED",
+                  "DeliverLogsErrorMessage": "Access error",
+                  "CreationTime": "2025-01-10T12:00:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-VPC-052",
+    "cases": [
+      {
+        "name": "pass - traffic type ALL",
+        "expected": "pass",
+        "resourceId": "fl-0abc123",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-0abc123",
+                  "FlowLogStatus": "ACTIVE",
+                  "ResourceId": "vpc-0a1b2c3d",
+                  "TrafficType": "ALL",
+                  "LogDestinationType": "cloud-watch-logs",
+                  "DeliverLogsStatus": "SUCCESS",
+                  "CreationTime": "2025-01-10T12:00:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail - traffic type REJECT only",
+        "expected": "fail",
+        "resourceId": "fl-0rej555",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_flow_logs",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FlowLogs": [
+                {
+                  "FlowLogId": "fl-0rej555",
+                  "FlowLogStatus": "ACTIVE",
+                  "ResourceId": "vpc-0a1b2c3d",
+                  "TrafficType": "REJECT",
+                  "LogDestinationType": "cloud-watch-logs",
+                  "DeliverLogsStatus": "SUCCESS",
+                  "CreationTime": "2025-01-10T12:00:00.000Z"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

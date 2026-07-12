@@ -1,0 +1,22 @@
+collectors:
+  - id: gcp.artifactregistry.repositories_list
+    provider: gcp
+    service: artifactregistry
+    description: All Artifact Registry repositories (metadata) across all locations
+      in the project.
+    kind: single
+    command: gcloud artifacts repositories list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; each element is a Repository resource
+      mirroring the Artifact Registry REST Repository resource. Fields include:
+      name (fully-qualified
+      projects/<project>/locations/<loc>/repositories/<id>), format (DOCKER,
+      MAVEN, NPM, PYTHON, APT, YUM, KFP, GO, etc.), mode (STANDARD_REPOSITORY,
+      VIRTUAL_REPOSITORY, REMOTE_REPOSITORY), kmsKeyName (fully-qualified Cloud
+      KMS key resource name when CMEK is configured, absent otherwise),
+      dockerConfig (object present for DOCKER-format repos, with immutableTags
+      boolean), createTime, updateTime, sizeBytes, and labels. The command
+      aggregates repositories from every location for the project without
+      needing --location. Requires artifactregistry.repositories.list.

@@ -1,0 +1,173 @@
+[
+  {
+    "controlId": "CR-AWS-CLOUDWATCH-001",
+    "cases": [
+      {
+        "name": "pass alarm with SNS action",
+        "expected": "pass",
+        "resourceId": "high-cpu",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": [
+                {
+                  "AlarmName": "high-cpu",
+                  "AlarmArn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:high-cpu",
+                  "ActionsEnabled": true,
+                  "OKActions": [],
+                  "AlarmActions": ["arn:aws:sns:us-east-1:111122223333:ops-alerts"],
+                  "InsufficientDataActions": [],
+                  "StateValue": "OK",
+                  "MetricName": "CPUUtilization",
+                  "Namespace": "AWS/EC2",
+                  "Statistic": "Average",
+                  "ComparisonOperator": "GreaterThanThreshold",
+                  "Threshold": 80
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail alarm with no action",
+        "expected": "fail",
+        "resourceId": "orphan-alarm",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": [
+                {
+                  "AlarmName": "orphan-alarm",
+                  "AlarmArn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:orphan-alarm",
+                  "ActionsEnabled": true,
+                  "OKActions": [],
+                  "AlarmActions": [],
+                  "InsufficientDataActions": [],
+                  "StateValue": "ALARM",
+                  "MetricName": "CPUUtilization",
+                  "Namespace": "AWS/EC2",
+                  "Statistic": "Average",
+                  "ComparisonOperator": "GreaterThanThreshold",
+                  "Threshold": 80
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDWATCH-002",
+    "cases": [
+      {
+        "name": "pass actions enabled",
+        "expected": "pass",
+        "resourceId": "enabled-alarm",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": [
+                {
+                  "AlarmName": "enabled-alarm",
+                  "AlarmArn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:enabled-alarm",
+                  "ActionsEnabled": true,
+                  "OKActions": [],
+                  "AlarmActions": ["arn:aws:sns:us-east-1:111122223333:ops-alerts"],
+                  "InsufficientDataActions": [],
+                  "StateValue": "OK"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail actions disabled",
+        "expected": "fail",
+        "resourceId": "disabled-alarm",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": [
+                {
+                  "AlarmName": "disabled-alarm",
+                  "AlarmArn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:disabled-alarm",
+                  "ActionsEnabled": false,
+                  "OKActions": [],
+                  "AlarmActions": ["arn:aws:sns:us-east-1:111122223333:ops-alerts"],
+                  "InsufficientDataActions": [],
+                  "StateValue": "OK"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CLOUDWATCH-003",
+    "cases": [
+      {
+        "name": "pass at least one metric alarm exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": [
+                {
+                  "AlarmName": "root-login-alarm",
+                  "AlarmArn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:root-login-alarm",
+                  "ActionsEnabled": true,
+                  "AlarmActions": ["arn:aws:sns:us-east-1:111122223333:security-alerts"],
+                  "OKActions": [],
+                  "InsufficientDataActions": [],
+                  "StateValue": "OK",
+                  "MetricName": "RootAccountUsageCount",
+                  "Namespace": "CISBenchmark"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no metric alarms in region",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cloudwatch.describe_alarms",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "CompositeAlarms": [],
+              "MetricAlarms": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

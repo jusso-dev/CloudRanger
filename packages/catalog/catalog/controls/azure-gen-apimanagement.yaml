@@ -1,0 +1,86 @@
+controls:
+  - id: CR-AZURE-APIM-101
+    version: 1.0.0
+    provider: azure
+    service: apimanagement
+    title: API Management service disables public network access
+    description: The service properties.publicNetworkAccess is set to Disabled so
+      the management/gateway endpoints are reachable only over private
+      connectivity.
+    rationale: A publicly reachable API Management control and gateway plane widens
+      the attack surface for credential stuffing, enumeration, and exploitation;
+      restricting to private access enforces network-level isolation.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: apim_service_public_access_disabled
+      license: Apache-2.0
+    collector: azure.apim.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: API Management service allows public network access
+      (publicNetworkAccess is not Disabled).
+    passMessage: API Management service has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use Private Link for access.
+      steps:
+        - Configure a Private Endpoint for the API Management service.
+        - Set properties.publicNetworkAccess to Disabled on the service.
+      verifyCommand: az apim list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/api-management/private-endpoint
+      - https://learn.microsoft.com/en-us/rest/api/apimanagement/api-management-service/list
+  - id: CR-AZURE-APIM-102
+    version: 1.0.0
+    provider: azure
+    service: apimanagement
+    title: API Management service is deployed into a virtual network
+    description: The service properties.virtualNetworkType is External or Internal
+      (not None), placing the gateway inside a VNet.
+    rationale: An API Management instance not integrated with a virtual network
+      cannot use network security groups, private backends, or subnet-level
+      controls, leaving backend traffic and the gateway exposed on the public
+      internet.
+    severity: medium
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: apim_service_virtual_network_enabled
+      license: Apache-2.0
+    collector: azure.apim.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: properties.virtualNetworkType
+        - op: notEquals
+          path: properties.virtualNetworkType
+          value: None
+    failMessage: API Management service is not integrated with a virtual network
+      (virtualNetworkType is None or unset).
+    passMessage: API Management service is integrated with a virtual network.
+    remediation:
+      summary: Deploy the API Management service into a VNet (External or Internal
+        mode).
+      steps:
+        - Recreate or configure the service with a virtual network in Internal
+          or External mode and attach the required subnet and NSG.
+      verifyCommand: az apim list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/api-management/virtual-network-concepts
+      - https://learn.microsoft.com/en-us/rest/api/apimanagement/api-management-service/list

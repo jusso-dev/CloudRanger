@@ -1,0 +1,192 @@
+[
+  {
+    "controlId": "CR-GCP-APIKEYS-100",
+    "cases": [
+      {
+        "name": "pass - key has restrictions object",
+        "expected": "pass",
+        "resourceId": "projects/111/locations/global/keys/a1b2c3d4-0000-1111-2222-333344445555",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/a1b2c3d4-0000-1111-2222-333344445555",
+                "uid": "a1b2c3d4-0000-1111-2222-333344445555",
+                "displayName": "web-frontend-key",
+                "createTime": "2025-02-01T10:00:00Z",
+                "updateTime": "2025-02-01T10:05:00Z",
+                "etag": "W/\"abc123\"",
+                "restrictions": {
+                  "browserKeyRestrictions": {
+                    "allowedReferrers": ["https://app.example.com/*"]
+                  },
+                  "apiTargets": [
+                    {
+                      "service": "maps-backend.googleapis.com"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - key has no restrictions",
+        "expected": "fail",
+        "resourceId": "projects/111/locations/global/keys/deadbeef-9999-8888-7777-666655554444",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/deadbeef-9999-8888-7777-666655554444",
+                "uid": "deadbeef-9999-8888-7777-666655554444",
+                "displayName": "legacy-unrestricted-key",
+                "createTime": "2022-06-15T08:00:00Z",
+                "updateTime": "2022-06-15T08:00:00Z",
+                "etag": "W/\"zzz000\""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-APIKEYS-101",
+    "cases": [
+      {
+        "name": "pass - browser restriction plus apiTargets",
+        "expected": "pass",
+        "resourceId": "projects/111/locations/global/keys/a1b2c3d4-0000-1111-2222-333344445555",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/a1b2c3d4-0000-1111-2222-333344445555",
+                "uid": "a1b2c3d4-0000-1111-2222-333344445555",
+                "displayName": "web-frontend-key",
+                "createTime": "2025-02-01T10:00:00Z",
+                "restrictions": {
+                  "browserKeyRestrictions": {
+                    "allowedReferrers": ["https://app.example.com/*"]
+                  },
+                  "apiTargets": [
+                    {
+                      "service": "maps-backend.googleapis.com",
+                      "methods": ["*"]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass - server IP restriction plus apiTargets",
+        "expected": "pass",
+        "resourceId": "projects/111/locations/global/keys/11112222-3333-4444-5555-666677778888",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/11112222-3333-4444-5555-666677778888",
+                "uid": "11112222-3333-4444-5555-666677778888",
+                "displayName": "backend-key",
+                "createTime": "2025-03-10T12:00:00Z",
+                "restrictions": {
+                  "serverKeyRestrictions": {
+                    "allowedIps": ["203.0.113.10"]
+                  },
+                  "apiTargets": [
+                    {
+                      "service": "translate.googleapis.com"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - apiTargets present but no application restriction",
+        "expected": "fail",
+        "resourceId": "projects/111/locations/global/keys/aaaa1111-bbbb-2222-cccc-333344445555",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/aaaa1111-bbbb-2222-cccc-333344445555",
+                "uid": "aaaa1111-bbbb-2222-cccc-333344445555",
+                "displayName": "api-only-restricted-key",
+                "createTime": "2024-11-20T09:00:00Z",
+                "restrictions": {
+                  "apiTargets": [
+                    {
+                      "service": "storage.googleapis.com"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - application restriction present but no apiTargets",
+        "expected": "fail",
+        "resourceId": "projects/111/locations/global/keys/bbbb2222-cccc-3333-dddd-444455556666",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/bbbb2222-cccc-3333-dddd-444455556666",
+                "uid": "bbbb2222-cccc-3333-dddd-444455556666",
+                "displayName": "browser-only-key",
+                "createTime": "2024-07-01T09:00:00Z",
+                "restrictions": {
+                  "browserKeyRestrictions": {
+                    "allowedReferrers": ["https://site.example.com/*"]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no restrictions at all",
+        "expected": "fail",
+        "resourceId": "projects/111/locations/global/keys/deadbeef-9999-8888-7777-666655554444",
+        "records": [
+          {
+            "collectorId": "gcp.apikeys.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/111/locations/global/keys/deadbeef-9999-8888-7777-666655554444",
+                "uid": "deadbeef-9999-8888-7777-666655554444",
+                "displayName": "legacy-unrestricted-key",
+                "createTime": "2022-06-15T08:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

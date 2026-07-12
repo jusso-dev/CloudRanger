@@ -1,0 +1,110 @@
+controls:
+  - id: CR-AWS-MACIE-001
+    version: 1.0.0
+    provider: aws
+    service: macie2
+    title: Amazon Macie is enabled in the region
+    description: The Amazon Macie session exists and its status is ENABLED for the
+      account in this region, as returned by get-macie-session.
+    rationale: Without Macie enabled there is no automated discovery of sensitive
+      data (PII, credentials, financial records) in S3, so accidental public or
+      over-permissioned data exposure can go undetected until it is exploited.
+    severity: medium
+    categories:
+      - logging
+      - monitoring
+      - data-protection
+    source:
+      engine: prowler
+      id: macie_is_enabled
+      license: Apache-2.0
+    collector: aws.macie2.get_macie_session
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: status
+      value: ENABLED
+    onError:
+      - contains: Macie is not enabled
+        status: fail
+        message: Amazon Macie is not enabled in this region.
+      - contains: ResourceNotFoundException
+        status: fail
+        message: Amazon Macie is not enabled in this region.
+      - contains: AccessDeniedException
+        status: fail
+        message: Amazon Macie is not enabled in this region.
+      - contains: AccessDenied
+        status: error
+    failMessage: Amazon Macie is not enabled (status is not ENABLED) in this region.
+    passMessage: Amazon Macie is enabled in this region.
+    remediation:
+      summary: Enable Amazon Macie in the region.
+      steps:
+        - Open the Amazon Macie console in the target region and choose Get
+          started, then Enable Macie.
+        - Or run aws macie2 enable-macie in the region.
+      verifyCommand: aws macie2 get-macie-session --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/macie/latest/user/getting-started.html
+      - https://docs.aws.amazon.com/cli/latest/reference/macie2/get-macie-session.html
+  - id: CR-AWS-MACIE-002
+    version: 1.0.0
+    provider: aws
+    service: macie2
+    title: Amazon Macie session is active (not paused)
+    description: When an Amazon Macie session exists, its status is ENABLED rather
+      than PAUSED so that sensitive-data discovery jobs and automated discovery
+      keep running.
+    rationale: A paused Macie session stops all sensitive-data discovery and
+      automated discovery activity, so new or newly public sensitive data in S3
+      is no longer flagged, silently eroding coverage that operators believe is
+      active.
+    severity: low
+    categories:
+      - monitoring
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: macie_is_enabled
+      license: Apache-2.0
+    collector: aws.macie2.get_macie_session
+    resourcesPath: $
+    resourceIdField: $scope
+    applicableWhen:
+      op: exists
+      path: status
+    passWhen:
+      op: notEquals
+      path: status
+      value: PAUSED
+    onError:
+      - contains: Macie is not enabled
+        status: not_applicable
+        message: Amazon Macie is not enabled in this region.
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: Amazon Macie is not enabled in this region.
+      - contains: AccessDeniedException
+        status: not_applicable
+        message: Amazon Macie is not enabled in this region.
+      - contains: AccessDenied
+        status: error
+    failMessage: The Amazon Macie session is PAUSED, so sensitive-data discovery is
+      suspended.
+    passMessage: The Amazon Macie session is active (not paused).
+    remediation:
+      summary: Resume the Amazon Macie session.
+      steps:
+        - Open the Amazon Macie console in the target region and resume Macie
+          from the account settings.
+        - Or run aws macie2 enable-macie --status ENABLED in the region to move
+          the session out of the PAUSED state.
+      verifyCommand: aws macie2 get-macie-session --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/macie/latest/user/macie-suspend-disable.html
+      - https://docs.aws.amazon.com/cli/latest/reference/macie2/get-macie-session.html

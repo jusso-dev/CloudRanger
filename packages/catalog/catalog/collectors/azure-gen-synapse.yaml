@@ -1,0 +1,14 @@
+collectors:
+  - id: azure.synapse.workspaces_list
+    provider: azure
+    service: synapse
+    description: All Azure Synapse Analytics workspaces in the subscription with
+      their properties (managed VNet, public network access, and managed VNet
+      settings).
+    kind: single
+    command: az synapse workspace list --output json
+    regional: false
+    outputFormat: json
+    notes: Requires the 'synapse' az CLI extension and Reader on the subscription.
+      Returns a JSON array at the root; workspace config is under each item's
+      'properties' object.

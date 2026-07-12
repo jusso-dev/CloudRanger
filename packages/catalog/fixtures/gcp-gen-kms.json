@@ -1,0 +1,153 @@
+[
+  {
+    "controlId": "CR-GCP-KMS-120",
+    "cases": [
+      {
+        "name": "fails when a KMS role is granted to allUsers",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc123=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.cryptoKeyDecrypter",
+                  "members": ["allUsers", "serviceAccount:app@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/viewer",
+                  "members": ["user:alice@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when KMS roles go only to specific principals",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc124=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/owner",
+                  "members": ["user:admin@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-KMS-121",
+    "cases": [
+      {
+        "name": "fails when cloudkms.admin granted to a user",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc125=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.admin",
+                  "members": ["user:bob@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when cloudkms.admin held only by a service account",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc126=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.admin",
+                  "members": ["serviceAccount:key-admin@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+                  "members": ["group:security@example.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-KMS-122",
+    "cases": [
+      {
+        "name": "fails when EncrypterDecrypter granted to allAuthenticatedUsers",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc127=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+                  "members": ["allAuthenticatedUsers"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when usage roles go to specific service accounts",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXabc128=",
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                },
+                {
+                  "role": "roles/cloudkms.signerVerifier",
+                  "members": ["serviceAccount:signer@proj.iam.gserviceaccount.com"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

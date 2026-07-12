@@ -1,0 +1,16 @@
+collectors:
+  - id: aws.cloudwatch.describe_alarms
+    provider: aws
+    service: cloudwatch
+    description: All CloudWatch alarms in one region, split into MetricAlarms and
+      CompositeAlarms with their action targets and enablement state.
+    kind: single
+    command: aws cloudwatch describe-alarms --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires cloudwatch:DescribeAlarms. Output has two top-level arrays
+      MetricAlarms[] and CompositeAlarms[]. Each metric alarm has AlarmName,
+      AlarmArn, ActionsEnabled (bool), and
+      AlarmActions/OKActions/InsufficientDataActions (arrays of SNS/target
+      ARNs). Empty AlarmActions means the alarm never notifies anyone when it
+      fires.

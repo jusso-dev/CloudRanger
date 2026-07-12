@@ -1,0 +1,152 @@
+[
+  {
+    "controlId": "CR-GCP-MONITORING-100",
+    "cases": [
+      {
+        "name": "pass - one alert policy exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": [
+              {
+                "name": "projects/my-project/alertPolicies/1234567890123456789",
+                "displayName": "Audit Config Changes",
+                "combiner": "OR",
+                "enabled": true,
+                "conditions": [
+                  {
+                    "name": "projects/my-project/alertPolicies/1234567890123456789/conditions/0",
+                    "displayName": "log-based metric",
+                    "conditionThreshold": {
+                      "filter": "metric.type=\"logging.googleapis.com/user/audit_config_changes\"",
+                      "comparison": "COMPARISON_GT",
+                      "thresholdValue": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no alert policies (empty array)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "error - permission denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": null,
+            "exitCode": 1,
+            "errorText": "ERROR: (gcloud.alpha.monitoring.policies.list) PERMISSION_DENIED: The caller does not have permission"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-MONITORING-101",
+    "cases": [
+      {
+        "name": "pass - an enabled policy exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": [
+              {
+                "name": "projects/my-project/alertPolicies/1111111111111111111",
+                "displayName": "Disabled Policy",
+                "combiner": "OR",
+                "enabled": false,
+                "conditions": [
+                  {
+                    "name": "projects/my-project/alertPolicies/1111111111111111111/conditions/0",
+                    "displayName": "cond"
+                  }
+                ]
+              },
+              {
+                "name": "projects/my-project/alertPolicies/2222222222222222222",
+                "displayName": "Project Ownership Changes",
+                "combiner": "OR",
+                "enabled": true,
+                "conditions": [
+                  {
+                    "name": "projects/my-project/alertPolicies/2222222222222222222/conditions/0",
+                    "displayName": "log-based metric",
+                    "conditionThreshold": {
+                      "filter": "metric.type=\"logging.googleapis.com/user/project_ownership_changes\"",
+                      "comparison": "COMPARISON_GT",
+                      "thresholdValue": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - all policies disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": [
+              {
+                "name": "projects/my-project/alertPolicies/3333333333333333333",
+                "displayName": "Disabled Policy A",
+                "combiner": "OR",
+                "enabled": false,
+                "conditions": [
+                  {
+                    "name": "projects/my-project/alertPolicies/3333333333333333333/conditions/0",
+                    "displayName": "cond"
+                  }
+                ]
+              }
+            ],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - no policies at all",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": [],
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "fail - monitoring API disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.monitoring.alert_policies_list",
+            "output": null,
+            "exitCode": 1,
+            "errorText": "ERROR: (gcloud.alpha.monitoring.policies.list) FAILED_PRECONDITION: Cloud Monitoring API has not been used in project my-project before or it is disabled. SERVICE_DISABLED"
+          }
+        ]
+      }
+    ]
+  }
+]

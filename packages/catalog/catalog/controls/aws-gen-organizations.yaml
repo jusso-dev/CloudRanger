@@ -1,0 +1,45 @@
+controls:
+  - id: CR-AWS-ORGANIZATIONS-001
+    version: 1.0.0
+    provider: aws
+    service: organizations
+    title: AWS Organization has all features enabled
+    description: The organization's FeatureSet is ALL, not CONSOLIDATED_BILLING only.
+    rationale: With only consolidated billing enabled, governance features such as
+      Service Control Policies and tag/backup policies cannot be applied,
+      leaving member accounts without centrally enforced guardrails.
+    severity: medium
+    categories:
+      - identity
+      - governance
+    source:
+      engine: prowler
+      id: organizations_account_part_of_organizations
+      license: Apache-2.0
+    collector: aws.organizations.describe_organization
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: equals
+      path: Organization.FeatureSet
+      value: ALL
+    onError:
+      - contains: AWSOrganizationsNotInUseException
+        status: fail
+        message: Account is not part of an AWS Organization.
+      - contains: AccessDenied
+        status: error
+    failMessage: The organization does not have all features enabled (or the account
+      is not in an organization).
+    passMessage: The organization has all features enabled.
+    remediation:
+      summary: Enable all features for the organization.
+      steps:
+        - From the management account, invoke the enable-all-features workflow
+          so member accounts approve the change.
+        - Confirm FeatureSet becomes ALL once all invited accounts accept.
+      verifyCommand: aws organizations describe-organization --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org_support-all-features.html
+      - https://docs.aws.amazon.com/cli/latest/reference/organizations/describe-organization.html

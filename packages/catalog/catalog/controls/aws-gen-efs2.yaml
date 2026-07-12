@@ -1,0 +1,96 @@
+controls:
+  - id: CR-AWS-EFS-050
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system is encrypted at rest
+    description: >
+      Verifies each EFS file system has encryption at rest enabled via the
+      Encrypted flag in describe-file-systems.
+    rationale: >
+      EFS encryption cannot be enabled after creation. An unencrypted file
+      system stores shared data in plaintext on disk, exposing it if the
+      underlying storage or a snapshot is accessed.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+    source:
+      engine: prowler
+      id: efs_encryption_at_rest_enabled
+      license: Apache-2.0
+    collector: aws.efs.describe_file_systems
+    resourcesPath: FileSystems
+    resourceIdField: FileSystemId
+    resourceNameField: Name
+    passWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    failMessage: EFS file system is not encrypted at rest.
+    passMessage: EFS file system is encrypted at rest.
+    remediation:
+      summary: Recreate the file system with encryption enabled and migrate data.
+      steps:
+        - Create a new EFS file system with encryption at rest enabled.
+        - Copy data from the old file system with AWS DataSync.
+        - Repoint mount targets to the encrypted file system and retire the old
+          one.
+      verifyCommand: aws efs describe-file-systems --region <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/encryption.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeFileSystems.html
+  - id: CR-AWS-EFS-051
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system uses a customer-managed KMS key
+    description: >
+      Verifies each encrypted EFS file system references a specific KMS key
+      (KmsKeyId) rather than relying only on the default AWS-managed key.
+    rationale: >
+      With the AWS-managed key aws/elasticfilesystem the customer cannot control
+      key rotation, key policy, or revoke access. A customer-managed key allows
+      independent access control and audit over the data encryption key.
+    severity: low
+    categories:
+      - storage
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: efs_encryption_at_rest_enabled
+      license: Apache-2.0
+    collector: aws.efs.describe_file_systems
+    resourcesPath: FileSystems
+    resourceIdField: FileSystemId
+    resourceNameField: Name
+    applicableWhen:
+      op: equals
+      path: Encrypted
+      value: true
+    passWhen:
+      op: exists
+      path: KmsKeyId
+    failMessage: EFS file system does not reference a specific KMS key (uses default
+      AWS-managed key).
+    passMessage: EFS file system is encrypted with a specified KMS key.
+    remediation:
+      summary: Recreate the file system encrypted with a customer-managed KMS key.
+      steps:
+        - Create or select a customer-managed KMS key for EFS encryption.
+        - Create a new EFS file system specifying that KMS key.
+        - Migrate data with AWS DataSync, cut over mount targets, retire the old
+          file system.
+      verifyCommand: aws efs describe-file-systems --region <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/encryption-at-rest.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeFileSystems.html

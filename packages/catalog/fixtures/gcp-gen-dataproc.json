@@ -1,0 +1,127 @@
+[
+  {
+    "controlId": "CR-GCP-DATAPROC-100",
+    "cases": [
+      {
+        "name": "pass - CMEK key set",
+        "expected": "pass",
+        "resourceId": "cluster-cmek",
+        "records": [
+          {
+            "collectorId": "gcp.dataproc.clusters_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "clusterName": "cluster-cmek",
+                "clusterUuid": "11111111-1111-1111-1111-111111111111",
+                "projectId": "my-project",
+                "status": {
+                  "state": "RUNNING"
+                },
+                "config": {
+                  "encryptionConfig": {
+                    "gcePdKmsKeyName": "projects/my-project/locations/us-central1/keyRings/dp/cryptoKeys/pd-key"
+                  },
+                  "gceClusterConfig": {
+                    "zoneUri": "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a",
+                    "internalIpOnly": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no encryptionConfig (Google default)",
+        "expected": "fail",
+        "resourceId": "cluster-default",
+        "records": [
+          {
+            "collectorId": "gcp.dataproc.clusters_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "clusterName": "cluster-default",
+                "clusterUuid": "22222222-2222-2222-2222-222222222222",
+                "projectId": "my-project",
+                "status": {
+                  "state": "RUNNING"
+                },
+                "config": {
+                  "gceClusterConfig": {
+                    "zoneUri": "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DATAPROC-101",
+    "cases": [
+      {
+        "name": "pass - internalIpOnly true",
+        "expected": "pass",
+        "resourceId": "cluster-internal",
+        "records": [
+          {
+            "collectorId": "gcp.dataproc.clusters_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "clusterName": "cluster-internal",
+                "clusterUuid": "33333333-3333-3333-3333-333333333333",
+                "projectId": "my-project",
+                "status": {
+                  "state": "RUNNING"
+                },
+                "config": {
+                  "gceClusterConfig": {
+                    "zoneUri": "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a",
+                    "internalIpOnly": true,
+                    "subnetworkUri": "https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1/subnetworks/private"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - internalIpOnly absent (public IPs allowed)",
+        "expected": "fail",
+        "resourceId": "cluster-public",
+        "records": [
+          {
+            "collectorId": "gcp.dataproc.clusters_list",
+            "region": "us-central1",
+            "exitCode": 0,
+            "output": [
+              {
+                "clusterName": "cluster-public",
+                "clusterUuid": "44444444-4444-4444-4444-444444444444",
+                "projectId": "my-project",
+                "status": {
+                  "state": "RUNNING"
+                },
+                "config": {
+                  "gceClusterConfig": {
+                    "zoneUri": "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a",
+                    "subnetworkUri": "https://www.googleapis.com/compute/v1/projects/my-project/regions/us-central1/subnetworks/default"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

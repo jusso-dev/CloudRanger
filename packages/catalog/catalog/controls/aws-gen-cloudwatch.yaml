@@ -1,0 +1,118 @@
+controls:
+  - id: CR-AWS-CLOUDWATCH-001
+    version: 1.0.0
+    provider: aws
+    service: cloudwatch
+    title: CloudWatch metric alarm has at least one alarm action configured
+    description: Every metric alarm defines at least one AlarmAction (e.g. an SNS
+      topic) to invoke when it transitions to ALARM.
+    rationale: An alarm with no action is silent — the condition it monitors can be
+      breached with no notification or automated response, defeating the purpose
+      of monitoring.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudwatch_alarm_actions_alarm_state_configured
+      license: Apache-2.0
+    collector: aws.cloudwatch.describe_alarms
+    resourcesPath: MetricAlarms
+    resourceIdField: AlarmName
+    resourceNameField: AlarmName
+    passWhen:
+      op: not
+      expr:
+        op: isEmpty
+        path: AlarmActions
+    failMessage: CloudWatch metric alarm has no alarm action configured; it will
+      fire silently.
+    passMessage: CloudWatch metric alarm has at least one alarm action configured.
+    remediation:
+      summary: Attach an SNS topic or other action to the alarm's ALARM state.
+      steps:
+        - Identify an SNS topic (or other supported target) subscribed by the
+          operations team.
+        - Update the alarm to add that target to its alarm actions.
+      verifyCommand: aws cloudwatch describe-alarms --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html
+  - id: CR-AWS-CLOUDWATCH-002
+    version: 1.0.0
+    provider: aws
+    service: cloudwatch
+    title: CloudWatch metric alarm has actions enabled
+    description: Every metric alarm has ActionsEnabled set to true so its configured
+      actions actually execute on state change.
+    rationale: An alarm can have actions defined but disabled; when ActionsEnabled
+      is false the alarm evaluates state but never invokes its notification or
+      remediation, silently suppressing alerts.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudwatch_alarm_actions_enabled
+      license: Apache-2.0
+    collector: aws.cloudwatch.describe_alarms
+    resourcesPath: MetricAlarms
+    resourceIdField: AlarmName
+    resourceNameField: AlarmName
+    passWhen:
+      op: equals
+      path: ActionsEnabled
+      value: true
+    failMessage: CloudWatch metric alarm has actions disabled; configured actions
+      will not run.
+    passMessage: CloudWatch metric alarm has actions enabled.
+    remediation:
+      summary: Enable actions on the alarm.
+      steps:
+        - Re-enable the alarm's actions so its configured targets execute on
+          state change.
+      verifyCommand: aws cloudwatch describe-alarms --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html
+  - id: CR-AWS-CLOUDWATCH-003
+    version: 1.0.0
+    provider: aws
+    service: cloudwatch
+    title: At least one CloudWatch metric alarm exists in the region
+    description: The account has at least one CloudWatch metric alarm defined in the
+      region so that operational conditions are monitored.
+    rationale: A region with no metric alarms has no automated detection of
+      failures, security-relevant events, or capacity breaches, leaving
+      operators blind to incidents.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: cloudwatch_metric_alarm_exists
+      license: Apache-2.0
+    collector: aws.cloudwatch.describe_alarms
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: MetricAlarms
+      condition:
+        op: exists
+        path: AlarmName
+    failMessage: No CloudWatch metric alarms exist in this region.
+    passMessage: At least one CloudWatch metric alarm exists in this region.
+    remediation:
+      summary: Create CloudWatch metric alarms for key operational and security metrics.
+      steps:
+        - Define metric alarms covering critical operational and security
+          signals.
+        - Attach SNS notification actions and enable them.
+      verifyCommand: aws cloudwatch describe-alarms --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html

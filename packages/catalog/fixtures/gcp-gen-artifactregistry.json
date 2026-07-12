@@ -1,0 +1,122 @@
+[
+  {
+    "controlId": "CR-GCP-ARTIFACTREGISTRY-100",
+    "cases": [
+      {
+        "name": "repo with CMEK passes",
+        "expected": "pass",
+        "resourceId": "projects/proj-a/locations/us/repositories/secure-repo",
+        "records": [
+          {
+            "collectorId": "gcp.artifactregistry.repositories_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-a/locations/us/repositories/secure-repo",
+                "format": "DOCKER",
+                "mode": "STANDARD_REPOSITORY",
+                "kmsKeyName": "projects/proj-a/locations/us/keyRings/kr1/cryptoKeys/ar-key",
+                "dockerConfig": {
+                  "immutableTags": true
+                },
+                "createTime": "2025-01-10T12:00:00.000000Z",
+                "updateTime": "2025-02-01T09:30:00.000000Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "repo without kmsKeyName fails",
+        "expected": "fail",
+        "resourceId": "projects/proj-a/locations/us-central1/repositories/default-enc",
+        "records": [
+          {
+            "collectorId": "gcp.artifactregistry.repositories_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-a/locations/us-central1/repositories/default-enc",
+                "format": "MAVEN",
+                "mode": "STANDARD_REPOSITORY",
+                "createTime": "2025-03-05T08:00:00.000000Z",
+                "updateTime": "2025-03-05T08:00:00.000000Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-ARTIFACTREGISTRY-101",
+    "cases": [
+      {
+        "name": "docker repo with immutable tags passes",
+        "expected": "pass",
+        "resourceId": "projects/proj-a/locations/us/repositories/prod-images",
+        "records": [
+          {
+            "collectorId": "gcp.artifactregistry.repositories_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-a/locations/us/repositories/prod-images",
+                "format": "DOCKER",
+                "mode": "STANDARD_REPOSITORY",
+                "dockerConfig": {
+                  "immutableTags": true
+                },
+                "createTime": "2025-01-10T12:00:00.000000Z",
+                "updateTime": "2025-02-01T09:30:00.000000Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "docker repo with mutable tags fails",
+        "expected": "fail",
+        "resourceId": "projects/proj-a/locations/us/repositories/dev-images",
+        "records": [
+          {
+            "collectorId": "gcp.artifactregistry.repositories_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-a/locations/us/repositories/dev-images",
+                "format": "DOCKER",
+                "mode": "STANDARD_REPOSITORY",
+                "dockerConfig": {
+                  "immutableTags": false
+                },
+                "createTime": "2025-04-01T10:00:00.000000Z",
+                "updateTime": "2025-04-01T10:00:00.000000Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "non-docker repo is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "projects/proj-a/locations/us/repositories/py-packages",
+        "records": [
+          {
+            "collectorId": "gcp.artifactregistry.repositories_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj-a/locations/us/repositories/py-packages",
+                "format": "PYTHON",
+                "mode": "STANDARD_REPOSITORY",
+                "createTime": "2025-05-01T10:00:00.000000Z",
+                "updateTime": "2025-05-01T10:00:00.000000Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

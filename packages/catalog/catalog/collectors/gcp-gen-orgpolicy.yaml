@@ -1,0 +1,26 @@
+collectors:
+  - id: gcp.resourcemanager.org_policies_list
+    provider: gcp
+    service: orgpolicy
+    description: >
+      All Organization Policy constraints and their effective policy values
+      set on the project.
+    kind: single
+    command: gcloud resource-manager org-policies list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      The 'gcloud resource-manager org-policies list' command returns a JSON
+      ARRAY at the root (use resourcesPath "$"). Each element is an Org Policy
+      v1 resource with a 'constraint' field holding the fully-qualified
+      constraint name (e.g. "constraints/compute.disableSerialPortAccess").
+      Boolean constraints carry a 'booleanPolicy' object with an 'enforced'
+      field (true when the constraint is enforced; the key is often OMITTED and
+      thus effectively false when not enforced). List constraints instead carry
+      a 'listPolicy' object (allowedValues/deniedValues/allValues). Elements may
+      also include 'etag' and 'updateTime'. An empty array means no org policies
+      are explicitly set at the project (constraints then take their org/default
+      value). This 'list' subcommand only returns constraints that have a policy
+      set on the project; a constraint absent from the array is NOT enforced at
+      this project level. Requires orgpolicy.policies.list /
+      resourcemanager.projects.getIamPolicy-adjacent read permission.

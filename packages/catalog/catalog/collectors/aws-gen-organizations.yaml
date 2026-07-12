@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.organizations.describe_organization
+    provider: aws
+    service: organizations
+    description: Account-level view of the AWS Organization the account belongs to,
+      including FeatureSet (ALL vs CONSOLIDATED_BILLING) and available policy
+      types.
+    kind: single
+    command: aws organizations describe-organization --output json
+    regional: false
+    outputFormat: json
+    notes: Requires organizations:DescribeOrganization. Errors with
+      AWSOrganizationsNotInUseException when the account is not part of an
+      organization; controls treat that as fail. Run from the management account
+      for complete AvailablePolicyTypes data. AccessDenied surfaces as error.

@@ -1,0 +1,98 @@
+controls:
+  - id: CR-GCP-ARTIFACTREGISTRY-100
+    version: 1.0.0
+    provider: gcp
+    service: artifactregistry
+    title: Artifact Registry repository is encrypted with a customer-managed key
+      (CMEK)
+    description: >
+      Verifies the repository specifies a Cloud KMS customer-managed encryption
+      key (kmsKeyName) so stored artifacts at rest are protected with a key you
+      control rather than only the Google-managed default key.
+    rationale: >
+      Without CMEK, Artifact Registry encrypts container images and packages
+      with a Google-managed key you cannot rotate, audit, or revoke. CMEK lets
+      you disable the key to immediately cut access to stored artifacts, an
+      important control for repositories holding proprietary or sensitive
+      software.
+    severity: medium
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: artifacts_container_repository_uses_cmk
+      license: Apache-2.0
+    collector: gcp.artifactregistry.repositories_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: kmsKeyName
+    failMessage: Repository uses Google-managed encryption; no CMEK (kmsKeyName) configured.
+    passMessage: Repository is encrypted with a customer-managed KMS key.
+    remediation:
+      summary: Recreate the repository with a customer-managed KMS key.
+      steps:
+        - Create a Cloud KMS key and grant the Artifact Registry service agent
+          the Cloud KMS CryptoKey Encrypter/Decrypter role on it.
+        - Recreate the repository with --kms-key set to the KMS key resource
+          name (CMEK is applied only at repository creation).
+        - Migrate artifacts from the old repository to the new CMEK-protected
+          repository, then delete the old repository.
+      verifyCommand: gcloud artifacts repositories list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/artifact-registry/docs/cmek
+  - id: CR-GCP-ARTIFACTREGISTRY-101
+    version: 1.0.0
+    provider: gcp
+    service: artifactregistry
+    title: Docker repository enforces immutable image tags
+    description: >
+      Verifies a DOCKER-format repository has immutable tags enabled
+      (dockerConfig.immutableTags = true) so an existing image tag cannot be
+      overwritten to point at a different image digest.
+    rationale: >
+      Mutable tags let an attacker or a mistaken push re-point a trusted tag
+      (for example :latest or :v1.2.0) to a malicious or broken image, breaking
+      supply-chain integrity and reproducible deployments. Immutable tags
+      guarantee a tag always resolves to the same digest it was first published
+      with.
+    severity: medium
+    categories:
+      - supply-chain
+      - resilience
+    source:
+      engine: prowler
+      id: artifacts_container_repository_immutable_tags_enabled
+      license: Apache-2.0
+    collector: gcp.artifactregistry.repositories_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: format
+      value: DOCKER
+    passWhen:
+      op: equals
+      path: dockerConfig.immutableTags
+      value: true
+    failMessage: Docker repository allows mutable tags; existing tags can be
+      overwritten to a different image.
+    passMessage: Docker repository enforces immutable image tags.
+    remediation:
+      summary: Enable immutable tags on the Docker repository.
+      steps:
+        - Update the repository with "gcloud artifacts repositories update
+          <repo> --location <loc> --immutable-tags" (immutable-tags is a
+          Docker-format setting).
+        - Note that switching from mutable to immutable is only permitted while
+          no conflicting tags exist; resolve duplicate tags first if the update
+          is rejected.
+      verifyCommand: gcloud artifacts repositories list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/artifact-registry/docs/docker/immutable-image-tags

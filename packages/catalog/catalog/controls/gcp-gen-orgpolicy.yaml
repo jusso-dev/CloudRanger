@@ -1,0 +1,170 @@
+controls:
+  - id: CR-GCP-ORGPOLICY-100
+    version: 1.0.0
+    provider: gcp
+    service: orgpolicy
+    title: Serial port access is disabled by org policy
+    description: >
+      The compute.disableSerialPortAccess boolean org policy is enforced on the
+      project so VM serial ports cannot be accessed interactively.
+    rationale: >
+      Interactive serial console access bypasses normal SSH controls, IAM-based
+      OS Login, and network firewalls; if enabled it gives a direct,
+      password-only foothold to instances and is a common lateral-movement and
+      persistence vector.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+      - identity
+    source:
+      engine: prowler
+      id: compute_serial_ports_in_use
+      license: Apache-2.0
+    collector: gcp.resourcemanager.org_policies_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: constraint
+            value: constraints/compute.disableSerialPortAccess
+          - op: equals
+            path: booleanPolicy.enforced
+            value: true
+    failMessage: >
+      The compute.disableSerialPortAccess org policy is not enforced; VM serial
+      port access is permitted.
+    passMessage: Serial port access is disabled by an enforced org policy.
+    remediation:
+      summary: Enforce the compute.disableSerialPortAccess boolean constraint.
+      steps:
+        - Review whether any workload legitimately needs serial console access.
+        - Enforce the compute.disableSerialPortAccess constraint at the
+          organization, folder, or project level.
+        - Confirm the policy is enforced and no exceptions are configured.
+      verifyCommand: gcloud resource-manager org-policies list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls: ["4.5"]
+    references:
+      - https://cloud.google.com/compute/docs/troubleshooting/troubleshooting-using-serial-console
+      - https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints
+  - id: CR-GCP-ORGPOLICY-101
+    version: 1.0.0
+    provider: gcp
+    service: orgpolicy
+    title: Default network creation is skipped by org policy
+    description: >
+      The compute.skipDefaultNetworkCreation boolean org policy is enforced so
+      new projects do not automatically receive the permissive default VPC.
+    rationale: >
+      The auto-created default network ships with overly permissive firewall
+      rules (allowing internal traffic and SSH/RDP/ICMP from anywhere) and
+      auto-mode subnets in every region; suppressing it prevents accidentally
+      exposed workloads on networks nobody deliberately secured.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_project_default_network_exists
+      license: Apache-2.0
+    collector: gcp.resourcemanager.org_policies_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: constraint
+            value: constraints/compute.skipDefaultNetworkCreation
+          - op: equals
+            path: booleanPolicy.enforced
+            value: true
+    failMessage: >
+      The compute.skipDefaultNetworkCreation org policy is not enforced; new
+      projects may auto-create the permissive default network.
+    passMessage: Default network creation is skipped by an enforced org policy.
+    remediation:
+      summary: Enforce the compute.skipDefaultNetworkCreation boolean constraint.
+      steps:
+        - Enforce the compute.skipDefaultNetworkCreation constraint at the
+          organization or folder level so it applies to all new projects.
+        - Delete any existing default networks that are not required.
+        - Create purpose-built custom-mode VPCs with least-privilege firewall
+          rules instead.
+      verifyCommand: gcloud resource-manager org-policies list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls: ["3.1"]
+    references:
+      - https://cloud.google.com/vpc/docs/firewalls#default_firewall_rules
+      - https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints
+  - id: CR-GCP-ORGPOLICY-102
+    version: 1.0.0
+    provider: gcp
+    service: orgpolicy
+    title: Public IPs on Cloud SQL are restricted by org policy
+    description: >
+      The sql.restrictPublicIp boolean org policy is enforced so Cloud SQL
+      instances cannot be assigned a public IP address.
+    rationale: >
+      A Cloud SQL instance with a public IP is reachable from the internet and,
+      combined with weak authorized-network rules, is a frequent cause of
+      exposed databases and data exfiltration; enforcing this constraint forces
+      private connectivity across the whole project.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+      - encryption
+    source:
+      engine: prowler
+      id: cloudsql_instance_public_access
+      license: Apache-2.0
+    collector: gcp.resourcemanager.org_policies_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: constraint
+            value: constraints/sql.restrictPublicIp
+          - op: equals
+            path: booleanPolicy.enforced
+            value: true
+    failMessage: >
+      The sql.restrictPublicIp org policy is not enforced; Cloud SQL instances
+      may be created with public IP addresses.
+    passMessage: Cloud SQL public IPs are restricted by an enforced org policy.
+    remediation:
+      summary: Enforce the sql.restrictPublicIp boolean constraint.
+      steps:
+        - Migrate any existing public-IP Cloud SQL instances to private IP /
+          Private Service Connect.
+        - Enforce the sql.restrictPublicIp constraint at the organization,
+          folder, or project level.
+        - Confirm no exceptions remain that re-permit public IPs.
+      verifyCommand: gcloud resource-manager org-policies list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls: ["6.6"]
+    references:
+      - https://cloud.google.com/sql/docs/mysql/configure-ip
+      - https://cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints

@@ -1,0 +1,94 @@
+controls:
+  - id: CR-AZURE-DATABRICKS-100
+    version: 1.0.0
+    provider: azure
+    service: databricks
+    title: Databricks workspace uses secure cluster connectivity (no public IP)
+    description: >
+      The Databricks workspace has secure cluster connectivity enabled so
+      cluster nodes have no public IP addresses
+      (properties.parameters.enableNoPublicIp.value is true).
+    rationale: >
+      Without secure cluster connectivity, cluster nodes receive public IPs and
+      open inbound ports to the Databricks control plane, expanding the attack
+      surface and exposing compute directly to the internet.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: databricks_workspace_secure_cluster_connectivity_enabled
+      license: Apache-2.0
+    collector: azure.databricks.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.parameters.enableNoPublicIp.value
+      value: true
+    failMessage: Databricks workspace does not enable secure cluster connectivity;
+      cluster nodes may receive public IPs.
+    passMessage: Databricks workspace enables secure cluster connectivity (no public IP).
+    remediation:
+      summary: Enable secure cluster connectivity (No Public IP) on the workspace.
+      steps:
+        - Secure cluster connectivity (enableNoPublicIp) can only be set at
+          workspace creation time.
+        - Recreate the workspace with No Public IP enabled, or deploy it into a
+          customer-managed VNet with secure cluster connectivity.
+        - Migrate clusters and data to the new workspace and decommission the
+          old one.
+      verifyCommand: az databricks workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/databricks/security/network/secure-cluster-connectivity
+      - https://learn.microsoft.com/en-us/cli/azure/databricks/workspace
+  - id: CR-AZURE-DATABRICKS-101
+    version: 1.0.0
+    provider: azure
+    service: databricks
+    title: Databricks workspace encrypts managed services with a customer-managed key
+    description: >
+      The Databricks workspace uses a customer-managed key from Azure Key Vault
+      for managed-services encryption
+      (properties.parameters.encryption.value.keySource is Microsoft.Keyvault).
+    rationale: >
+      With the default Microsoft-managed key, notebooks, secrets and other
+      managed-services data are encrypted with a key the customer cannot rotate
+      or revoke; a customer-managed key gives control over key lifecycle and
+      revocation to contain compromise.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: databricks_workspace_cmk_encryption_enabled
+      license: Apache-2.0
+    collector: azure.databricks.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.parameters.encryption.value.keySource
+      value: Microsoft.Keyvault
+    failMessage: Databricks workspace managed services use the default
+      Microsoft-managed key, not a customer-managed key.
+    passMessage: Databricks workspace managed services are encrypted with a
+      customer-managed key.
+    remediation:
+      summary: Configure a customer-managed key from Key Vault for managed-services
+        encryption.
+      steps:
+        - Create or select an Azure Key Vault key and grant the Databricks
+          managed identity access.
+        - Update the workspace to use the customer-managed key for managed
+          services (keySource Microsoft.Keyvault).
+        - Confirm the encryption parameter reflects the Key Vault key source.
+      verifyCommand: az databricks workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/en-us/azure/databricks/security/keys/customer-managed-keys-managed-services
+      - https://learn.microsoft.com/en-us/cli/azure/databricks/workspace

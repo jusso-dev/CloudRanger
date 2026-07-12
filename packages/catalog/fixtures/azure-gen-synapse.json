@@ -1,0 +1,172 @@
+[
+  {
+    "controlId": "CR-AZURE-SYNAPSE-100",
+    "cases": [
+      {
+        "name": "pass managed vnet default",
+        "expected": "pass",
+        "resourceId": "ws-secure",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-secure",
+                "name": "ws-secure",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "managedVirtualNetwork": "default",
+                  "publicNetworkAccess": "Disabled",
+                  "managedVirtualNetworkSettings": {
+                    "preventDataExfiltration": true,
+                    "allowedAadTenantIdsForLinking": []
+                  },
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no managed vnet",
+        "expected": "fail",
+        "resourceId": "ws-open",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-open",
+                "name": "ws-open",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "publicNetworkAccess": "Enabled",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SYNAPSE-101",
+    "cases": [
+      {
+        "name": "pass public access disabled",
+        "expected": "pass",
+        "resourceId": "ws-secure",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-secure",
+                "name": "ws-secure",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "managedVirtualNetwork": "default",
+                  "publicNetworkAccess": "Disabled",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public access enabled",
+        "expected": "fail",
+        "resourceId": "ws-open",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-open",
+                "name": "ws-open",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "managedVirtualNetwork": "default",
+                  "publicNetworkAccess": "Enabled",
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SYNAPSE-102",
+    "cases": [
+      {
+        "name": "pass exfiltration protection enabled",
+        "expected": "pass",
+        "resourceId": "ws-secure",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-secure",
+                "name": "ws-secure",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "managedVirtualNetwork": "default",
+                  "publicNetworkAccess": "Disabled",
+                  "managedVirtualNetworkSettings": {
+                    "preventDataExfiltration": true,
+                    "allowedAadTenantIdsForLinking": ["11111111-1111-1111-1111-111111111111"]
+                  },
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail exfiltration protection disabled",
+        "expected": "fail",
+        "resourceId": "ws-open",
+        "records": [
+          {
+            "collectorId": "azure.synapse.workspaces_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Synapse/workspaces/ws-open",
+                "name": "ws-open",
+                "type": "Microsoft.Synapse/workspaces",
+                "location": "eastus",
+                "properties": {
+                  "managedVirtualNetwork": "default",
+                  "publicNetworkAccess": "Enabled",
+                  "managedVirtualNetworkSettings": {
+                    "preventDataExfiltration": false,
+                    "allowedAadTenantIdsForLinking": []
+                  },
+                  "provisioningState": "Succeeded"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

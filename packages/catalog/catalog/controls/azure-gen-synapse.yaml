@@ -1,0 +1,123 @@
+controls:
+  - id: CR-AZURE-SYNAPSE-100
+    version: 1.0.0
+    provider: azure
+    service: synapse
+    title: Synapse workspace has a managed virtual network
+    description: Verifies the workspace's managedVirtualNetwork property is set to
+      "default", so compute resources run inside a Microsoft-managed virtual
+      network.
+    rationale: >
+      Without a managed virtual network, Synapse Spark and integration compute
+      run without network isolation, and data exfiltration protection cannot be
+      enabled. A managed VNet is the prerequisite for restricting outbound
+      traffic from workspace compute.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: synapse_workspace_managed_virtual_network_enabled
+      license: Apache-2.0
+    collector: azure.synapse.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.managedVirtualNetwork
+      value: default
+    failMessage: Synapse workspace does not have a managed virtual network enabled.
+    passMessage: Synapse workspace has a managed virtual network (default).
+    remediation:
+      summary: Recreate the workspace with a managed virtual network enabled.
+      steps:
+        - Managed VNet can only be set at workspace creation; plan a migration
+          to a new workspace created with --enable-managed-virtual-network true.
+        - Repoint pipelines, linked services, and Spark pools to the new
+          workspace.
+      verifyCommand: az synapse workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/synapse-analytics/security/synapse-workspace-managed-vnet
+  - id: CR-AZURE-SYNAPSE-101
+    version: 1.0.0
+    provider: azure
+    service: synapse
+    title: Synapse workspace disables public network access
+    description: Verifies the workspace's publicNetworkAccess property is Disabled
+      so the workspace is reachable only through private endpoints.
+    rationale: >
+      A Synapse workspace with public network access enabled exposes its SQL and
+      development endpoints to the internet; combined with weak credentials or a
+      leaked token this is a direct data-exfiltration path.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: synapse_workspace_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.synapse.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Synapse workspace allows public network access.
+    passMessage: Synapse workspace has public network access disabled.
+    remediation:
+      summary: Set public network access to Disabled and use private endpoints.
+      steps:
+        - Provision managed private endpoints for the workspace resources.
+        - Disable public network access on the workspace (operator action).
+      verifyCommand: az synapse workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/synapse-analytics/security/connectivity-settings
+  - id: CR-AZURE-SYNAPSE-102
+    version: 1.0.0
+    provider: azure
+    service: synapse
+    title: Synapse workspace enables data exfiltration protection
+    description: Verifies managedVirtualNetworkSettings.preventDataExfiltration is
+      true so workspace compute can only reach approved outbound targets.
+    rationale: >
+      Data exfiltration protection restricts outbound traffic from managed VNet
+      compute to an allow-list of Entra tenants and resources. Without it, a
+      compromised notebook or pipeline can stage and copy data to arbitrary
+      external endpoints.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: synapse_workspace_data_exfiltration_protection_enabled
+      license: Apache-2.0
+    collector: azure.synapse.workspaces_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.managedVirtualNetworkSettings.preventDataExfiltration
+      value: true
+    failMessage: Synapse workspace does not have data exfiltration protection enabled.
+    passMessage: Synapse workspace has data exfiltration protection enabled.
+    remediation:
+      summary: Enable data exfiltration protection with an approved Entra tenant
+        allow-list.
+      steps:
+        - Data exfiltration protection is set at workspace creation; plan
+          migration to a workspace created with --prevent-data-exfiltration
+          true.
+        - Define the allowed Entra tenant IDs for approved outbound targets.
+      verifyCommand: az synapse workspace list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/synapse-analytics/security/workspace-data-exfiltration-protection

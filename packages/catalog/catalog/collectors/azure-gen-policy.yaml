@@ -1,0 +1,21 @@
+collectors:
+  - id: azure.policy.assignments_list
+    provider: azure
+    service: policy
+    description: >
+      Lists all Azure Policy assignments visible at the current subscription
+      scope (and inherited management-group/resource-group assignments), with
+      each assignment's enforcementMode, displayName, policyDefinitionId and
+      scope.
+    kind: single
+    command: az policy assignment list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      az flattens the ARM PolicyAssignment 'properties' onto the top-level
+      object, so the output is a JSON ARRAY at the root where each item exposes
+      id, name, type ("Microsoft.Authorization/policyAssignments"),
+      displayName, enforcementMode ("Default" | "DoNotEnforce"),
+      policyDefinitionId, scope and notScopes directly (not under a
+      'properties' key). Requires Reader (or Resource Policy Contributor) on the
+      subscription. When no assignments exist the array is empty ([]).

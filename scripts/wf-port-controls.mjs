@@ -75,7 +75,7 @@ COLLECTOR SCHEMA (YAML under top-level 'collectors:' list; emit ONLY new ones):
 FIXTURES (JSON array; one object per control). Each control needs >=1 pass case AND >=1 fail case; add not_applicable/error where the control uses applicableWhen/onError:
   [ { "controlId": "<id>", "cases": [
       { "name": "<desc>", "expected": "pass|fail|not_applicable|error|no_results",
-        "resourceId": "<optional; which resource's status to assert when a case yields multiple>",
+        "resourceId": "<optional; which resource's status to assert when a case yields multiple. NEVER set this to the literal '$scope' — for aggregate/$scope checks the unit's id resolves to the real account/subscription/project id, so a '$scope' assertion never matches and the case yields no_results. For aggregate checks OMIT resourceId entirely.>",
         "records": [ { "collectorId": "<id>", "region": "<optional>", "resourceKey": "<for per_resource>",
                       "output": <the REAL-SHAPE parsed JSON the CLI would return>, "errorText": "<for failures>", "exitCode": 0 } ] } ] } ]
 Fixture output MUST be the realistic CLI JSON shape (this is how grounding is proven). For an error case set output null, exitCode non-zero, and errorText to the real CLI error string.

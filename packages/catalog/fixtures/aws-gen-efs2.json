@@ -1,0 +1,194 @@
+[
+  {
+    "controlId": "CR-AWS-EFS-050",
+    "cases": [
+      {
+        "name": "encrypted file system passes",
+        "expected": "pass",
+        "resourceId": "fs-0a1b2c3d4e5f6a7b8",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FileSystems": [
+                {
+                  "OwnerId": "123456789012",
+                  "CreationToken": "console-1234",
+                  "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+                  "FileSystemArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0a1b2c3d4e5f6a7b8",
+                  "CreationTime": 1710000000,
+                  "LifeCycleState": "available",
+                  "Name": "app-data",
+                  "NumberOfMountTargets": 2,
+                  "SizeInBytes": {
+                    "Value": 6144,
+                    "Timestamp": 1710000000
+                  },
+                  "PerformanceMode": "generalPurpose",
+                  "Encrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/abcd1234-1111-2222-3333-444455556666",
+                  "ThroughputMode": "bursting",
+                  "Tags": [
+                    {
+                      "Key": "env",
+                      "Value": "prod"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted file system fails",
+        "expected": "fail",
+        "resourceId": "fs-0999888877776666a",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FileSystems": [
+                {
+                  "OwnerId": "123456789012",
+                  "CreationToken": "console-9876",
+                  "FileSystemId": "fs-0999888877776666a",
+                  "FileSystemArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0999888877776666a",
+                  "CreationTime": 1700000000,
+                  "LifeCycleState": "available",
+                  "Name": "legacy-share",
+                  "NumberOfMountTargets": 1,
+                  "SizeInBytes": {
+                    "Value": 2048,
+                    "Timestamp": 1700000000
+                  },
+                  "PerformanceMode": "generalPurpose",
+                  "Encrypted": false,
+                  "ThroughputMode": "bursting",
+                  "Tags": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-051",
+    "cases": [
+      {
+        "name": "encrypted with specified KMS key passes",
+        "expected": "pass",
+        "resourceId": "fs-0a1b2c3d4e5f6a7b8",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FileSystems": [
+                {
+                  "OwnerId": "123456789012",
+                  "CreationToken": "console-1234",
+                  "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+                  "FileSystemArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0a1b2c3d4e5f6a7b8",
+                  "CreationTime": 1710000000,
+                  "LifeCycleState": "available",
+                  "Name": "app-data",
+                  "NumberOfMountTargets": 2,
+                  "SizeInBytes": {
+                    "Value": 6144,
+                    "Timestamp": 1710000000
+                  },
+                  "PerformanceMode": "generalPurpose",
+                  "Encrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/abcd1234-1111-2222-3333-444455556666",
+                  "ThroughputMode": "bursting",
+                  "Tags": [
+                    {
+                      "Key": "env",
+                      "Value": "prod"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "encrypted without KmsKeyId (default AWS-managed key) fails",
+        "expected": "fail",
+        "resourceId": "fs-07777aaaa88889999",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FileSystems": [
+                {
+                  "OwnerId": "123456789012",
+                  "CreationToken": "console-5555",
+                  "FileSystemId": "fs-07777aaaa88889999",
+                  "FileSystemArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-07777aaaa88889999",
+                  "CreationTime": 1705000000,
+                  "LifeCycleState": "available",
+                  "Name": "default-key-fs",
+                  "NumberOfMountTargets": 1,
+                  "SizeInBytes": {
+                    "Value": 4096,
+                    "Timestamp": 1705000000
+                  },
+                  "PerformanceMode": "generalPurpose",
+                  "Encrypted": true,
+                  "ThroughputMode": "elastic",
+                  "Tags": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted file system is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "fs-0999888877776666a",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_systems",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "FileSystems": [
+                {
+                  "OwnerId": "123456789012",
+                  "CreationToken": "console-9876",
+                  "FileSystemId": "fs-0999888877776666a",
+                  "FileSystemArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0999888877776666a",
+                  "CreationTime": 1700000000,
+                  "LifeCycleState": "available",
+                  "Name": "legacy-share",
+                  "NumberOfMountTargets": 1,
+                  "SizeInBytes": {
+                    "Value": 2048,
+                    "Timestamp": 1700000000
+                  },
+                  "PerformanceMode": "generalPurpose",
+                  "Encrypted": false,
+                  "ThroughputMode": "bursting",
+                  "Tags": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,204 @@
+[
+  {
+    "controlId": "CR-AZURE-RECOVERYVAULT-100",
+    "cases": [
+      {
+        "name": "pass public network access disabled",
+        "expected": "pass",
+        "resourceId": "vault-secure",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-secure",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-secure",
+                "location": "westus",
+                "sku": {
+                  "name": "RS0",
+                  "tier": "Standard"
+                },
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "publicNetworkAccess": "Disabled",
+                  "privateEndpointStateForBackup": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public network access enabled",
+        "expected": "fail",
+        "resourceId": "vault-open",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-open",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-open",
+                "location": "westus",
+                "sku": {
+                  "name": "Standard"
+                },
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "publicNetworkAccess": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-RECOVERYVAULT-101",
+    "cases": [
+      {
+        "name": "pass soft delete enabled",
+        "expected": "pass",
+        "resourceId": "vault-sd",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-sd",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-sd",
+                "location": "eastus",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "securitySettings": {
+                    "softDeleteSettings": {
+                      "softDeleteState": "Enabled",
+                      "softDeleteRetentionPeriodInDays": 14
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail soft delete disabled",
+        "expected": "fail",
+        "resourceId": "vault-nosd",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-nosd",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-nosd",
+                "location": "eastus",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "securitySettings": {
+                    "softDeleteSettings": {
+                      "softDeleteState": "Disabled"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-RECOVERYVAULT-102",
+    "cases": [
+      {
+        "name": "pass geo redundant",
+        "expected": "pass",
+        "resourceId": "vault-grs",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-grs",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-grs",
+                "location": "westeurope",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "redundancySettings": {
+                    "standardTierStorageRedundancy": "GeoRedundant",
+                    "crossRegionRestore": "Enabled"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass zone redundant",
+        "expected": "pass",
+        "resourceId": "vault-zrs",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-zrs",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-zrs",
+                "location": "westeurope",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "redundancySettings": {
+                    "standardTierStorageRedundancy": "ZoneRedundant",
+                    "crossRegionRestore": "Disabled"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail locally redundant",
+        "expected": "fail",
+        "resourceId": "vault-lrs",
+        "records": [
+          {
+            "collectorId": "azure.recoveryservices.vaults_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vault-lrs",
+                "type": "Microsoft.RecoveryServices/vaults",
+                "id": "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RecoveryServices/vaults/vault-lrs",
+                "location": "westeurope",
+                "properties": {
+                  "provisioningState": "Succeeded",
+                  "redundancySettings": {
+                    "standardTierStorageRedundancy": "LocallyRedundant",
+                    "crossRegionRestore": "Disabled"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

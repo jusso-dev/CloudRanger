@@ -1,0 +1,26 @@
+collectors:
+  - id: gcp.dataproc.clusters_list
+    provider: gcp
+    service: dataproc
+    description: >
+      Lists Cloud Dataproc clusters in one region of the project
+      (dataproc.projects.regions.clusters.list). Each element is a full Cluster
+      resource including config.gceClusterConfig and config.encryptionConfig.
+    kind: single
+    command: gcloud dataproc clusters list --project {project} --region {region}
+      --format json
+    regional: true
+    outputFormat: json
+    notes: >
+      Requires dataproc.clusters.list / dataproc.clusters.get
+      (roles/dataproc.viewer or higher). Dataproc is region-scoped: the list
+      call MUST specify a region, so this collector iterates {region} aws-style.
+      gcloud "list" returns a JSON ARRAY at the root; each element is a Cluster
+      resource with clusterName, clusterUuid, projectId, status.state, and a
+      nested config object. config.gceClusterConfig.internalIpOnly is a boolean
+      that is present (true) only when the cluster was created with
+      internal-IP-only; when public IPs are allowed the field is typically
+      omitted or false. config.encryptionConfig.gcePdKmsKeyName is present only
+      when a customer-managed CMEK key is set for PD/boot-disk encryption;
+      Google-managed default encryption omits the field. An empty region yields
+      an empty JSON array [].

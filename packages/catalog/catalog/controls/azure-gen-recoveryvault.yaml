@@ -1,0 +1,130 @@
+controls:
+  - id: CR-AZURE-RECOVERYVAULT-100
+    version: 1.0.0
+    provider: azure
+    service: recoveryvault
+    title: Recovery Services vault disables public network access
+    description: Verifies properties.publicNetworkAccess is Disabled so the vault is
+      reachable only through private endpoints.
+    rationale: >
+      A Recovery Services vault with public network access enabled is reachable
+      from the internet; backup and site-recovery data are among an attacker's
+      highest-value targets for exfiltration or ransom, so exposing the control
+      plane broadens the attack surface unnecessarily.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: recovery_services_vault_uses_private_endpoints
+      license: Apache-2.0
+    collector: azure.recoveryservices.vaults_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: properties.publicNetworkAccess
+      value: Disabled
+    failMessage: Recovery Services vault allows public network access.
+    passMessage: Recovery Services vault has public network access disabled.
+    remediation:
+      summary: Set publicNetworkAccess to Disabled and use private endpoints.
+      steps:
+        - Provision a private endpoint for the vault (AzureBackup and
+          AzureSiteRecovery sub-resources).
+        - Disable public network access on the vault (operator action).
+      verifyCommand: az recoveryservices vault list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/backup/private-endpoints-overview
+  - id: CR-AZURE-RECOVERYVAULT-101
+    version: 1.0.0
+    provider: azure
+    service: recoveryvault
+    title: Recovery Services vault enables soft delete
+    description: Verifies
+      properties.securitySettings.softDeleteSettings.softDeleteState is Enabled
+      or AlwaysON so deleted backup items are retained and recoverable.
+    rationale: >
+      Without soft delete, an attacker or malicious insider who gains vault
+      access can permanently delete backup data, defeating the last line of
+      recovery during a ransomware event. Soft delete retains deleted backups
+      for a retention window so they can be restored.
+    severity: high
+    categories:
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: recovery_services_vault_soft_delete_enabled
+      license: Apache-2.0
+    collector: azure.recoveryservices.vaults_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: properties.securitySettings.softDeleteSettings.softDeleteState
+      values:
+        - Enabled
+        - AlwaysON
+    failMessage: Recovery Services vault does not have soft delete enabled.
+    passMessage: Recovery Services vault has soft delete enabled.
+    remediation:
+      summary: Enable soft delete on the vault security settings.
+      steps:
+        - Open the vault Properties > Security Settings and set Soft Delete to
+          Enabled (or Always-on).
+        - Consider enabling Multi-User Authorization to protect against
+          soft-delete being turned off.
+      verifyCommand: az recoveryservices vault list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/backup/backup-azure-security-feature-cloud
+  - id: CR-AZURE-RECOVERYVAULT-102
+    version: 1.0.0
+    provider: azure
+    service: recoveryvault
+    title: Recovery Services vault uses geo- or zone-redundant storage
+    description: Verifies
+      properties.redundancySettings.standardTierStorageRedundancy is
+      GeoRedundant or ZoneRedundant rather than LocallyRedundant.
+    rationale: >
+      Locally redundant backup storage keeps all copies in a single datacenter;
+      a zone or regional outage (or a targeted attack on that location) can
+      destroy every backup copy at once. Geo- or zone-redundant storage keeps
+      copies across fault domains so backups survive localized failures.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: recovery_services_vault_geo_redundant_storage_enabled
+      license: Apache-2.0
+    collector: azure.recoveryservices.vaults_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: properties.redundancySettings.standardTierStorageRedundancy
+      values:
+        - GeoRedundant
+        - ZoneRedundant
+    failMessage: Recovery Services vault uses locally redundant (single-location)
+      backup storage.
+    passMessage: Recovery Services vault uses geo- or zone-redundant backup storage.
+    remediation:
+      summary: Set the vault backup storage redundancy to Geo-redundant or
+        Zone-redundant.
+      steps:
+        - Set storage redundancy on the vault before any backup item is
+          protected (it is fixed once protection begins).
+        - For a new vault, choose Geo-redundant (with cross-region restore) or
+          Zone-redundant storage.
+      verifyCommand: az recoveryservices vault list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/backup/backup-create-recovery-services-vault#set-storage-redundancy

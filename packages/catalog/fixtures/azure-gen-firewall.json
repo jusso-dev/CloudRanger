@@ -1,0 +1,167 @@
+[
+  {
+    "controlId": "CR-AZURE-FIREWALL-100",
+    "cases": [
+      {
+        "name": "passes with Deny threat intel mode",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-prod",
+                "name": "fw-prod",
+                "location": "eastus",
+                "provisioningState": "Succeeded",
+                "threatIntelMode": "Deny",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Standard"
+                },
+                "firewallPolicy": {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/firewallPolicies/fp-prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with Off threat intel mode",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-open",
+                "name": "fw-open",
+                "location": "eastus",
+                "provisioningState": "Succeeded",
+                "threatIntelMode": "Off",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Standard"
+                },
+                "firewallPolicy": {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/firewallPolicies/fp-open"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-FIREWALL-101",
+    "cases": [
+      {
+        "name": "passes with firewall policy attached",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-prod",
+                "name": "fw-prod",
+                "location": "eastus",
+                "threatIntelMode": "Alert",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Premium"
+                },
+                "firewallPolicy": {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/firewallPolicies/fp-prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with classic rules and no policy",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-classic",
+                "name": "fw-classic",
+                "location": "eastus",
+                "threatIntelMode": "Alert",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Standard"
+                },
+                "networkRuleCollections": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-FIREWALL-102",
+    "cases": [
+      {
+        "name": "passes with Premium tier",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-prem",
+                "name": "fw-prem",
+                "location": "eastus",
+                "threatIntelMode": "Deny",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Premium"
+                },
+                "firewallPolicy": {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/firewallPolicies/fp-prem"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with Basic tier",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.firewalls_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw-basic",
+                "name": "fw-basic",
+                "location": "eastus",
+                "threatIntelMode": "Alert",
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Basic"
+                },
+                "firewallPolicy": {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/firewallPolicies/fp-basic"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

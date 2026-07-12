@@ -1,0 +1,182 @@
+[
+  {
+    "controlId": "CR-AWS-INSPECTOR-001",
+    "cases": [
+      {
+        "name": "ec2 scanning enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "accounts": [
+                {
+                  "accountId": "111122223333",
+                  "resourceState": {
+                    "ec2": {
+                      "status": "ENABLED"
+                    },
+                    "ecr": {
+                      "status": "ENABLED"
+                    },
+                    "lambda": {
+                      "status": "DISABLED"
+                    },
+                    "lambdaCode": {
+                      "status": "DISABLED"
+                    }
+                  },
+                  "state": {
+                    "status": "ENABLED"
+                  }
+                }
+              ],
+              "failedAccounts": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "ec2 scanning disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "accounts": [
+                {
+                  "accountId": "111122223333",
+                  "resourceState": {
+                    "ec2": {
+                      "status": "DISABLED"
+                    },
+                    "ecr": {
+                      "status": "ENABLED"
+                    },
+                    "lambda": {
+                      "status": "DISABLED"
+                    },
+                    "lambdaCode": {
+                      "status": "DISABLED"
+                    }
+                  },
+                  "state": {
+                    "status": "ENABLED"
+                  }
+                }
+              ],
+              "failedAccounts": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "access denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the BatchGetAccountStatus operation: User is not authorized to perform: inspector2:BatchGetAccountStatus"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-INSPECTOR-002",
+    "cases": [
+      {
+        "name": "ecr scanning enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "accounts": [
+                {
+                  "accountId": "111122223333",
+                  "resourceState": {
+                    "ec2": {
+                      "status": "ENABLED"
+                    },
+                    "ecr": {
+                      "status": "ENABLED"
+                    },
+                    "lambda": {
+                      "status": "ENABLED"
+                    },
+                    "lambdaCode": {
+                      "status": "DISABLED"
+                    }
+                  },
+                  "state": {
+                    "status": "ENABLED"
+                  }
+                }
+              ],
+              "failedAccounts": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "ecr scanning suspended fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "accounts": [
+                {
+                  "accountId": "111122223333",
+                  "resourceState": {
+                    "ec2": {
+                      "status": "ENABLED"
+                    },
+                    "ecr": {
+                      "status": "SUSPENDED"
+                    },
+                    "lambda": {
+                      "status": "DISABLED"
+                    },
+                    "lambdaCode": {
+                      "status": "DISABLED"
+                    }
+                  },
+                  "state": {
+                    "status": "ENABLED"
+                  }
+                }
+              ],
+              "failedAccounts": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "access denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.inspector2.batch_get_account_status",
+            "region": "us-east-1",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the BatchGetAccountStatus operation: User is not authorized to perform: inspector2:BatchGetAccountStatus"
+          }
+        ]
+      }
+    ]
+  }
+]

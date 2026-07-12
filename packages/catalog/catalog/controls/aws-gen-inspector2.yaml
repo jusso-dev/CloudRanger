@@ -1,0 +1,89 @@
+controls:
+  - id: CR-AWS-INSPECTOR-001
+    version: 1.0.0
+    provider: aws
+    service: inspector2
+    title: Amazon Inspector EC2 scanning is enabled
+    description: Amazon Inspector v2 has the EC2 scan type ENABLED for the account
+      in the region.
+    rationale: Without Inspector EC2 scanning, unpatched OS and software
+      vulnerabilities on running instances go undetected, leaving a common
+      exploitation path open.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: inspector2_is_enabled
+      license: Apache-2.0
+    collector: aws.inspector2.batch_get_account_status
+    resourcesPath: accounts
+    resourceIdField: accountId
+    passWhen:
+      op: equals
+      path: resourceState.ec2.status
+      value: ENABLED
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: AccessDeniedException
+        status: error
+    failMessage: Amazon Inspector EC2 vulnerability scanning is not enabled for this
+      account/region.
+    passMessage: Amazon Inspector EC2 vulnerability scanning is enabled.
+    remediation:
+      summary: Enable the EC2 scan type in Amazon Inspector.
+      steps:
+        - Open the Amazon Inspector console (or run aws inspector2 enable) in
+          the region.
+        - Activate the EC2 scanning resource type for the account.
+      verifyCommand: aws inspector2 batch-get-account-status --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/inspector/latest/user/scanning-ec2.html
+      - https://docs.aws.amazon.com/cli/latest/reference/inspector2/batch-get-account-status.html
+  - id: CR-AWS-INSPECTOR-002
+    version: 1.0.0
+    provider: aws
+    service: inspector2
+    title: Amazon Inspector ECR scanning is enabled
+    description: Amazon Inspector v2 has the ECR scan type ENABLED for the account
+      in the region.
+    rationale: With ECR scanning disabled, vulnerable OS packages and language
+      dependencies in container images ship to production undetected, expanding
+      the attack surface of every workload that runs them.
+    severity: medium
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: inspector2_is_enabled
+      license: Apache-2.0
+    collector: aws.inspector2.batch_get_account_status
+    resourcesPath: accounts
+    resourceIdField: accountId
+    passWhen:
+      op: equals
+      path: resourceState.ecr.status
+      value: ENABLED
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: AccessDeniedException
+        status: error
+    failMessage: Amazon Inspector ECR image vulnerability scanning is not enabled
+      for this account/region.
+    passMessage: Amazon Inspector ECR image vulnerability scanning is enabled.
+    remediation:
+      summary: Enable the ECR scan type in Amazon Inspector.
+      steps:
+        - Open the Amazon Inspector console (or run aws inspector2 enable) in
+          the region.
+        - Activate the ECR scanning resource type for the account.
+      verifyCommand: aws inspector2 batch-get-account-status --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html
+      - https://docs.aws.amazon.com/cli/latest/reference/inspector2/batch-get-account-status.html

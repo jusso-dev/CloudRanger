@@ -1,0 +1,123 @@
+controls:
+  - id: CR-AWS-VPC-050
+    version: 1.0.0
+    provider: aws
+    service: ec2flowlogs
+    title: At least one active VPC flow log exists in the region
+    description: The region has at least one flow log whose status is ACTIVE so that
+      VPC network traffic is being captured.
+    rationale: Without flow logs, there is no record of accepted or rejected network
+      traffic, crippling incident investigation and detection of exfiltration or
+      lateral movement.
+    severity: medium
+    categories:
+      - logging
+      - network
+    source:
+      engine: prowler
+      id: vpc_flow_logs_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_flow_logs
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: FlowLogs
+      condition:
+        op: equals
+        path: FlowLogStatus
+        value: ACTIVE
+    failMessage: No active VPC flow log found in this region.
+    passMessage: At least one active VPC flow log is capturing traffic in this region.
+    remediation:
+      summary: Enable VPC flow logs for your VPCs.
+      steps:
+        - Create a flow log on each VPC targeting a CloudWatch Logs group or S3
+          bucket.
+        - Confirm DeliverLogsStatus is SUCCESS and FlowLogStatus is ACTIVE.
+      verifyCommand: aws ec2 describe-flow-logs --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.9"
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html
+  - id: CR-AWS-VPC-051
+    version: 1.0.0
+    provider: aws
+    service: ec2flowlogs
+    title: Flow log delivery status is ACTIVE
+    description: Each configured flow log is in the ACTIVE state, meaning delivery
+      of log records is currently working.
+    rationale: A flow log stuck in a non-ACTIVE state silently stops capturing
+      traffic, leaving a blind spot even though a flow log appears to be
+      configured.
+    severity: medium
+    categories:
+      - logging
+      - network
+    source:
+      engine: prowler
+      id: vpc_flow_logs_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_flow_logs
+    resourcesPath: FlowLogs
+    resourceIdField: FlowLogId
+    resourceNameField: ResourceId
+    passWhen:
+      op: equals
+      path: FlowLogStatus
+      value: ACTIVE
+    failMessage: Flow log status is not ACTIVE; traffic is not being captured.
+    passMessage: Flow log status is ACTIVE.
+    remediation:
+      summary: Repair or recreate the flow log so its status returns to ACTIVE.
+      steps:
+        - Check DeliverLogsErrorMessage for the delivery failure reason.
+        - Fix the destination IAM permissions or recreate the flow log.
+      verifyCommand: aws ec2 describe-flow-logs --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "3.9"
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html
+  - id: CR-AWS-VPC-052
+    version: 1.0.0
+    provider: aws
+    service: ec2flowlogs
+    title: Flow log captures ALL traffic
+    description: Each flow log records traffic of type ALL rather than only ACCEPT
+      or only REJECT, giving complete visibility of both permitted and denied
+      flows.
+    rationale: Logging only ACCEPT or only REJECT traffic omits half the picture,
+      hiding either successful exfiltration paths or reconnaissance/denial
+      patterns needed for investigation.
+    severity: low
+    categories:
+      - logging
+      - network
+    source:
+      engine: prowler
+      id: vpc_flow_logs_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_flow_logs
+    resourcesPath: FlowLogs
+    resourceIdField: FlowLogId
+    resourceNameField: ResourceId
+    passWhen:
+      op: equals
+      path: TrafficType
+      value: ALL
+    failMessage: Flow log does not capture ALL traffic (only ACCEPT or REJECT).
+    passMessage: Flow log captures ALL traffic.
+    remediation:
+      summary: Recreate the flow log with traffic type ALL.
+      steps:
+        - Delete the partial flow log and recreate it with --traffic-type ALL.
+      verifyCommand: aws ec2 describe-flow-logs --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html

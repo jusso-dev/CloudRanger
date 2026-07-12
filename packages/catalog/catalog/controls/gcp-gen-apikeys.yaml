@@ -1,0 +1,106 @@
+controls:
+  - id: CR-GCP-APIKEYS-100
+    version: 1.0.0
+    provider: gcp
+    service: apikeys
+    title: API key has restrictions configured
+    description: Each API key has a restrictions object defining how and where the
+      key may be used.
+    rationale: An unrestricted API key can be reused from any host, app, or against
+      any Google API if leaked, turning a single credential leak into broad,
+      unattributable abuse and quota/billing exhaustion.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: apikeys_key_exists
+      license: Apache-2.0
+    collector: gcp.apikeys.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: exists
+      path: restrictions
+    failMessage: API key has no restrictions configured and can be used from
+      anywhere against any API.
+    passMessage: API key has a restrictions object configured.
+    remediation:
+      summary: Add restrictions to every API key.
+      steps:
+        - Open APIs & Services > Credentials and select the API key.
+        - Set Application restrictions (HTTP referrers, IP addresses, Android,
+          or iOS apps).
+        - Set API restrictions to only the specific APIs the key needs.
+        - Prefer creating separate, narrowly scoped keys per application.
+      verifyCommand: gcloud services api-keys list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "1.13"
+    references:
+      - https://cloud.google.com/docs/authentication/api-keys
+      - https://cloud.google.com/api-keys/docs/add-restrictions-api-keys
+  - id: CR-GCP-APIKEYS-101
+    version: 1.0.0
+    provider: gcp
+    service: apikeys
+    title: API key restricts both application source and API targets
+    description: Each API key defines an application restriction (browser, server
+      IP, Android, or iOS) and restricts which APIs it can call via apiTargets.
+    rationale: A restrictions object present in name only is not protective. Without
+      an application restriction a leaked key works from any origin, and without
+      apiTargets it can call every enabled API, so both dimensions must be
+      constrained to contain abuse.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: apikeys_api_restrictions_configured
+      license: Apache-2.0
+    collector: gcp.apikeys.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: displayName
+    passWhen:
+      op: and
+      exprs:
+        - op: or
+          exprs:
+            - op: exists
+              path: restrictions.browserKeyRestrictions
+            - op: exists
+              path: restrictions.serverKeyRestrictions
+            - op: exists
+              path: restrictions.androidKeyRestrictions
+            - op: exists
+              path: restrictions.iosKeyRestrictions
+        - op: exists
+          path: restrictions.apiTargets.0
+    failMessage: API key lacks an application restriction and/or API target
+      restriction, so a leaked key can be reused broadly.
+    passMessage: API key restricts both its application source and the APIs it may call.
+    remediation:
+      summary: Set both application restrictions and API restrictions on every key.
+      steps:
+        - Open APIs & Services > Credentials and select the API key.
+        - Under Application restrictions choose HTTP referrers, IP addresses,
+          Android apps, or iOS apps and populate the allowed values.
+        - Under API restrictions choose Restrict key and select only the
+          required APIs (populates restrictions.apiTargets).
+        - Save and rotate the key if it may have been exposed while unrestricted.
+      verifyCommand: gcloud services api-keys list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundations
+        version: "2.0"
+        controls:
+          - "1.14"
+          - "1.15"
+    references:
+      - https://cloud.google.com/api-keys/docs/add-restrictions-api-keys
+      - https://cloud.google.com/api-keys/docs/reference/rest/v2/projects.locations.keys#Restrictions
