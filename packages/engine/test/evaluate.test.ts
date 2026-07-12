@@ -250,4 +250,59 @@ describe("evaluateControls", () => {
     expect(results).toHaveLength(1);
     expect(results[0]!.status).toBe("error");
   });
+
+  it("aggregate mode treats a top-level array as one scope resource for anyItem", () => {
+    // Account-level check: "does ANY analyzer exist" over a top-level array.
+    const listCollector: CollectorDefinition = {
+      id: "aws.accessanalyzer.list_analyzers",
+      provider: "aws",
+      service: "accessanalyzer",
+      description: "List IAM Access Analyzers",
+      kind: "single",
+      command: "aws accessanalyzer list-analyzers --region {region} --output json",
+      regional: true,
+      outputFormat: "json",
+    };
+    const aggControl: ControlDefinition = {
+      id: "CR-AWS-ACCESSANALYZER-001",
+      version: "1.0.0",
+      provider: "aws",
+      service: "accessanalyzer",
+      title: "At least one active IAM Access Analyzer exists",
+      description: "The account has an active analyzer.",
+      rationale: "Access Analyzer surfaces resources shared externally.",
+      severity: "medium",
+      categories: ["identity"],
+      source: { engine: "prowler", id: "accessanalyzer_enabled", license: "Apache-2.0" },
+      collector: "aws.accessanalyzer.list_analyzers",
+      aggregate: true,
+      resourceIdField: "$scope",
+      passWhen: { op: "anyItem", path: "$", condition: { op: "equals", path: "status", value: "ACTIVE" } },
+      onError: [],
+      failMessage: "No active Access Analyzer.",
+      passMessage: "An active Access Analyzer exists.",
+      remediation: { summary: "Create an analyzer.", steps: ["Create an account analyzer."] },
+      compliance: [],
+      references: [],
+    };
+    const aggCollectors = new Map<string, CollectorDefinition>([[listCollector.id, listCollector]]);
+    const mk = (output: unknown): EvidenceBundle => ({
+      provider: "aws",
+      scopeId: "123456789012",
+      records: [
+        { collectorId: listCollector.id, region: "us-east-1", output, exitCode: 0, collectedAt: NOW.toISOString() },
+      ],
+    });
+
+    // One record, whole array = one unit → exactly one result (not split per item).
+    const pass = evaluateControls([aggControl], aggCollectors, mk([{ status: "ACTIVE" }]), { now: NOW });
+    expect(pass.results).toHaveLength(1);
+    expect(pass.results[0]!.status).toBe("pass");
+    expect(pass.results[0]!.resourceId).toBe("123456789012");
+
+    // Empty inventory → the aggregate unit exists but no item matches → fail (not no_results).
+    const fail = evaluateControls([aggControl], aggCollectors, mk([]), { now: NOW });
+    expect(fail.results).toHaveLength(1);
+    expect(fail.results[0]!.status).toBe("fail");
+  });
 });

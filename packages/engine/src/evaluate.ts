@@ -57,6 +57,16 @@ function resolveResources(
       });
       continue;
     }
+    // Aggregate (account/subscription/project-level) checks: the ENTIRE output
+    // is one resource unit, even when the CLI returns a top-level array. This
+    // lets a $scope control quantify over the whole inventory with
+    // anyItem/noneItem/allItems over path "$" (e.g. "does any log profile
+    // capture all activity categories"). Without this, a top-level array is
+    // split into per-item units below and no expression can see the whole set.
+    if (control.aggregate) {
+      units.push({ resource: record.output, region: record.region, exitCode: 0 });
+      continue;
+    }
     const path = control.resourcesPath ?? "$";
     if (path === "$") {
       // "$" means: the whole output. If the CLI returned a top-level array

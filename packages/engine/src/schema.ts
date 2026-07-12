@@ -118,6 +118,7 @@ export const controlSchema = z
       .strict(),
     collector: z.string().min(1),
     resourcesPath: z.string().optional(),
+    aggregate: z.boolean().optional(),
     resourceIdField: z.string().min(1),
     resourceNameField: z.string().optional(),
     applicableWhen: expressionSchema.optional(),

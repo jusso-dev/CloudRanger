@@ -35,7 +35,8 @@ CONTROL SCHEMA (YAML, under a top-level 'controls:' list). Every field is requir
     source: { engine: prowler, id: <exact prowler snake_case check id>, license: Apache-2.0 }
     collector: <collector id this control evaluates>
     resourcesPath: <optional; path within collector output to the resource ARRAY. Use "$" when the CLI output root IS the array (az/gcloud list style) OR the whole output is one account-level object. Support "A[].B" to flatten nested arrays e.g. Reservations[].Instances. OMIT entirely for per_resource collectors.>
-    resourceIdField: <field identifying the resource. Use "$resourceKey" for per_resource collectors; "$scope" for account/subscription/project-level single checks>
+    aggregate: <optional bool. Set true for an ACCOUNT/SUBSCRIPTION/PROJECT-level check that must reason over the WHOLE inventory at once — e.g. "does ANY log profile capture all categories", "does a catch-all log sink exist", "is there a security contact". With aggregate:true the entire collector output (even a top-level array) is treated as ONE resource, so passWhen uses anyItem/noneItem/allItems over path "$" (each item's condition paths are relative to the item). Pair with resourceIdField "$scope" and OMIT resourcesPath. Do NOT use aggregate for per-resource checks (each bucket/VM/server is its own resource — use the normal array split).>
+    resourceIdField: <field identifying the resource. Use "$resourceKey" for per_resource collectors; "$scope" for account/subscription/project-level single checks (single-object OR aggregate:true over an array)>
     resourceNameField: <optional display-name field>
     applicableWhen: <optional expression; resource only evaluated if true>
     passWhen: <expression; resource PASSES when true>
@@ -164,6 +165,15 @@ fixture (per_resource uses resourceKey and $resourceKey as the id):
   { "name": "fail missing config", "expected": "fail", "records": [ { "collectorId": "aws.s3.get_public_access_block", "resourceKey": "b2", "exitCode": 254, "output": null, "errorText": "An error occurred (NoSuchPublicAccessBlockConfiguration)" } ] } ] } ]
 
 Account-level single check: collector kind single, resourceIdField: $scope, resourcesPath "$" and the output object is the single resource (e.g. aws iam get-account-summary → evaluate SummaryMap fields).
+
+Aggregate account-level check over an inventory ARRAY (use when the pass condition is "does ANY / do NONE of the items in the whole account satisfy X"): set aggregate: true, resourceIdField: $scope, OMIT resourcesPath, and quantify with anyItem/noneItem/allItems over path "$". Example — a project has at least one catch-all log sink:
+  - id: CR-GCP-LOGGING-110
+    ...
+    collector: gcp.logging.sinks_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen: { op: anyItem, path: "$", condition: { op: and, exprs: [ { op: notEquals, path: disabled, value: true }, { op: isEmpty, path: filter } ] } }
+Fixture: ONE record whose output is the whole array; a pass case where an item matches, and a fail case where the array is empty or no item matches (the aggregate unit still evaluates, yielding fail — not no_results).
 
 OUTPUT: return collectorsYaml (a YAML doc with a 'collectors:' list of ONLY new collectors, or "collectors: []"), controlsYaml (a YAML doc with a 'controls:' list), fixturesJson (a JSON array), controlIds (list of ids you produced), and excludedChecks (checks you deliberately skipped with a one-line reason). Everything must be valid and internally consistent: every control's collector must exist (new or in the provided existing list), every control must have a fixture with >=1 pass and >=1 fail case, and every fixture output must be a realistic CLI shape.`;
 

@@ -121,6 +121,14 @@ export interface ControlDefinition {
    * and for account-level single-object checks (use "$" for whole output).
    */
   resourcesPath?: string;
+  /**
+   * Account/subscription/project-level aggregate check: treat the whole
+   * collector output as ONE resource unit (do not split a top-level array),
+   * so passWhen can quantify over the entire inventory with
+   * anyItem/noneItem/allItems. Pair with resourceIdField "$scope". Ignored for
+   * per_resource collectors. Default: false.
+   */
+  aggregate?: boolean;
   /** Path (relative to a resource) of the field used as the resource ID. */
   resourceIdField: string;
   /** Optional name field for display. */
