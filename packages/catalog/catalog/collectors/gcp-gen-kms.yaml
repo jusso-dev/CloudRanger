@@ -1,0 +1,25 @@
+collectors:
+  - id: gcp.kms.inventory_keys_list
+    provider: gcp
+    service: kms
+    description: >
+      All Cloud KMS CryptoKeys in the project (across every location and
+      keyring) via the KMS inventory API, so no per-keyring/per-location
+      iteration is needed.
+    kind: single
+    command: gcloud kms inventory list-keys --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON array at the root; each element is a CryptoKey resource
+      mirroring the Cloud KMS REST CryptoKey shape. Relevant fields: name
+      (projects/<p>/locations/<loc>/keyRings/<ring>/cryptoKeys/<key>), purpose
+      (ENCRYPT_DECRYPT | ASYMMETRIC_SIGN | ASYMMETRIC_DECRYPT |
+      RAW_ENCRYPT_DECRYPT | MAC | KEY_ENCAPSULATION), createTime, rotationPeriod
+      (a seconds duration string such as "7776000s"; only settable/present for
+      ENCRYPT_DECRYPT keys with automatic rotation), nextRotationTime (ISO
+      timestamp; present only when rotation is scheduled),
+      versionTemplate.protectionLevel, versionTemplate.algorithm, and labels.
+      Requires the cloudkms.cryptoKeys.list permission and the Cloud KMS
+      Inventory API enabled (cloudkms.googleapis.com). rotationPeriod and
+      nextRotationTime are omitted for keys without automatic rotation.

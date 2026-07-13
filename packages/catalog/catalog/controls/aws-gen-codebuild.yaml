@@ -1,0 +1,306 @@
+controls:
+  - id: CR-AWS-CODEBUILD-001
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project does not run in privileged mode
+    description: The build environment does not enable privilegedMode, which would
+      grant the build container Docker daemon and near-root host access.
+    rationale: A privileged build container can access the host Docker socket and
+      devices, so a poisoned build script or dependency can escape the container
+      and compromise the build fleet and any credentials it holds.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: codebuild_project_no_privileged_mode
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    passWhen:
+      op: not
+      expr:
+        op: equals
+        path: projects.0.environment.privilegedMode
+        value: true
+    failMessage: CodeBuild project runs its build environment in privileged mode.
+    passMessage: CodeBuild project does not use privileged mode.
+    remediation:
+      summary: Disable privileged mode unless building Docker images is required.
+      steps:
+        - Set environment.privilegedMode to false on the project.
+        - If Docker builds are required, isolate the project and restrict its
+          service-role permissions.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
+  - id: CR-AWS-CODEBUILD-002
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project has no plaintext secret environment variables
+    description: No PLAINTEXT environment variable in the build environment uses a
+      secret-looking name (key, secret, token, password, credential).
+    rationale: Secrets stored as PLAINTEXT environment variables are visible to
+      anyone with read access to the project and are printed in build logs,
+      leaking long-lived credentials. Secrets should come from Secrets Manager
+      or SSM Parameter Store instead.
+    severity: high
+    categories:
+      - identity
+      - encryption
+    source:
+      engine: prowler
+      id: codebuild_project_no_secrets_in_variables
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    passWhen:
+      op: noneItem
+      path: projects.0.environment.environmentVariables
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: type
+            value: PLAINTEXT
+          - op: matches
+            path: name
+            pattern: (KEY|key|Key|SECRET|secret|Secret|TOKEN|token|Token|PASSWORD|password|Password|PASSWD|passwd|CREDENTIAL|credential|CRED|cred|Cred|ACCESS|access|Access)
+    failMessage: CodeBuild project exposes a secret-looking value as a PLAINTEXT
+      environment variable.
+    passMessage: No secret-looking PLAINTEXT environment variables found.
+    remediation:
+      summary: Move secrets to Secrets Manager or SSM Parameter Store.
+      steps:
+        - Delete the PLAINTEXT variable holding the secret.
+        - Re-add it with type SECRETS_MANAGER or PARAMETER_STORE referencing a
+          managed secret.
+        - Rotate the exposed credential.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.env.secrets-manager
+  - id: CR-AWS-CODEBUILD-003
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project encrypts build artifacts
+    description: The primary artifacts configuration does not set encryptionDisabled
+      to true, so build output stored in S3 is encrypted.
+    rationale: Disabling artifact encryption leaves build output (which can include
+      compiled binaries, config and embedded secrets) unencrypted at rest in S3,
+      widening exposure if the bucket is misconfigured or compromised.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: codebuild_project_uses_encryption_for_artifacts
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    applicableWhen:
+      op: notEquals
+      path: projects.0.artifacts.type
+      value: NO_ARTIFACTS
+    passWhen:
+      op: notEquals
+      path: projects.0.artifacts.encryptionDisabled
+      value: true
+    failMessage: CodeBuild project stores artifacts with encryption disabled.
+    passMessage: CodeBuild project encrypts its build artifacts.
+    remediation:
+      summary: Enable encryption on the project artifacts.
+      steps:
+        - Set artifacts.encryptionDisabled to false (or omit it).
+        - Provide a KMS key via encryptionKey if a customer-managed key is
+          required.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectArtifacts.html
+  - id: CR-AWS-CODEBUILD-004
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project encrypts S3 build logs
+    description: When S3 logging is enabled, the s3Logs configuration does not set
+      encryptionDisabled to true.
+    rationale: Build logs frequently contain secrets, tokens and internal hostnames.
+      Storing them unencrypted in S3 exposes that data at rest if the log bucket
+      is accessed by an unauthorized party.
+    severity: medium
+    categories:
+      - encryption
+      - logging
+    source:
+      engine: prowler
+      id: codebuild_project_s3_logs_encrypted
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    applicableWhen:
+      op: equals
+      path: projects.0.logsConfig.s3Logs.status
+      value: ENABLED
+    passWhen:
+      op: notEquals
+      path: projects.0.logsConfig.s3Logs.encryptionDisabled
+      value: true
+    failMessage: CodeBuild project writes S3 build logs with encryption disabled.
+    passMessage: CodeBuild project encrypts its S3 build logs.
+    remediation:
+      summary: Enable encryption on the S3 logs configuration.
+      steps:
+        - Set logsConfig.s3Logs.encryptionDisabled to false (or omit it).
+        - Ensure the target log bucket enforces server-side encryption.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/APIReference/API_S3LogsConfig.html
+  - id: CR-AWS-CODEBUILD-005
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project does not use hardcoded source credentials
+    description: The project source location does not embed credentials inline in
+      the repository URL (for example https://user:token@host/repo).
+    rationale: Credentials embedded directly in the source location are stored in
+      the project definition and echoed in build logs, exposing long-lived
+      repository access tokens or passwords.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: codebuild_project_source_repo_url_no_sensitive_credentials
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    applicableWhen:
+      op: exists
+      path: projects.0.source.location
+    passWhen:
+      op: not
+      expr:
+        op: matches
+        path: projects.0.source.location
+        pattern: ://[^/@\s]+:[^/@\s]+@
+    failMessage: CodeBuild project source location embeds hardcoded credentials.
+    passMessage: CodeBuild project source location contains no embedded credentials.
+    remediation:
+      summary: Remove inline credentials from the source URL.
+      steps:
+        - Strip the user:password segment from source.location.
+        - Configure source authentication via CodeBuild source credentials
+          (OAuth or a token in Secrets Manager) instead.
+        - Rotate the exposed credential.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectSource.html
+  - id: CR-AWS-CODEBUILD-006
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project ships build logs to CloudWatch or S3
+    description: At least one of cloudWatchLogs or s3Logs in the project logsConfig
+      is ENABLED so build output is retained.
+    rationale: A project with all logging disabled loses build output once the build
+      completes, leaving no trail to investigate tampered builds, leaked secrets
+      or supply-chain incidents.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: codebuild_project_logging_enabled
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: projects.0.logsConfig.cloudWatchLogs.status
+          value: ENABLED
+        - op: equals
+          path: projects.0.logsConfig.s3Logs.status
+          value: ENABLED
+    failMessage: CodeBuild project has both CloudWatch and S3 logging disabled.
+    passMessage: CodeBuild project sends build logs to CloudWatch or S3.
+    remediation:
+      summary: Enable CloudWatch Logs or S3 logging for the project.
+      steps:
+        - Set logsConfig.cloudWatchLogs.status to ENABLED (default) or configure
+          logsConfig.s3Logs with status ENABLED.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/APIReference/API_LogsConfig.html
+  - id: CR-AWS-CODEBUILD-007
+    version: 1.0.0
+    provider: aws
+    service: codebuild
+    title: CodeBuild project has no plaintext secrets in secondary artifacts or
+      variables at scale
+    description: No PLAINTEXT environment variable stores a value that looks like a
+      raw credential token (long high-entropy or AWS access-key-style value).
+    rationale: Even variables with innocuous names can hold pasted access keys or
+      tokens in plaintext; these are exposed in the project definition and build
+      logs and represent leaked long-lived credentials.
+    severity: high
+    categories:
+      - identity
+      - encryption
+    source:
+      engine: prowler
+      id: codebuild_project_no_secrets_in_variables
+      license: Apache-2.0
+    collector: aws.codebuild.batch_get_projects
+    resourceIdField: $resourceKey
+    resourceNameField: projects.0.name
+    passWhen:
+      op: noneItem
+      path: projects.0.environment.environmentVariables
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: type
+            value: PLAINTEXT
+          - op: matches
+            path: value
+            pattern: (AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16})
+    failMessage: CodeBuild project has an AWS access-key-like value in a PLAINTEXT variable.
+    passMessage: No AWS access-key-like plaintext values found.
+    remediation:
+      summary: Remove embedded access keys and use IAM roles or managed secrets.
+      steps:
+        - Delete the PLAINTEXT variable containing the key material.
+        - Grant the build the needed access via the project service role instead
+          of static keys.
+        - Rotate the exposed key immediately.
+      verifyCommand: aws codebuild batch-get-projects --names <name> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.env.secrets-manager

@@ -625,3 +625,390 @@ controls:
     compliance: []
     references:
       - https://cloud.google.com/compute/docs/instances/preventing-accidental-vm-deletion
+  - id: CR-GCP-COMPUTE-151
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has automatic restart enabled
+    description: >
+      Verifies scheduling.automaticRestart is true so the instance is
+      automatically recreated after a maintenance event or host failure.
+    rationale: >
+      Without automatic restart, a host maintenance event or crash leaves the
+      workload down until an operator intervenes, harming availability of
+      standard (non-preemptible) services.
+    severity: low
+    categories:
+      - compute
+      - resilience
+    source:
+      engine: prowler
+      id: compute_instance_automatic_restart_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: equals
+      path: scheduling.automaticRestart
+      value: true
+    failMessage: Instance does not have automatic restart enabled.
+    passMessage: Instance has automatic restart enabled.
+    remediation:
+      summary: Enable automatic restart in the instance scheduling options.
+      steps:
+        - Set the instance scheduling automatic-restart option to on (operator
+          action).
+        - Note that preemptible/Spot VMs cannot use automatic restart by design.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/compute/docs/instances/setting-instance-scheduling-options
+  - id: CR-GCP-COMPUTE-152
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has a single network interface
+    description: >
+      Verifies the instance has exactly one network interface, avoiding
+      multi-NIC configurations that can bridge otherwise isolated networks.
+    rationale: >
+      A multi-NIC instance attached to several VPCs can act as an unmanaged
+      bridge between trust zones, defeating network segmentation and enabling
+      lateral movement.
+    severity: medium
+    categories:
+      - compute
+      - network
+    source:
+      engine: prowler
+      id: compute_instance_single_network_interface
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: lengthEquals
+      path: networkInterfaces
+      value: 1
+    failMessage: Instance has multiple network interfaces (bridges VPCs).
+    passMessage: Instance has a single network interface.
+    remediation:
+      summary: Reduce the instance to a single network interface.
+      steps:
+        - Review why multiple NICs are attached; consolidate onto one VPC where
+          possible (operator action).
+        - Use dedicated appliances or peering rather than multi-NIC bridging.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/vpc/docs/create-use-multiple-interfaces
+  - id: CR-GCP-COMPUTE-153
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance does not use the default Compute Engine service account
+    description: >
+      Verifies no attached service account is the project default Compute Engine
+      identity (ending -compute@developer.gserviceaccount.com).
+    rationale: >
+      The default Compute Engine service account is broadly privileged and
+      shared across the project, so a compromised VM using it inherits wide
+      access; a dedicated least-privilege service account limits blast radius.
+    severity: high
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_instance_default_service_account_in_use
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: noneItem
+      path: serviceAccounts
+      condition:
+        op: endsWith
+        path: email
+        value: -compute@developer.gserviceaccount.com
+    failMessage: Instance uses the default Compute Engine service account.
+    passMessage: Instance uses a dedicated (non-default) service account.
+    remediation:
+      summary: Attach a dedicated least-privilege service account instead of the
+        default.
+      steps:
+        - Create a dedicated service account scoped to the workload's needs.
+        - Stop the instance and set it to use that service account (operator
+          action).
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.1"
+    references:
+      - https://cloud.google.com/compute/docs/access/service-accounts#default_service_account
+  - id: CR-GCP-COMPUTE-154
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Project enforces OS Login two-factor authentication
+    description: >
+      Verifies enable-oslogin-2fa is set true in project-wide compute metadata
+      so SSH via OS Login requires a second factor.
+    rationale: >
+      OS Login 2FA blocks SSH access with a stolen key or password alone,
+      materially raising the bar for account takeover of Linux instances.
+    severity: medium
+    categories:
+      - compute
+      - identity
+    source:
+      engine: prowler
+      id: compute_project_os_login_2fa_enabled
+      license: Apache-2.0
+    collector: gcp.compute.project_info
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: commonInstanceMetadata.items
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: key
+            value: enable-oslogin-2fa
+          - op: in
+            path: value
+            values:
+              - "TRUE"
+              - "true"
+              - "True"
+              - "1"
+              - true
+    failMessage: Project does not enforce OS Login two-factor authentication.
+    passMessage: Project enforces OS Login two-factor authentication.
+    remediation:
+      summary: Set enable-oslogin-2fa=TRUE in project-wide compute metadata.
+      steps:
+        - Ensure OS Login itself is enabled (enable-oslogin=TRUE).
+        - Add enable-oslogin-2fa TRUE to project-wide metadata (operator action).
+      verifyCommand: gcloud compute project-info describe --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.4"
+    references:
+      - https://cloud.google.com/compute/docs/oslogin/set-up-oslogin#enable_two_factor_authentication
+  - id: CR-GCP-COMPUTE-155
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has Shielded VM vTPM enabled
+    description: >
+      Verifies shieldedInstanceConfig.enableVtpm is true so the instance has a
+      virtual Trusted Platform Module for measured boot and key protection.
+    rationale: >
+      The vTPM underpins measured boot and integrity monitoring; without it the
+      instance cannot attest its boot state or protect keys from a compromised
+      guest.
+    severity: medium
+    categories:
+      - compute
+      - integrity
+    source:
+      engine: prowler
+      id: compute_instance_shielded_vm_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: equals
+      path: shieldedInstanceConfig.enableVtpm
+      value: true
+    failMessage: Instance does not have Shielded VM vTPM enabled.
+    passMessage: Shielded VM vTPM is enabled.
+    remediation:
+      summary: Enable vTPM in the instance Shielded VM options.
+      steps:
+        - Stop the instance and enable vTPM in Shielded VM options (operator
+          action).
+        - Ensure the boot image is UEFI-compatible.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.8"
+    references:
+      - https://cloud.google.com/security/shielded-cloud/shielded-vm
+  - id: CR-GCP-COMPUTE-156
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Instance has Shielded VM integrity monitoring enabled
+    description: >
+      Verifies shieldedInstanceConfig.enableIntegrityMonitoring is true so boot
+      integrity is measured and compared against a trusted baseline.
+    rationale: >
+      Integrity monitoring detects boot-level tampering (rootkits, bootkits) by
+      comparing measurements to a known-good baseline; without it such
+      compromises go unnoticed.
+    severity: medium
+    categories:
+      - compute
+      - integrity
+    source:
+      engine: prowler
+      id: compute_instance_shielded_vm_enabled
+      license: Apache-2.0
+    collector: gcp.compute.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: not
+      expr:
+        op: startsWith
+        path: name
+        value: gke-
+    passWhen:
+      op: equals
+      path: shieldedInstanceConfig.enableIntegrityMonitoring
+      value: true
+    failMessage: Instance does not have Shielded VM integrity monitoring enabled.
+    passMessage: Shielded VM integrity monitoring is enabled.
+    remediation:
+      summary: Enable integrity monitoring in the instance Shielded VM options.
+      steps:
+        - Stop the instance and enable integrity monitoring in Shielded VM
+          options (operator action).
+        - Requires vTPM to be enabled.
+      verifyCommand: gcloud compute instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "4.8"
+    references:
+      - https://cloud.google.com/security/shielded-cloud/shielded-vm#integrity-monitoring
+  - id: CR-GCP-COMPUTE-157
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Custom image is not publicly shared
+    description: >
+      Verifies no IAM binding on the custom image grants access to allUsers or
+      allAuthenticatedUsers.
+    rationale: >
+      A publicly shared image can be read and instantiated by anyone, exposing
+      any embedded configuration, credentials or proprietary software baked into
+      the image.
+    severity: high
+    categories:
+      - compute
+      - public-exposure
+    source:
+      engine: prowler
+      id: compute_image_not_publicly_shared
+      license: Apache-2.0
+    collector: gcp.compute.image_iam_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: members
+            value: allUsers
+          - op: contains
+            path: members
+            value: allAuthenticatedUsers
+    onError:
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: was not found
+        status: not_applicable
+        message: Image no longer exists.
+    failMessage: Custom image is shared publicly (allUsers/allAuthenticatedUsers).
+    passMessage: Custom image is not publicly shared.
+    remediation:
+      summary: Remove allUsers and allAuthenticatedUsers from the image IAM policy.
+      steps:
+        - Remove any binding granting allUsers or allAuthenticatedUsers on the
+          image (operator action).
+        - Share the image only with specific principals or projects.
+      verifyCommand: gcloud compute images get-iam-policy <image> --project <project>
+        --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/compute/docs/images/sharing-images-across-projects
+  - id: CR-GCP-COMPUTE-158
+    version: 1.0.0
+    provider: gcp
+    service: compute
+    title: Disk snapshots are not older than 90 days
+    description: >
+      Verifies each snapshot was created within the last 90 days so backups
+      reflect a recent recovery point.
+    rationale: >
+      Stale snapshots give a false sense of backup coverage; recovering from a
+      months-old snapshot means large data loss and drift from current
+      configuration.
+    severity: low
+    categories:
+      - compute
+      - resilience
+    source:
+      engine: prowler
+      id: compute_snapshot_not_outdated
+      license: Apache-2.0
+    collector: gcp.compute.snapshots_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: daysSinceLt
+      path: creationTimestamp
+      value: 90
+    failMessage: Snapshot is older than 90 days.
+    passMessage: Snapshot was created within the last 90 days.
+    remediation:
+      summary: Refresh backups and prune stale snapshots on a schedule.
+      steps:
+        - Create current snapshots or a snapshot schedule for the source disks.
+        - Delete snapshots that are no longer a valid recovery point (operator
+          action).
+      verifyCommand: gcloud compute snapshots list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/compute/docs/disks/scheduled-snapshots

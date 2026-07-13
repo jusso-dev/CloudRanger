@@ -1,0 +1,35 @@
+collectors:
+  - id: aws.codebuild.list_projects
+    provider: aws
+    service: codebuild
+    description: Names of all CodeBuild build projects in one region.
+    kind: single
+    command: aws codebuild list-projects --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires codebuild:ListProjects. Returns a projects array of project-name
+      strings (and an optional nextToken for pagination). Empty array when no
+      projects exist in the region.
+  - id: aws.codebuild.batch_get_projects
+    provider: aws
+    service: codebuild
+    description: Full configuration of one CodeBuild project including source,
+      environment (privilegedMode, environmentVariables), artifacts and
+      logsConfig.
+    kind: per_resource
+    command: aws codebuild batch-get-projects --names {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.codebuild.list_projects
+      itemsPath: projects
+      resourceField: $
+    outputFormat: json
+    notes: Requires codebuild:BatchGetProjects. Response wraps a projects array (one
+      element for a single {resource} name) plus a projectsNotFound array. Each
+      project has source, environment, artifacts, secondaryArtifacts and
+      logsConfig objects. environment.privilegedMode is OMITTED when false, and
+      artifacts.encryptionDisabled / s3Logs.encryptionDisabled are OMITTED when
+      false, so absence must be treated as the secure default. environment
+      variable objects carry name, value and type (PLAINTEXT, PARAMETER_STORE,
+      SECRETS_MANAGER).

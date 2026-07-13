@@ -1,0 +1,190 @@
+controls:
+  - id: CR-AWS-EC2-151
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: Elastic IP is associated with a resource
+    description: The allocated Elastic IP address is attached to an instance or
+      network interface (has an AssociationId).
+    rationale: Unassociated Elastic IPs are dangling public addresses that incur
+      cost and, when reused across tenants, can be involved in dangling-DNS
+      takeover; keeping only in-use EIPs reduces the public IPv4 footprint and
+      stale allocations.
+    severity: low
+    categories:
+      - network
+      - public-exposure
+      - resilience
+    source:
+      engine: prowler
+      id: ec2_elastic_ip_unassigned
+      license: Apache-2.0
+    collector: aws.ec2.describe_addresses
+    resourcesPath: Addresses
+    resourceIdField: AllocationId
+    resourceNameField: PublicIp
+    passWhen:
+      op: exists
+      path: AssociationId
+    failMessage: Elastic IP is allocated but not associated with any resource.
+    passMessage: Elastic IP is associated with a resource.
+    remediation:
+      summary: Associate the EIP or release it.
+      steps:
+        - Associate the address with aws ec2 associate-address --allocation-id
+          <id> --instance-id <instance>.
+        - If unused, release it with aws ec2 release-address --allocation-id
+          <id>.
+      verifyCommand: aws ec2 describe-addresses --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html
+  - id: CR-AWS-EC2-152
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: Internet-facing EC2 instance has no IAM instance profile
+    description: An instance with a public IPv4 address does not also carry an IAM
+      instance profile.
+    rationale: An internet-facing instance that also holds an IAM instance profile
+      is a prime target - compromising it via a public service yields role
+      credentials the attacker can use to pivot into the account.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: ec2_instance_internet_facing_with_instance_profile
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: not
+      expr:
+        op: and
+        exprs:
+          - op: exists
+            path: PublicIpAddress
+          - op: exists
+            path: IamInstanceProfile.Arn
+    failMessage: Internet-facing instance has an IAM instance profile attached,
+      exposing role credentials if compromised.
+    passMessage: Instance is not both internet-facing and carrying an IAM instance profile.
+    remediation:
+      summary: Remove public exposure or the instance profile.
+      steps:
+        - Move the instance behind a load balancer or into a private subnet so
+          it has no public IPv4 address.
+        - If public exposure is required, scope the instance profile to least
+          privilege or detach it.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+  - id: CR-AWS-EC2-153
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance is not older than 180 days
+    description: The instance was launched within the last 180 days.
+    rationale: Long-running instances drift from current baselines and patch levels
+      and accumulate unrotated credentials and stale software; recycling
+      instances forces re-provisioning from hardened, patched images.
+    severity: low
+    categories:
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: ec2_instance_older_than_specific_days
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: daysSinceLt
+      path: LaunchTime
+      value: 180
+    failMessage: Instance has been running for more than 180 days without re-provisioning.
+    passMessage: Instance was launched within the last 180 days.
+    remediation:
+      summary: Recycle long-running instances from a current image.
+      steps:
+        - Replace the instance from an up-to-date, patched AMI or launch
+          template.
+        - Automate instance rotation (e.g. immutable deployments / auto scaling
+          refresh).
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html
+  - id: CR-AWS-EC2-154
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: EC2 instance metadata service does not expose IMDSv1
+    description: The instance either disables the metadata endpoint entirely or
+      requires IMDSv2 session tokens.
+    rationale: When the metadata endpoint is enabled but tokens are optional, IMDSv1
+      is reachable and an SSRF or forwarding proxy can retrieve role credentials
+      without a token; disabling the endpoint or requiring tokens closes that
+      credential-theft path.
+    severity: high
+    categories:
+      - identity
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: ec2_instance_imdsv2_enabled
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    resourcesPath: Reservations[].Instances
+    resourceIdField: InstanceId
+    resourceNameField: InstanceId
+    applicableWhen:
+      op: notEquals
+      path: State.Name
+      value: terminated
+    passWhen:
+      op: or
+      exprs:
+        - op: equals
+          path: MetadataOptions.HttpEndpoint
+          value: disabled
+        - op: equals
+          path: MetadataOptions.HttpTokens
+          value: required
+    failMessage: Metadata endpoint is enabled with optional tokens, so IMDSv1 is reachable.
+    passMessage: Metadata service is disabled or requires IMDSv2 tokens.
+    remediation:
+      summary: Require IMDSv2 or disable the metadata endpoint.
+      steps:
+        - Run aws ec2 modify-instance-metadata-options --instance-id <id>
+          --http-tokens required --http-endpoint enabled.
+        - If the workload never queries metadata, disable it with
+          --http-endpoint disabled.
+      verifyCommand: aws ec2 describe-instances --instance-ids <id> --region <region>
+        --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - "5.6"
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html

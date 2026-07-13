@@ -352,3 +352,347 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/key-vault/general/skus
+  - id: CR-AZURE-KEYVAULT-150
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: All key vault keys have an expiration date set
+    description: >
+      Verifies every cryptographic key in the vault has attributes.expires set
+      so keys are not usable indefinitely.
+    rationale: >
+      Keys with no expiration remain valid forever, so a leaked or stale key
+      never ages out. An expiration date bounds the window a compromised key can
+      be abused and forces periodic review and rotation.
+    severity: medium
+    categories:
+      - keys
+      - encryption
+    source:
+      engine: prowler
+      id: keyvault_key_expiration_set_in_non_rbac
+      license: Apache-2.0
+    collector: azure.keyvault.key_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: $
+      condition:
+        op: exists
+        path: attributes.expires
+    onError:
+      - contains: Forbidden
+        status: error
+      - contains: AccessDenied
+        status: error
+      - contains: does not have keys list permission
+        status: error
+    failMessage: One or more keys in the vault have no expiration date set.
+    passMessage: All keys in the vault have an expiration date set.
+    remediation:
+      summary: Set an expiration date on every key in the vault.
+      steps:
+        - List keys without an expiry and agree a rotation/expiry policy with
+          the owner.
+        - Set attributes.expires (expiry date) on each key (operator action).
+        - Adopt a key rotation policy so new versions inherit an expiry.
+      verifyCommand: az keyvault key list --vault-name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.1"
+          - "8.2"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/keys/about-keys
+  - id: CR-AZURE-KEYVAULT-151
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: All key vault secrets have an expiration date set
+    description: >
+      Verifies every secret in the vault has attributes.expires set so secrets
+      are not valid indefinitely.
+    rationale: >
+      Secrets (connection strings, passwords, tokens) that never expire stay
+      valid forever, so a leaked secret is usable indefinitely. An expiry date
+      bounds exposure and drives regular rotation.
+    severity: medium
+    categories:
+      - keys
+      - identity
+    source:
+      engine: prowler
+      id: keyvault_non_rbac_secret_expiration_set
+      license: Apache-2.0
+    collector: azure.keyvault.secret_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: allItems
+      path: $
+      condition:
+        op: exists
+        path: attributes.expires
+    onError:
+      - contains: Forbidden
+        status: error
+      - contains: AccessDenied
+        status: error
+      - contains: does not have secrets list permission
+        status: error
+    failMessage: One or more secrets in the vault have no expiration date set.
+    passMessage: All secrets in the vault have an expiration date set.
+    remediation:
+      summary: Set an expiration date on every secret in the vault.
+      steps:
+        - Identify secrets without an expiry and confirm their rotation cadence
+          with the owner.
+        - Set attributes.expires (expiry date) on each secret (operator action).
+        - Rotate long-lived secrets and store new versions with an expiry.
+      verifyCommand: az keyvault secret list --vault-name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.1"
+          - "8.2"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/secrets/about-secrets
+  - id: CR-AZURE-KEYVAULT-152
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault has diagnostic logging enabled
+    description: >
+      Verifies at least one Azure Monitor diagnostic setting on the vault
+      forwards logs to a Log Analytics workspace, storage account, or event hub.
+    rationale: >
+      Without diagnostic logging, key and secret access (AuditEvent) is not
+      recorded, so unauthorized access or exfiltration cannot be detected or
+      investigated after the fact.
+    severity: medium
+    categories:
+      - keys
+      - logging
+    source:
+      engine: prowler
+      id: keyvault_logging_enabled
+      license: Apache-2.0
+    collector: azure.keyvault.diagnostic_settings_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: anyItem
+            path: logs
+            condition:
+              op: equals
+              path: enabled
+              value: true
+          - op: or
+            exprs:
+              - op: exists
+                path: workspaceId
+              - op: exists
+                path: storageAccountId
+              - op: exists
+                path: eventHubName
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: Authorization
+        status: error
+    failMessage: Key vault has no diagnostic setting exporting enabled logs.
+    passMessage: Key vault forwards enabled diagnostic logs to a destination.
+    remediation:
+      summary: Create a diagnostic setting that sends AuditEvent logs to a destination.
+      steps:
+        - Choose a destination (Log Analytics workspace, storage account, or
+          event hub).
+        - Create a diagnostic setting on the vault with the AuditEvent (or audit
+          category group) logs enabled (operator action).
+        - Confirm logs begin flowing to the chosen destination.
+      verifyCommand: az monitor diagnostic-settings list --resource <vault-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.5"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/logging
+  - id: CR-AZURE-KEYVAULT-154
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault has an approved private endpoint connection
+    description: >
+      Verifies the vault has at least one private endpoint connection whose
+      connection state is Approved.
+    rationale: >
+      Reaching the vault over a private endpoint keeps traffic on the Azure
+      backbone and off the public internet. A vault with no approved private
+      connection typically depends on public reachability, widening the attack
+      surface for secret access.
+    severity: medium
+    categories:
+      - keys
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: keyvault_private_endpoints
+      license: Apache-2.0
+    collector: azure.keyvault.show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: anyItem
+      path: properties.privateEndpointConnections
+      condition:
+        op: equals
+        path: privateLinkServiceConnectionState.status
+        value: Approved
+    failMessage: Key vault has no approved private endpoint connection.
+    passMessage: Key vault has an approved private endpoint connection.
+    remediation:
+      summary: Create and approve a private endpoint for the vault.
+      steps:
+        - Provision a private endpoint for the vault in the consuming VNet.
+        - Approve the resulting private endpoint connection (operator action).
+        - Restrict public network access once private access is validated.
+      verifyCommand: az keyvault show --name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.6"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/private-link-service
+  - id: CR-AZURE-KEYVAULT-155
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: Key vault diagnostic logging captures the AuditEvent category
+    description: >
+      Verifies a diagnostic setting on the vault enables the AuditEvent log
+      category (directly or via the audit category group).
+    rationale: >
+      Generic metric-only or partial diagnostic settings do not record key and
+      secret access. Capturing AuditEvent is what provides the access trail
+      needed to detect and investigate misuse.
+    severity: medium
+    categories:
+      - keys
+      - logging
+    source:
+      engine: prowler
+      id: keyvault_logging_enabled
+      license: Apache-2.0
+    collector: azure.keyvault.diagnostic_settings_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: anyItem
+        path: logs
+        condition:
+          op: and
+          exprs:
+            - op: equals
+              path: enabled
+              value: true
+            - op: or
+              exprs:
+                - op: equals
+                  path: category
+                  value: AuditEvent
+                - op: equals
+                  path: categoryGroup
+                  value: audit
+                - op: equals
+                  path: categoryGroup
+                  value: allLogs
+    onError:
+      - contains: AccessDenied
+        status: error
+      - contains: Authorization
+        status: error
+    failMessage: No diagnostic setting enables the AuditEvent log category on the vault.
+    passMessage: Key vault diagnostic logging captures the AuditEvent category.
+    remediation:
+      summary: Enable the AuditEvent category (or audit category group) in a
+        diagnostic setting.
+      steps:
+        - Edit or create a diagnostic setting on the vault.
+        - Enable the AuditEvent log category or the audit category group
+          (operator action).
+        - Confirm access events appear at the destination.
+      verifyCommand: az monitor diagnostic-settings list --resource <vault-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.5"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/general/logging
+  - id: CR-AZURE-KEYVAULT-156
+    version: 1.0.0
+    provider: azure
+    service: keyvault
+    title: All enabled key vault keys have a future expiration date
+    description: >
+      Verifies no enabled key in the vault has an expiration date that has
+      already passed.
+    rationale: >
+      An enabled key whose expiry is in the past is either not actually being
+      enforced or signals stale, unmanaged key material. Both indicate weak key
+      lifecycle hygiene and should be rotated or disabled.
+    severity: low
+    categories:
+      - keys
+      - encryption
+    source:
+      engine: prowler
+      id: keyvault_key_expiration_set_in_non_rbac
+      license: Apache-2.0
+    collector: azure.keyvault.key_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: attributes.enabled
+            value: true
+          - op: exists
+            path: attributes.expires
+          - op: daysSinceGt
+            path: attributes.expires
+            value: 0
+    onError:
+      - contains: Forbidden
+        status: error
+      - contains: AccessDenied
+        status: error
+    failMessage: An enabled key in the vault has an expiration date in the past.
+    passMessage: No enabled key has a past expiration date.
+    remediation:
+      summary: Rotate or disable enabled keys whose expiry has already passed.
+      steps:
+        - Identify enabled keys with an expiry date in the past.
+        - Rotate to a new key version or disable the stale key (operator action).
+        - Ensure a rotation policy keeps future versions within their validity.
+      verifyCommand: az keyvault key list --vault-name <vault> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "8.1"
+    references:
+      - https://learn.microsoft.com/azure/key-vault/keys/about-keys

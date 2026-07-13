@@ -227,3 +227,156 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/cosmos-db/continuous-backup-restore-introduction
+  - id: CR-AZURE-COSMOSDB-150
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account enables automatic failover
+    description: >
+      Verifies enableAutomaticFailover is true so the account fails over to a
+      secondary region without operator intervention when the primary is down.
+    rationale: >
+      Without automatic failover, a regional outage on the primary write region
+      requires a manual failover, extending downtime and risking data
+      unavailability for a multi-region account.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cosmosdb_account_automatic_failover_enabled
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: enableAutomaticFailover
+      value: true
+    failMessage: Cosmos DB account does not have automatic failover enabled.
+    passMessage: Cosmos DB account has automatic failover enabled.
+    remediation:
+      summary: Enable automatic failover on the account.
+      steps:
+        - Confirm the account has more than one region configured.
+        - Enable automatic failover on the account (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/high-availability
+  - id: CR-AZURE-COSMOSDB-151
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account is replicated across multiple regions
+    description: >
+      Verifies the account has more than one entry in its locations list so data
+      is replicated to at least one secondary region.
+    rationale: >
+      A single-region account has no geo-redundancy; a regional outage or
+      deletion event can cause total data unavailability with no failover
+      target.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cosmosdb_account_replica_multiple_regions
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: lengthGt
+      path: locations
+      value: 1
+    failMessage: Cosmos DB account is configured in a single region only.
+    passMessage: Cosmos DB account is replicated across multiple regions.
+    remediation:
+      summary: Add at least one additional read or write region.
+      steps:
+        - Choose a paired Azure region for replication.
+        - Add the region to the account's locations (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/distribute-data-globally
+  - id: CR-AZURE-COSMOSDB-152
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account uses at least one availability-zone-redundant region
+    description: >
+      Verifies at least one configured location has isZoneRedundant set to true
+      so the account survives a single datacenter (zone) failure.
+    rationale: >
+      Without zone redundancy, an availability-zone failure in a region can take
+      the account offline in that region; zone redundancy provides intra-region
+      resilience for higher availability SLAs.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cosmosdb_account_zone_redundant_enabled
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: anyItem
+      path: locations
+      condition:
+        op: equals
+        path: isZoneRedundant
+        value: true
+    failMessage: No Cosmos DB account region has availability-zone redundancy enabled.
+    passMessage: Cosmos DB account has at least one availability-zone-redundant region.
+    remediation:
+      summary: Enable availability-zone redundancy on at least one region.
+      steps:
+        - Confirm the target region supports availability zones.
+        - Enable zone redundancy for a region on the account (operator action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/high-availability#availability-zone-support
+  - id: CR-AZURE-COSMOSDB-153
+    version: 1.0.0
+    provider: azure
+    service: cosmosdb
+    title: Cosmos DB account restricts key-based metadata write access
+    description: >
+      Verifies disableKeyBasedMetadataWriteAccess is true so account keys cannot
+      change container, throughput, or user metadata via the data plane.
+    rationale: >
+      When metadata writes via keys are permitted, a leaked key can create or
+      delete containers and change throughput rather than only read data,
+      widening the blast radius of a key compromise.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cosmosdb_account_disable_metadata_write_access
+      license: Apache-2.0
+    collector: azure.cosmosdb.list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: disableKeyBasedMetadataWriteAccess
+      value: true
+    failMessage: Cosmos DB account allows key-based metadata write access.
+    passMessage: Cosmos DB account disables key-based metadata write access.
+    remediation:
+      summary: Set disableKeyBasedMetadataWriteAccess to true.
+      steps:
+        - Move metadata management (container and throughput changes) to
+          ARM/Entra ID control-plane paths.
+        - Disable key-based metadata write access on the account (operator
+          action).
+      verifyCommand: az cosmosdb list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/cosmos-db/role-based-access-control

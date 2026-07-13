@@ -1,0 +1,305 @@
+[
+  {
+    "controlId": "CR-AWS-EFS-052",
+    "cases": [
+      {
+        "name": "backup policy enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_backup_policy",
+            "resourceKey": "fs-0a1b2c3d4e5f6a7b8",
+            "exitCode": 0,
+            "output": {
+              "BackupPolicy": {
+                "Status": "ENABLED"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "backup policy disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_backup_policy",
+            "resourceKey": "fs-0999888877776666a",
+            "exitCode": 0,
+            "output": {
+              "BackupPolicy": {
+                "Status": "DISABLED"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no backup policy configured fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_backup_policy",
+            "resourceKey": "fs-07777aaaa88889999",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (PolicyNotFound) when calling the DescribeBackupPolicy operation: None"
+          }
+        ]
+      },
+      {
+        "name": "access denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_backup_policy",
+            "resourceKey": "fs-0deniedaaaa000111",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the DescribeBackupPolicy operation: User is not authorized to perform elasticfilesystem:DescribeBackupPolicy"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-053",
+    "cases": [
+      {
+        "name": "policy scoped to specific principal passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-0a1b2c3d4e5f6a7b8",
+            "exitCode": 0,
+            "output": {
+              "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+              "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowApp\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:role/app\"},\"Action\":\"elasticfilesystem:ClientMount\"}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "policy with wildcard principal fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-0999888877776666a",
+            "exitCode": 0,
+            "output": {
+              "FileSystemId": "fs-0999888877776666a",
+              "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"Open\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"elasticfilesystem:ClientMount\"}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy attached fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-07777aaaa88889999",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (PolicyNotFound) when calling the DescribeFileSystemPolicy operation: Policy does not exist for the file system: fs-07777aaaa88889999"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-054",
+    "cases": [
+      {
+        "name": "policy denies non-TLS access passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-0a1b2c3d4e5f6a7b8",
+            "exitCode": 0,
+            "output": {
+              "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+              "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecure\",\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"*\",\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "policy without secure transport condition fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-0999888877776666a",
+            "exitCode": 0,
+            "output": {
+              "FileSystemId": "fs-0999888877776666a",
+              "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowApp\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:role/app\"},\"Action\":\"elasticfilesystem:ClientMount\"}]}"
+            }
+          }
+        ]
+      },
+      {
+        "name": "no policy attached fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_file_system_policy",
+            "resourceKey": "fs-07777aaaa88889999",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (PolicyNotFound) when calling the DescribeFileSystemPolicy operation: Policy does not exist for the file system: fs-07777aaaa88889999"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-055",
+    "cases": [
+      {
+        "name": "access point with posix user passes",
+        "expected": "pass",
+        "resourceId": "fsap-0aa11bb22cc33dd44",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_access_points",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AccessPoints": [
+                {
+                  "ClientToken": "app-ap-1",
+                  "Name": "app-ap",
+                  "AccessPointId": "fsap-0aa11bb22cc33dd44",
+                  "AccessPointArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:access-point/fsap-0aa11bb22cc33dd44",
+                  "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+                  "RootDirectory": {
+                    "Path": "/app",
+                    "CreationInfo": {
+                      "OwnerUid": 1000,
+                      "OwnerGid": 1000,
+                      "Permissions": "0750"
+                    }
+                  },
+                  "PosixUser": {
+                    "Uid": 1000,
+                    "Gid": 1000
+                  },
+                  "OwnerId": "123456789012",
+                  "LifeCycleState": "available"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "access point without posix user fails",
+        "expected": "fail",
+        "resourceId": "fsap-0ee55ff66aa77bb88",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_access_points",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AccessPoints": [
+                {
+                  "ClientToken": "open-ap-1",
+                  "Name": "open-ap",
+                  "AccessPointId": "fsap-0ee55ff66aa77bb88",
+                  "AccessPointArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:access-point/fsap-0ee55ff66aa77bb88",
+                  "FileSystemId": "fs-0999888877776666a",
+                  "RootDirectory": {
+                    "Path": "/shared"
+                  },
+                  "OwnerId": "123456789012",
+                  "LifeCycleState": "available"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EFS-056",
+    "cases": [
+      {
+        "name": "access point scoped to subdirectory passes",
+        "expected": "pass",
+        "resourceId": "fsap-0aa11bb22cc33dd44",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_access_points",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AccessPoints": [
+                {
+                  "ClientToken": "app-ap-1",
+                  "Name": "app-ap",
+                  "AccessPointId": "fsap-0aa11bb22cc33dd44",
+                  "AccessPointArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:access-point/fsap-0aa11bb22cc33dd44",
+                  "FileSystemId": "fs-0a1b2c3d4e5f6a7b8",
+                  "RootDirectory": {
+                    "Path": "/app",
+                    "CreationInfo": {
+                      "OwnerUid": 1000,
+                      "OwnerGid": 1000,
+                      "Permissions": "0750"
+                    }
+                  },
+                  "PosixUser": {
+                    "Uid": 1000,
+                    "Gid": 1000
+                  },
+                  "OwnerId": "123456789012",
+                  "LifeCycleState": "available"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "access point rooted at file system root fails",
+        "expected": "fail",
+        "resourceId": "fsap-0cc99dd00ee11ff22",
+        "records": [
+          {
+            "collectorId": "aws.efs.describe_access_points",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "AccessPoints": [
+                {
+                  "ClientToken": "root-ap-1",
+                  "Name": "root-ap",
+                  "AccessPointId": "fsap-0cc99dd00ee11ff22",
+                  "AccessPointArn": "arn:aws:elasticfilesystem:us-east-1:123456789012:access-point/fsap-0cc99dd00ee11ff22",
+                  "FileSystemId": "fs-0999888877776666a",
+                  "RootDirectory": {
+                    "Path": "/"
+                  },
+                  "PosixUser": {
+                    "Uid": 0,
+                    "Gid": 0
+                  },
+                  "OwnerId": "123456789012",
+                  "LifeCycleState": "available"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -20,3 +20,92 @@ collectors:
       MySQL Single Server offering; Flexible Server uses a different command and
       shape and is out of scope here. Requires
       Microsoft.DBforMySQL/servers/read.
+  - id: azure.mysql.flexible_server_list
+    provider: azure
+    service: mysql
+    description: >
+      Lists all Azure Database for MySQL Flexible Server instances
+      (Microsoft.DBforMySQL/flexibleServers) in the subscription with their
+      security-relevant configuration.
+    kind: single
+    command: az mysql flexible-server list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY at the root; one object per Flexible Server. The az
+      CLI flattens the ARM 'properties' object to top-level camelCase fields and
+      keeps nested config objects at the top level: id, name, location,
+      resourceGroup, version, state, availabilityZone, sku{name,tier},
+      storage{storageSizeGb,autoGrow,autoIoScaling,storageRedundancy},
+      backup{backupRetentionDays,geoRedundantBackup(Enabled|Disabled)},
+      highAvailability{mode(Disabled|ZoneRedundant|SameZone),state,
+      standbyAvailabilityZone}, network{publicNetworkAccess(Enabled|Disabled),
+      delegatedSubnetResourceId,privateDnsZoneResourceId},
+      dataEncryption{type,primaryKeyURI}. Distinct from the classic Single
+      Server offering (azure.mysql.list). Requires
+      Microsoft.DBforMySQL/flexibleServers/read. Returns an empty array when no
+      Flexible Servers exist.
+  - id: azure.mysql.flexible_server_param_require_secure_transport
+    provider: azure
+    service: mysql
+    description: >
+      Reads the require_secure_transport server parameter for one MySQL Flexible
+      Server.
+    kind: per_resource
+    command: az mysql flexible-server parameter show --ids
+      {resource}/configurations/require_secure_transport --output json
+    regional: false
+    parent:
+      collector: azure.mysql.flexible_server_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Uses the global --ids argument with the parameter's ARM resource id
+      (serverId/configurations/require_secure_transport) so no separate
+      --resource-group/--server-name is needed (parameter show accepts --ids;
+      parameter list does not). Returns a single Configuration object; az
+      flattens properties to top-level: name, value, currentValue, defaultValue
+      (ON), source, dataType, allowedValues (ON,OFF). value is 'ON' or 'OFF'.
+      Requires Microsoft.DBforMySQL/flexibleServers/configurations/read.
+  - id: azure.mysql.flexible_server_param_tls_version
+    provider: azure
+    service: mysql
+    description: |
+      Reads the tls_version server parameter for one MySQL Flexible Server.
+    kind: per_resource
+    command: az mysql flexible-server parameter show --ids
+      {resource}/configurations/tls_version --output json
+    regional: false
+    parent:
+      collector: azure.mysql.flexible_server_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Uses --ids with serverId/configurations/tls_version. Returns a single
+      Configuration object flattened to top-level name, value, currentValue,
+      defaultValue, source, allowedValues. value is a comma-separated protocol
+      list such as 'TLSv1.2' or 'TLSv1.2,TLSv1.3'; older insecure settings
+      include 'TLSv1' or 'TLSv1.1'. Requires
+      Microsoft.DBforMySQL/flexibleServers/configurations/read.
+  - id: azure.mysql.flexible_server_param_audit_log_enabled
+    provider: azure
+    service: mysql
+    description: >
+      Reads the audit_log_enabled server parameter for one MySQL Flexible Server.
+    kind: per_resource
+    command: az mysql flexible-server parameter show --ids
+      {resource}/configurations/audit_log_enabled --output json
+    regional: false
+    parent:
+      collector: azure.mysql.flexible_server_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Uses --ids with serverId/configurations/audit_log_enabled. Returns a
+      single Configuration object flattened to top-level name, value,
+      currentValue, defaultValue (OFF), source, allowedValues (ON,OFF). value is
+      'ON' or 'OFF'. Requires
+      Microsoft.DBforMySQL/flexibleServers/configurations/read.

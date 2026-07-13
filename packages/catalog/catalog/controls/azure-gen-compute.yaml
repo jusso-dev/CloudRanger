@@ -361,3 +361,288 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/virtual-machines/disks-enable-private-links-for-import-export-portal
+  - id: CR-AZURE-COMPUTE-150
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine OS disk is encrypted with a customer-managed key
+    description: >
+      Verifies each VM's attached OS managed disk references a disk encryption
+      set (customer-managed key) rather than relying only on the default
+      platform-managed key.
+    rationale: >
+      An attached OS disk protected only by the platform key leaves the tenant
+      without control over key rotation, revocation, or audit; a leaked
+      subscription or storage-layer compromise cannot be independently contained
+      without a customer-managed key.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+    source:
+      engine: prowler
+      id: vm_ensure_attached_disks_encrypted_with_cmk
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: exists
+      path: storageProfile.osDisk.managedDisk.diskEncryptionSet.id
+    failMessage: VM OS disk uses only the platform-managed key, not a customer-managed key.
+    passMessage: VM OS disk is encrypted with a customer-managed disk encryption set.
+    remediation:
+      summary: Attach a disk encryption set backed by a customer-managed key to the OS
+        disk.
+      steps:
+        - Create a Key Vault key and a disk encryption set.
+        - Stop-deallocate the VM and update the OS disk to use the
+          customer-managed disk encryption set (operator action).
+      verifyCommand: az vm list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "7.3"
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/disk-encryption#customer-managed-keys
+  - id: CR-AZURE-COMPUTE-151
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine uses the Trusted Launch security type
+    description: >
+      Verifies each VM is provisioned with securityType TrustedLaunch, the
+      foundation for secure boot and vTPM protection.
+    rationale: >
+      Without Trusted Launch, the VM cannot enforce secure boot or measured
+      boot, leaving it exposed to boot-kits, rootkits, and unsigned
+      firmware/driver tampering that persist below the OS.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: vm_trusted_launch_enabled
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: securityProfile.securityType
+      value: TrustedLaunch
+    failMessage: VM does not use the Trusted Launch security type.
+    passMessage: VM uses the Trusted Launch security type.
+    remediation:
+      summary: Recreate or upgrade the VM to a Trusted Launch security type.
+      steps:
+        - Confirm the VM size and image support Trusted Launch (Gen2).
+        - Set securityType to TrustedLaunch and enable secure boot and vTPM
+          (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/trusted-launch
+  - id: CR-AZURE-COMPUTE-152
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has Secure Boot enabled
+    description: >
+      Verifies each Trusted Launch VM has secure boot enabled so only signed
+      boot loaders and drivers execute during startup.
+    rationale: >
+      With secure boot disabled, an attacker with a foothold can load unsigned
+      or malicious boot components to persist below the OS and evade endpoint
+      defenses.
+    severity: medium
+    categories:
+      - compute
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_secure_boot_enabled
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: securityProfile.securityType
+      value: TrustedLaunch
+    passWhen:
+      op: equals
+      path: securityProfile.uefiSettings.secureBootEnabled
+      value: true
+    failMessage: VM does not have Secure Boot enabled.
+    passMessage: VM has Secure Boot enabled.
+    remediation:
+      summary: Enable Secure Boot on the Trusted Launch VM.
+      steps:
+        - Stop-deallocate the VM.
+        - Enable Secure Boot in the VM security profile (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/trusted-launch#secure-boot
+  - id: CR-AZURE-COMPUTE-153
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine has vTPM enabled
+    description: >
+      Verifies each Trusted Launch VM has a virtual Trusted Platform Module
+      enabled to attest boot integrity and protect keys.
+    rationale: >
+      Without a vTPM, the VM cannot perform measured boot or guest attestation,
+      removing the hardware root of trust needed to detect boot tampering and to
+      bind disk-encryption keys.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_vtpm_enabled
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: securityProfile.securityType
+      value: TrustedLaunch
+    passWhen:
+      op: equals
+      path: securityProfile.uefiSettings.vTpmEnabled
+      value: true
+    failMessage: VM does not have vTPM enabled.
+    passMessage: VM has vTPM enabled.
+    remediation:
+      summary: Enable vTPM on the Trusted Launch VM.
+      steps:
+        - Stop-deallocate the VM.
+        - Enable vTPM in the VM security profile (operator action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/trusted-launch#vtpm
+  - id: CR-AZURE-COMPUTE-154
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Virtual machine boots only from approved marketplace or gallery images
+    description: >
+      Verifies each VM's OS image comes from an approved publisher allow-list or
+      from a private Shared Image Gallery, rejecting arbitrary third-party
+      marketplace images.
+    rationale: >
+      An unvetted marketplace image can ship with backdoors, outdated vulnerable
+      software, or unexpected agents; constraining VMs to approved or
+      internally-curated golden images reduces supply-chain and drift risk.
+    severity: medium
+    categories:
+      - compute
+      - resilience
+    source:
+      engine: prowler
+      id: vm_ensure_using_approved_images
+      license: Apache-2.0
+    collector: azure.vm.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: exists
+          path: storageProfile.imageReference.id
+        - op: in
+          path: storageProfile.imageReference.publisher
+          values:
+            - Canonical
+            - MicrosoftWindowsServer
+            - RedHat
+            - SUSE
+            - MicrosoftCBLMariner
+            - Debian
+            - OpenLogic
+            - microsoft-dsvm
+            - MicrosoftWindowsDesktop
+    failMessage: VM OS image is not from an approved publisher or private gallery.
+    passMessage: VM boots from an approved marketplace or private gallery image.
+    remediation:
+      summary: Rebuild the VM from an approved image or a curated Shared Image Gallery
+        version.
+      steps:
+        - Identify an approved base image or publish a hardened golden image to
+          a Shared Image Gallery.
+        - Recreate the workload from the approved image reference (operator
+          action).
+      verifyCommand: az vm list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/shared-image-galleries
+  - id: CR-AZURE-COMPUTE-155
+    version: 1.0.0
+    provider: azure
+    service: compute
+    title: Unattached managed disk is encrypted with a customer-managed key
+    description: >
+      Verifies each managed disk that is currently unattached uses a
+      customer-managed key (or platform+customer double encryption) rather than
+      only the default platform key.
+    rationale: >
+      Unattached disks are frequently forgotten leftovers from decommissioned
+      VMs yet still hold sensitive data; without a customer-managed key the
+      tenant cannot revoke access or independently rotate the key protecting
+      that orphaned data.
+    severity: medium
+    categories:
+      - compute
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: vm_ensure_unattached_disks_encrypted_with_cmk
+      license: Apache-2.0
+    collector: azure.disk.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: diskState
+      value: Unattached
+    passWhen:
+      op: in
+      path: encryption.type
+      values:
+        - EncryptionAtRestWithCustomerKey
+        - EncryptionAtRestWithPlatformAndCustomerKeys
+    failMessage: Unattached managed disk uses only the platform-managed key, not a
+      customer-managed key.
+    passMessage: Unattached managed disk is encrypted with a customer-managed key.
+    remediation:
+      summary: Encrypt the unattached disk with a customer-managed key or delete it if
+        unneeded.
+      steps:
+        - Confirm the unattached disk is still required.
+        - Attach a customer-managed disk encryption set, or delete the orphaned
+          disk (operator action).
+      verifyCommand: az disk list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "7.3"
+    references:
+      - https://learn.microsoft.com/azure/virtual-machines/disk-encryption#customer-managed-keys

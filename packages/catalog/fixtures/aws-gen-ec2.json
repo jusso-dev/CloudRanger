@@ -1,0 +1,374 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-151",
+    "cases": [
+      {
+        "name": "associated eip passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_addresses",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Addresses": [
+                {
+                  "AllocationId": "eipalloc-01",
+                  "PublicIp": "203.0.113.10",
+                  "Domain": "vpc",
+                  "AssociationId": "eipassoc-01",
+                  "InstanceId": "i-01",
+                  "NetworkInterfaceId": "eni-01"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unassociated eip fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_addresses",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Addresses": [
+                {
+                  "AllocationId": "eipalloc-02",
+                  "PublicIp": "203.0.113.20",
+                  "Domain": "vpc"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-152",
+    "cases": [
+      {
+        "name": "private instance with profile passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-10",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PrivateIpAddress": "10.0.0.5",
+                      "IamInstanceProfile": {
+                        "Arn": "arn:aws:iam::111122223333:instance-profile/app"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "public instance no profile passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-11",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.30"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "public instance with profile fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-12",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.31",
+                      "IamInstanceProfile": {
+                        "Arn": "arn:aws:iam::111122223333:instance-profile/exposed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "terminated not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-13",
+                      "State": {
+                        "Name": "terminated"
+                      },
+                      "PublicIpAddress": "203.0.113.32",
+                      "IamInstanceProfile": {
+                        "Arn": "arn:aws:iam::111122223333:instance-profile/old"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-153",
+    "cases": [
+      {
+        "name": "recent instance passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-20",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "LaunchTime": "2026-06-01T12:00:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "old instance fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-21",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "LaunchTime": "2024-01-10T09:30:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "terminated not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-22",
+                      "State": {
+                        "Name": "terminated"
+                      },
+                      "LaunchTime": "2024-01-10T09:30:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-154",
+    "cases": [
+      {
+        "name": "tokens required passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-30",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpEndpoint": "enabled",
+                        "HttpPutResponseHopLimit": 1
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "endpoint disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-31",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "optional",
+                        "HttpEndpoint": "disabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "endpoint enabled with optional tokens fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-32",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "optional",
+                        "HttpEndpoint": "enabled",
+                        "HttpPutResponseHopLimit": 2
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "terminated not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-33",
+                      "State": {
+                        "Name": "terminated"
+                      },
+                      "MetadataOptions": {
+                        "HttpTokens": "optional",
+                        "HttpEndpoint": "enabled"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

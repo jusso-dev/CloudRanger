@@ -1,0 +1,200 @@
+controls:
+  - id: CR-AWS-DYNAMODB-002
+    version: 1.0.0
+    provider: aws
+    service: dynamodb
+    title: DynamoDB table is encrypted at rest with a KMS key
+    description: >
+      Verifies each table uses server-side encryption backed by a KMS key
+      (SSEDescription.Status ENABLED with SSEType KMS) rather than only the
+      default AWS-owned key.
+    rationale: >
+      With the default AWS-owned key you get no key policy, no CloudTrail key
+      usage visibility, and no ability to revoke access by disabling a key. A
+      KMS (AWS-managed or customer-managed) key gives auditable, revocable
+      encryption for table data at rest.
+    severity: medium
+    categories:
+      - database
+      - encryption
+    source:
+      engine: prowler
+      id: dynamodb_tables_kms_cmk_encryption_enabled
+      license: Apache-2.0
+    collector: aws.dynamodb.describe_table
+    resourceIdField: $resourceKey
+    resourceNameField: TableName
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: Table.SSEDescription.Status
+          value: ENABLED
+        - op: equals
+          path: Table.SSEDescription.SSEType
+          value: KMS
+    failMessage: DynamoDB table is not encrypted with a KMS key (using the default
+      AWS-owned key).
+    passMessage: DynamoDB table is encrypted at rest with a KMS key.
+    remediation:
+      summary: Enable KMS server-side encryption on the table.
+      steps:
+        - Update the table encryption to use an AWS-managed or customer-managed
+          KMS key (operator action).
+        - For strongest control, use a customer-managed key so its key policy
+          and rotation are auditable.
+      verifyCommand: aws dynamodb describe-table --table-name <table> --region
+        <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html
+  - id: CR-AWS-DYNAMODB-003
+    version: 1.0.0
+    provider: aws
+    service: dynamodb
+    title: DynamoDB table has deletion protection enabled
+    description: Verifies each table has DeletionProtectionEnabled set to true.
+    rationale: >
+      Without deletion protection a single accidental or malicious DeleteTable
+      call permanently destroys the table and all its items; deletion protection
+      forces an explicit disable step before deletion is possible.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: dynamodb_table_deletion_protection_enabled
+      license: Apache-2.0
+    collector: aws.dynamodb.describe_table
+    resourceIdField: $resourceKey
+    resourceNameField: TableName
+    passWhen:
+      op: equals
+      path: Table.DeletionProtectionEnabled
+      value: true
+    failMessage: DynamoDB table does not have deletion protection enabled.
+    passMessage: DynamoDB table has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the table.
+      steps:
+        - Enable deletion protection for the table (operator action).
+      verifyCommand: aws dynamodb describe-table --table-name <table> --region
+        <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html#WorkingWithTables.Basics.DeletionProtection
+  - id: CR-AWS-DYNAMODB-004
+    version: 1.0.0
+    provider: aws
+    service: dynamodb
+    title: DynamoDB table uses on-demand capacity or auto scaling
+    description: >
+      Verifies each table uses PAY_PER_REQUEST (on-demand) billing, which
+      auto-scales throughput; fixed PROVISIONED capacity without scaling risks
+      throttling under load.
+    rationale: >
+      A PROVISIONED table with static capacity throttles requests when traffic
+      exceeds the fixed limit, causing availability loss for dependent
+      applications. On-demand billing absorbs traffic spikes automatically.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: dynamodb_table_autoscaling_enabled
+      license: Apache-2.0
+    collector: aws.dynamodb.describe_table
+    resourceIdField: $resourceKey
+    resourceNameField: TableName
+    passWhen:
+      op: equals
+      path: Table.BillingModeSummary.BillingMode
+      value: PAY_PER_REQUEST
+    failMessage: DynamoDB table uses fixed provisioned capacity without on-demand scaling.
+    passMessage: DynamoDB table uses on-demand (PAY_PER_REQUEST) capacity.
+    remediation:
+      summary: Switch the table to on-demand capacity or attach auto scaling.
+      steps:
+        - Change the table billing mode to on-demand (PAY_PER_REQUEST), or
+        - Attach Application Auto Scaling policies to the provisioned read and
+          write capacity (operator action).
+      verifyCommand: aws dynamodb describe-table --table-name <table> --region
+        <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html
+  - id: CR-AWS-DYNAMODB-005
+    version: 1.0.0
+    provider: aws
+    service: dynamodb
+    title: DynamoDB table resource policy does not allow cross-account access
+    description: >
+      Verifies each table's resource-based policy does not grant access to a
+      wildcard principal (Principal "*") that would permit cross-account or
+      anonymous access.
+    rationale: >
+      A table resource policy that allows Principal "*" exposes table data to
+      any AWS account or, combined with public conditions, to anonymous callers,
+      which can leak or corrupt stored records.
+    severity: high
+    categories:
+      - database
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: dynamodb_table_cross_account_access
+      license: Apache-2.0
+    collector: aws.dynamodb.get_resource_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: not
+      expr:
+        op: anyItem
+        path: Policy.Statement
+        condition:
+          op: and
+          exprs:
+            - op: equals
+              path: Effect
+              value: Allow
+            - op: equals
+              path: Principal
+              value: "*"
+    onError:
+      - contains: PolicyNotFoundException
+        status: pass
+        message: No resource-based policy attached; no cross-account exposure via table
+          policy.
+      - contains: ResourceNotFoundException
+        status: not_applicable
+      - contains: AccessDenied
+        status: error
+    failMessage: DynamoDB table resource policy allows access from a wildcard principal.
+    passMessage: DynamoDB table resource policy does not allow cross-account access.
+    remediation:
+      summary: Remove wildcard principals from the table resource policy.
+      steps:
+        - Replace Principal "*" with specific account or role ARNs (operator
+          action).
+        - Scope statements with account-restricting conditions where broad
+          access is required.
+      verifyCommand: aws dynamodb get-resource-policy --resource-arn <table-arn>
+        --region <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/access-control-resource-based.html

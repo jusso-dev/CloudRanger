@@ -290,5 +290,243 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-150",
+    "cases": [
+      {
+        "name": "automatic failover enabled",
+        "expected": "pass",
+        "resourceId": "cosmos-prod",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-prod",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod",
+                "location": "East US",
+                "enableAutomaticFailover": true,
+                "enableMultipleWriteLocations": false,
+                "publicNetworkAccess": "Disabled",
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": true
+                  },
+                  {
+                    "locationName": "West US",
+                    "failoverPriority": 1,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "automatic failover disabled",
+        "expected": "fail",
+        "resourceId": "cosmos-dev",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-dev",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-dev",
+                "location": "East US",
+                "enableAutomaticFailover": false,
+                "enableMultipleWriteLocations": false,
+                "publicNetworkAccess": "Enabled",
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-151",
+    "cases": [
+      {
+        "name": "multi-region account",
+        "expected": "pass",
+        "resourceId": "cosmos-prod",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-prod",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod",
+                "location": "East US",
+                "enableAutomaticFailover": true,
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": true
+                  },
+                  {
+                    "locationName": "West US",
+                    "failoverPriority": 1,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "single-region account",
+        "expected": "fail",
+        "resourceId": "cosmos-single",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-single",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-single",
+                "location": "East US",
+                "enableAutomaticFailover": false,
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-152",
+    "cases": [
+      {
+        "name": "one region is zone redundant",
+        "expected": "pass",
+        "resourceId": "cosmos-prod",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-prod",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod",
+                "location": "East US",
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": true
+                  },
+                  {
+                    "locationName": "West US",
+                    "failoverPriority": 1,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no region is zone redundant",
+        "expected": "fail",
+        "resourceId": "cosmos-flat",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-flat",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-flat",
+                "location": "East US",
+                "locations": [
+                  {
+                    "locationName": "East US",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  },
+                  {
+                    "locationName": "West US",
+                    "failoverPriority": 1,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COSMOSDB-153",
+    "cases": [
+      {
+        "name": "metadata write access disabled",
+        "expected": "pass",
+        "resourceId": "cosmos-prod",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-prod",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod",
+                "location": "East US",
+                "disableKeyBasedMetadataWriteAccess": true,
+                "disableLocalAuth": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "metadata write access allowed",
+        "expected": "fail",
+        "resourceId": "cosmos-dev",
+        "records": [
+          {
+            "collectorId": "azure.cosmosdb.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "cosmos-dev",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-dev",
+                "location": "East US",
+                "disableKeyBasedMetadataWriteAccess": false,
+                "disableLocalAuth": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

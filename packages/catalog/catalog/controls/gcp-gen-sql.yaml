@@ -503,3 +503,466 @@ controls:
           - 6.3.7
     references:
       - https://cloud.google.com/sql/docs/sqlserver/flags
+  - id: CR-GCP-SQL-150
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance sets log_min_error_statement to error
+    description: >
+      For POSTGRES instances, verifies the log_min_error_statement database flag
+      is set to error, so statements causing errors are logged.
+    rationale: >
+      If log_min_error_statement is set above error (e.g. panic/fatal), failing
+      SQL statements are not recorded, removing the audit trail needed to detect
+      injection attempts and misbehaving clients.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_min_error_statement_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_min_error_statement
+          - op: equals
+            path: value
+            value: error
+    failMessage: PostgreSQL instance does not set log_min_error_statement to error.
+    passMessage: PostgreSQL instance sets log_min_error_statement to error.
+    remediation:
+      summary: Set the log_min_error_statement flag to error.
+      steps:
+        - Add the database flag log_min_error_statement=error to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.7
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-151
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance disables log_min_duration_statement
+    description: >
+      For POSTGRES instances, verifies the log_min_duration_statement database
+      flag is set to -1, which disables logging full statement text by duration.
+    rationale: >
+      A non-negative log_min_duration_statement causes full SQL statement text
+      (potentially containing sensitive parameter values) to be written to logs,
+      creating a data-exposure risk; CIS recommends -1 to disable it.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_min_duration_statement_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_min_duration_statement
+          - op: equals
+            path: value
+            value: "-1"
+    failMessage: PostgreSQL instance does not set log_min_duration_statement to -1.
+    passMessage: PostgreSQL instance disables log_min_duration_statement (-1).
+    remediation:
+      summary: Set the log_min_duration_statement flag to -1.
+      steps:
+        - Add the database flag log_min_duration_statement=-1 to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.6
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-152
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance has log_disconnections enabled
+    description: >
+      For POSTGRES instances, verifies the log_disconnections database flag is
+      set to on.
+    rationale: >
+      Logging session terminations, together with connection logging, provides
+      the full session lifecycle needed to detect anomalous access patterns and
+      support incident forensics.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_disconnections_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_disconnections
+          - op: equals
+            path: value
+            value: on
+    failMessage: PostgreSQL instance does not have log_disconnections set to on.
+    passMessage: PostgreSQL instance has log_disconnections enabled.
+    remediation:
+      summary: Set the log_disconnections flag to on.
+      steps:
+        - Add the database flag log_disconnections=on to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.3
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-153
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: PostgreSQL Cloud SQL instance sets log_error_verbosity to default
+    description: >
+      For POSTGRES instances, verifies the log_error_verbosity database flag is
+      set to default (rather than terse), so error logs retain useful detail.
+    rationale: >
+      A terse log_error_verbosity strips detail and context lines from error
+      messages, reducing the diagnostic value of logs during security
+      investigations and troubleshooting.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: cloudsql_instance_postgres_log_error_verbosity_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: POSTGRES
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_error_verbosity
+          - op: in
+            path: value
+            values:
+              - default
+              - verbose
+    failMessage: PostgreSQL instance sets log_error_verbosity to terse (not default).
+    passMessage: PostgreSQL instance sets log_error_verbosity to default or verbose.
+    remediation:
+      summary: Set the log_error_verbosity flag to default.
+      steps:
+        - Add the database flag log_error_verbosity=default to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.2.5
+    references:
+      - https://cloud.google.com/sql/docs/postgres/flags
+  - id: CR-GCP-SQL-154
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: MySQL Cloud SQL instance has skip_show_database enabled
+    description: >
+      For MYSQL instances, verifies the skip_show_database database flag is set
+      to on, preventing users without the SHOW DATABASES privilege from
+      enumerating databases.
+    rationale: >
+      With skip_show_database off, any authenticated user can list every
+      database on the server via SHOW DATABASES, aiding reconnaissance and
+      lateral movement toward sensitive schemas.
+    severity: low
+    categories:
+      - database
+      - identity
+    source:
+      engine: prowler
+      id: cloudsql_instance_mysql_skip_show_database_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: MYSQL
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: skip_show_database
+          - op: equals
+            path: value
+            value: on
+    failMessage: MySQL instance does not have skip_show_database set to on.
+    passMessage: MySQL instance has skip_show_database enabled.
+    remediation:
+      summary: Set the skip_show_database flag to on.
+      steps:
+        - Add the database flag skip_show_database=on to the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.1.2
+    references:
+      - https://cloud.google.com/sql/docs/mysql/flags
+  - id: CR-GCP-SQL-155
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: SQL Server Cloud SQL instance disables external scripts enabled
+    description: >
+      For SQLSERVER instances, verifies the "external scripts enabled" database
+      flag is set to off, preventing execution of external R/Python scripts.
+    rationale: >
+      Enabling external scripts lets the database run arbitrary R/Python code on
+      the server, which is a code-execution and lateral-movement risk if an
+      account is compromised.
+    severity: high
+    categories:
+      - database
+      - identity
+    source:
+      engine: prowler
+      id: cloudsql_instance_sqlserver_external_scripts_enabled_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: SQLSERVER
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: external scripts enabled
+          - op: equals
+            path: value
+            value: off
+    failMessage: SQL Server instance does not set "external scripts enabled" to off.
+    passMessage: SQL Server instance has "external scripts enabled" set to off.
+    remediation:
+      summary: Set the "external scripts enabled" flag to off.
+      steps:
+        - Set the database flag "external scripts enabled"=off on the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.3.4
+    references:
+      - https://cloud.google.com/sql/docs/sqlserver/flags
+  - id: CR-GCP-SQL-156
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: SQL Server Cloud SQL instance disables remote access
+    description: >
+      For SQLSERVER instances, verifies the "remote access" database flag is set
+      to off, blocking the running of local stored procedures from remote
+      servers.
+    rationale: >
+      With remote access enabled, remote servers can run local stored procedures
+      on the instance, widening the attack surface for privilege escalation and
+      denial-of-service against the database engine.
+    severity: medium
+    categories:
+      - database
+      - network
+    source:
+      engine: prowler
+      id: cloudsql_instance_sqlserver_remote_access_flag
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: startsWith
+      path: databaseVersion
+      value: SQLSERVER
+    passWhen:
+      op: anyItem
+      path: settings.databaseFlags
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: remote access
+          - op: equals
+            path: value
+            value: off
+    failMessage: SQL Server instance does not set "remote access" to off.
+    passMessage: SQL Server instance has "remote access" set to off.
+    remediation:
+      summary: Set the "remote access" flag to off.
+      steps:
+        - Set the database flag "remote access"=off on the instance.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - 6.3.6
+    references:
+      - https://cloud.google.com/sql/docs/sqlserver/flags
+  - id: CR-GCP-SQL-157
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL instance is encrypted with a customer-managed key (CMEK)
+    description: >
+      Verifies diskEncryptionConfiguration.kmsKeyName is present, so the
+      instance's data at rest is encrypted with a customer-managed Cloud KMS key
+      rather than the default Google-managed key.
+    rationale: >
+      Without CMEK, the organization cannot independently control key rotation,
+      access, or revocation for the database's at-rest encryption, weakening
+      cryptographic control over sensitive data.
+    severity: medium
+    categories:
+      - database
+      - encryption
+    source:
+      engine: prowler
+      id: cloudsql_instance_cmek_encryption_enabled_enabled
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: exists
+      path: diskEncryptionConfiguration.kmsKeyName
+    failMessage: Cloud SQL instance uses Google-managed encryption; no CMEK configured.
+    passMessage: Cloud SQL instance is encrypted with a customer-managed key.
+    remediation:
+      summary: Create the instance with a customer-managed Cloud KMS key.
+      steps:
+        - Provision the instance with a CMEK (disk-encryption-key) from Cloud
+          KMS.
+        - CMEK cannot be added to an existing instance; recreate it with the key.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.4"
+    references:
+      - https://cloud.google.com/sql/docs/mysql/cmek
+  - id: CR-GCP-SQL-158
+    version: 1.0.0
+    provider: gcp
+    service: sql
+    title: Cloud SQL instance does not have a public IPv4 address
+    description: >
+      Verifies settings.ipConfiguration.ipv4Enabled is false so the instance is
+      not assigned a public IP and is reachable only via private IP or the Auth
+      Proxy.
+    rationale: >
+      A public IPv4 address exposes the database endpoint to the internet, where
+      it is subject to credential stuffing and exploitation of the database
+      engine; private IP keeps traffic on the VPC.
+    severity: high
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudsql_instance_private_ip_assignment
+      license: Apache-2.0
+    collector: gcp.sql.instances_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: notEquals
+      path: settings.ipConfiguration.ipv4Enabled
+      value: true
+    failMessage: Cloud SQL instance has a public IPv4 address (ipv4Enabled true).
+    passMessage: Cloud SQL instance has no public IPv4 address.
+    remediation:
+      summary: Disable public IP and use private IP.
+      steps:
+        - Disable the public IPv4 address on the instance.
+        - Configure a private IP on the instance's VPC and connect via the Auth
+          Proxy or private networking.
+      verifyCommand: gcloud sql instances list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "6.6"
+    references:
+      - https://cloud.google.com/sql/docs/mysql/configure-private-ip

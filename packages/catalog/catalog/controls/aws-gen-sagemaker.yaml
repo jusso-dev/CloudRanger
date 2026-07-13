@@ -228,3 +228,289 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_InstanceMetadataServiceConfiguration.html
+  - id: CR-AWS-SAGEMAKER-006
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker training job has network isolation enabled
+    description: The training job is configured with EnableNetworkIsolation set to
+      true so the training container cannot make inbound or outbound network
+      calls.
+    rationale: Without network isolation a compromised or malicious training
+      container can reach the internet or internal services to exfiltrate
+      training data, model artifacts or credentials.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sagemaker_training_jobs_network_isolation_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_training_job
+    resourceIdField: $resourceKey
+    resourceNameField: TrainingJobName
+    passWhen:
+      op: equals
+      path: EnableNetworkIsolation
+      value: true
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Training job no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Training job does not have network isolation enabled.
+    passMessage: Training job has network isolation enabled.
+    remediation:
+      summary: Enable network isolation when creating training jobs.
+      steps:
+        - EnableNetworkIsolation cannot be changed on an existing job; set
+          EnableNetworkIsolation to true when creating the training job.
+        - Combine network isolation with a VPC configuration so SageMaker still
+          moves data through controlled channels while the container has no
+          direct network access.
+      verifyCommand: aws sagemaker describe-training-job --training-job-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html
+  - id: CR-AWS-SAGEMAKER-007
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker training job encrypts inter-container traffic
+    description: The training job has EnableInterContainerTrafficEncryption set to
+      true so communication between distributed training instances is encrypted.
+    rationale: In distributed training, unencrypted traffic between ML compute
+      instances can expose training data and intermediate model state to anyone
+      able to observe intra-cluster network traffic.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: sagemaker_training_jobs_intercontainer_encryption_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_training_job
+    resourceIdField: $resourceKey
+    resourceNameField: TrainingJobName
+    passWhen:
+      op: equals
+      path: EnableInterContainerTrafficEncryption
+      value: true
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Training job no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Training job does not encrypt inter-container traffic.
+    passMessage: Training job encrypts inter-container traffic.
+    remediation:
+      summary: Enable inter-container traffic encryption on training jobs.
+      steps:
+        - EnableInterContainerTrafficEncryption cannot be changed on an existing
+          job; set it to true when creating the training job.
+        - Expect distributed training to take longer with encryption enabled and
+          size clusters accordingly.
+      verifyCommand: aws sagemaker describe-training-job --training-job-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/train-encrypt.html
+  - id: CR-AWS-SAGEMAKER-008
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker training job encrypts storage volume and output with KMS
+    description: The training job has both ResourceConfig.VolumeKmsKeyId and
+      OutputDataConfig.KmsKeyId set so the ML storage volume and the S3 output
+      artifacts are encrypted with a KMS key.
+    rationale: Training volumes and output artifacts can contain sensitive training
+      data and derived model weights; without an explicit KMS key they lack
+      key-level access control and auditable encryption at rest.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: sagemaker_training_jobs_volume_and_output_encryption_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_training_job
+    resourceIdField: $resourceKey
+    resourceNameField: TrainingJobName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: ResourceConfig.VolumeKmsKeyId
+        - op: exists
+          path: OutputDataConfig.KmsKeyId
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Training job no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Training job does not encrypt both its storage volume and output
+      with a KMS key.
+    passMessage: Training job encrypts its storage volume and output with a KMS key.
+    remediation:
+      summary: Supply KMS keys for the training volume and output when creating jobs.
+      steps:
+        - Encryption keys cannot be changed on an existing job; set
+          ResourceConfig.VolumeKmsKeyId and OutputDataConfig.KmsKeyId when
+          creating the training job.
+        - Use customer-managed KMS keys with restrictive key policies where
+          key-level control over training data and artifacts is required.
+      verifyCommand: aws sagemaker describe-training-job --training-job-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/encryption-at-rest.html
+  - id: CR-AWS-SAGEMAKER-009
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker training job runs inside a VPC
+    description: The training job has a VpcConfig with at least one subnet so its ML
+      compute instances run inside a customer VPC.
+    rationale: A training job without VPC settings runs on the SageMaker
+      service-managed network and cannot be governed by VPC security groups,
+      route tables or endpoint policies, weakening network isolation and egress
+      control over the training environment.
+    severity: high
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: sagemaker_training_jobs_vpc_settings_configured
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_training_job
+    resourceIdField: $resourceKey
+    resourceNameField: TrainingJobName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: VpcConfig
+        - op: lengthGt
+          path: VpcConfig.Subnets
+          value: 0
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Training job no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Training job is not configured to run inside a VPC.
+    passMessage: Training job runs inside a VPC.
+    remediation:
+      summary: Provide a VPC configuration when creating training jobs.
+      steps:
+        - VpcConfig cannot be changed on an existing job; set VpcConfig with
+          Subnets and SecurityGroupIds when creating the training job.
+        - Use private subnets and route required egress through VPC endpoints or
+          a controlled NAT gateway.
+      verifyCommand: aws sagemaker describe-training-job --training-job-name <name>
+        --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/train-vpc.html
+  - id: CR-AWS-SAGEMAKER-010
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker model has network isolation enabled
+    description: The model is configured with EnableNetworkIsolation set to true so
+      the inference container cannot make inbound or outbound network calls.
+    rationale: Without network isolation a compromised or malicious inference
+      container can reach the internet or internal services to exfiltrate model
+      inputs, outputs or credentials at serving time.
+    severity: high
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sagemaker_models_network_isolation_enabled
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_model
+    resourceIdField: $resourceKey
+    resourceNameField: ModelName
+    passWhen:
+      op: equals
+      path: EnableNetworkIsolation
+      value: true
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Model no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Model does not have network isolation enabled.
+    passMessage: Model has network isolation enabled.
+    remediation:
+      summary: Enable network isolation when creating models.
+      steps:
+        - EnableNetworkIsolation cannot be changed on an existing model; set
+          EnableNetworkIsolation to true when creating the model.
+        - Combine network isolation with a VPC configuration so the container
+          has no direct network access while SageMaker still routes required
+          data.
+      verifyCommand: aws sagemaker describe-model --model-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html
+  - id: CR-AWS-SAGEMAKER-011
+    version: 1.0.0
+    provider: aws
+    service: sagemaker
+    title: SageMaker model is attached to a VPC
+    description: The model has a VpcConfig with at least one subnet so its inference
+      container runs inside a customer VPC.
+    rationale: A model without VPC settings cannot be governed by VPC security
+      groups, route tables or endpoint policies at serving time, weakening
+      network isolation and egress control over the inference environment.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: sagemaker_models_vpc_settings_configured
+      license: Apache-2.0
+    collector: aws.sagemaker.describe_model
+    resourceIdField: $resourceKey
+    resourceNameField: ModelName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: VpcConfig
+        - op: lengthGt
+          path: VpcConfig.Subnets
+          value: 0
+    onError:
+      - contains: ResourceNotFound
+        status: not_applicable
+        message: Model no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Model is not attached to a VPC.
+    passMessage: Model is attached to a VPC.
+    remediation:
+      summary: Provide a VPC configuration when creating models.
+      steps:
+        - VpcConfig cannot be changed on an existing model; set VpcConfig with
+          Subnets and SecurityGroupIds when creating the model.
+        - Use private subnets and route required egress through VPC endpoints or
+          a controlled NAT gateway.
+      verifyCommand: aws sagemaker describe-model --model-name <name> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/sagemaker/latest/dg/host-vpc.html

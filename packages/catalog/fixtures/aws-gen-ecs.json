@@ -311,5 +311,509 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-007",
+    "cases": [
+      {
+        "name": "fails plaintext password env var",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:3",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:3",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1",
+                    "environment": [
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "hunter2"
+                      }
+                    ],
+                    "secrets": []
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with secrets block only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:4",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:4",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1",
+                    "environment": [
+                      {
+                        "name": "LOG_LEVEL",
+                        "value": "info"
+                      }
+                    ],
+                    "secrets": [
+                      {
+                        "name": "DB_PASSWORD",
+                        "valueFrom": "arn:aws:secretsmanager:us-east-1:111122223333:secret:db-Ab12"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-008",
+    "cases": [
+      {
+        "name": "fails docker socket mount",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/ci:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/ci:1",
+                "family": "ci",
+                "networkMode": "bridge",
+                "containerDefinitions": [
+                  {
+                    "name": "runner",
+                    "image": "runner:1",
+                    "mountPoints": [
+                      {
+                        "sourceVolume": "dockersock",
+                        "containerPath": "/var/run/docker.sock"
+                      }
+                    ]
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "dockersock",
+                    "host": {
+                      "sourcePath": "/var/run/docker.sock"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes no docker socket",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:2",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:2",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ],
+                "volumes": []
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-009",
+    "cases": [
+      {
+        "name": "fails host-path volume",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/logs:5",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/logs:5",
+                "family": "logs",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "agent",
+                    "image": "agent:1"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "varlog",
+                    "host": {
+                      "sourcePath": "/var/log"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes managed volume only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:6",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:6",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "data",
+                    "efsVolumeConfiguration": {
+                      "fileSystemId": "fs-abc123",
+                      "transitEncryption": "ENABLED"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-010",
+    "cases": [
+      {
+        "name": "fails added SYS_ADMIN capability",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/net:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/net:1",
+                "family": "net",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "tool",
+                    "image": "tool:1",
+                    "linuxParameters": {
+                      "capabilities": {
+                        "add": ["SYS_ADMIN"]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes with dropped capabilities only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:7",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:7",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1",
+                    "linuxParameters": {
+                      "capabilities": {
+                        "drop": ["ALL"]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-011",
+    "cases": [
+      {
+        "name": "fails host device exposed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/dev:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/dev:1",
+                "family": "dev",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "worker",
+                    "image": "worker:1",
+                    "linuxParameters": {
+                      "devices": [
+                        {
+                          "hostPath": "/dev/nvidia0",
+                          "containerPath": "/dev/nvidia0",
+                          "permissions": ["read", "write"]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes no host devices",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:8",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:8",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1",
+                    "linuxParameters": {
+                      "initProcessEnabled": true
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-012",
+    "cases": [
+      {
+        "name": "fails host pidMode",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/mon:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/mon:1",
+                "family": "mon",
+                "networkMode": "awsvpc",
+                "pidMode": "host",
+                "containerDefinitions": [
+                  {
+                    "name": "agent",
+                    "image": "agent:1"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes without host pidMode",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:9",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:9",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "pidMode": "task",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-ECS-013",
+    "cases": [
+      {
+        "name": "fails EFS volume without transit encryption",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/efs:1",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/efs:1",
+                "family": "efs",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "data",
+                    "efsVolumeConfiguration": {
+                      "fileSystemId": "fs-abc123",
+                      "transitEncryption": "DISABLED"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes EFS volume with transit encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/efs:2",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/efs:2",
+                "family": "efs",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ],
+                "volumes": [
+                  {
+                    "name": "data",
+                    "efsVolumeConfiguration": {
+                      "fileSystemId": "fs-abc123",
+                      "transitEncryption": "ENABLED"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable when no EFS volumes",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.ecs.describe_task_definition",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:10",
+            "exitCode": 0,
+            "output": {
+              "taskDefinition": {
+                "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/app:10",
+                "family": "app",
+                "networkMode": "awsvpc",
+                "containerDefinitions": [
+                  {
+                    "name": "web",
+                    "image": "web:1"
+                  }
+                ],
+                "volumes": []
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -629,3 +629,369 @@ controls:
           - "6.1"
     references:
       - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-150
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: Virtual network has DDoS Protection Standard enabled
+    description: >
+      Verifies each virtual network has Azure DDoS Protection Standard enabled
+      (enableDdosProtection is true).
+    rationale: >
+      Without DDoS Protection Standard, VNets rely only on best-effort basic
+      protection, leaving internet-facing workloads exposed to volumetric and
+      protocol attacks that can cause outages.
+    severity: medium
+    categories:
+      - network
+      - resilience
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_vnet_ddos_protection_enabled
+      license: Apache-2.0
+    collector: azure.network.list_vnets
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: enableDdosProtection
+      value: true
+    failMessage: Virtual network does not have DDoS Protection Standard enabled.
+    passMessage: Virtual network has DDoS Protection Standard enabled.
+    remediation:
+      summary: Associate the VNet with a DDoS Protection Standard plan.
+      steps:
+        - Create or reuse a DDoS protection plan in the region (operator action).
+        - Enable DDoS Protection Standard on the virtual network and attach the
+          plan.
+      verifyCommand: az network vnet list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.6"
+    references:
+      - https://learn.microsoft.com/azure/ddos-protection/ddos-protection-overview
+  - id: CR-AZURE-NETWORK-151
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: Every workload subnet is associated with a network security group
+    description: >
+      Verifies that no workload subnet in the virtual network is missing an NSG
+      association. Azure-managed special subnets (GatewaySubnet,
+      AzureFirewallSubnet, AzureBastionSubnet, RouteServerSubnet), which cannot
+      have an NSG, are excluded.
+    rationale: >
+      A subnet without an NSG has no stateful ingress/egress filtering, so any
+      resource placed there is reachable per the effective platform defaults
+      with no segmentation, widening lateral-movement and exposure risk.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_subnet_nsg_associated
+      license: Apache-2.0
+    collector: azure.network.list_vnets
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: subnets
+      condition:
+        op: and
+        exprs:
+          - op: notExists
+            path: networkSecurityGroup.id
+          - op: notIn
+            path: name
+            values:
+              - GatewaySubnet
+              - AzureFirewallSubnet
+              - AzureFirewallManagementSubnet
+              - AzureBastionSubnet
+              - RouteServerSubnet
+    failMessage: A workload subnet is not associated with any network security group.
+    passMessage: Every workload subnet is associated with a network security group.
+    remediation:
+      summary: Associate an NSG with each workload subnet.
+      steps:
+        - Define an NSG with least-privilege rules for the subnet's workloads.
+        - Associate the NSG with the subnet (operator action).
+      verifyCommand: az network vnet list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.6"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-152
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows HTTP from the internet
+    description: >
+      Verifies no inbound allow rule exposes cleartext HTTP (TCP 80) to
+      Any/Internet/0.0.0.0/0 sources.
+    rationale: >
+      Serving HTTP directly to the internet transmits traffic without encryption
+      and often fronts admin panels; it should be restricted or redirected to
+      HTTPS behind a gateway.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: network_http_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Tcp
+              - "*"
+          - op: or
+            exprs:
+              - op: portStringIncludes
+                path: destinationPortRange
+                value: 80
+              - op: portStringIncludes
+                path: destinationPortRanges
+                value: 80
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows HTTP (80/tcp) from the internet.
+    passMessage: No internet-open HTTP rule.
+    remediation:
+      summary: Restrict HTTP exposure and prefer HTTPS behind a gateway.
+      steps:
+        - Front web workloads with an Application Gateway or Front Door and
+          enforce HTTPS.
+        - Replace Any/Internet sources on port 80 with specific ranges or remove
+          the rule (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.5"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-153
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: No NSG rule allows UDP from the internet
+    description: >
+      Verifies no inbound allow rule permits UDP traffic (any UDP port, or a
+      protocol-any rule) from Any/Internet/0.0.0.0/0 sources.
+    rationale: >
+      Internet-open UDP services are frequently abused for reflection and
+      amplification DDoS and expose connectionless services with weak
+      authentication.
+    severity: medium
+    categories:
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: network_udp_internet_access_restricted
+      license: Apache-2.0
+    collector: azure.network.list_nsgs
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: noneItem
+      path: securityRules
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: access
+            value: Allow
+          - op: equals
+            path: direction
+            value: Inbound
+          - op: in
+            path: protocol
+            values:
+              - Udp
+              - "*"
+          - op: or
+            exprs:
+              - op: isPublicCidr
+                path: sourceAddressPrefix
+              - op: anyItem
+                path: sourceAddressPrefixes
+                condition:
+                  op: isPublicCidr
+                  path: $
+    failMessage: NSG allows UDP from the internet.
+    passMessage: No internet-open UDP rule.
+    remediation:
+      summary: Restrict internet-facing UDP or remove the rule.
+      steps:
+        - Confirm whether any UDP service must be internet-reachable; most
+          should not be.
+        - Replace Any/Internet sources with specific ranges or remove the UDP
+          rule (operator action).
+      verifyCommand: az network nsg list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.5"
+    references:
+      - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - id: CR-AZURE-NETWORK-154
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: NSG flow logs are enabled with retention greater than 90 days
+    description: >
+      Verifies each network security group has Network Watcher flow logging
+      enabled and a retention policy that retains logs for more than 90 days.
+    rationale: >
+      Flow logs are the primary record of network traffic to and from a subnet
+      or NIC; without them, or with short retention, incident investigation and
+      forensic analysis are severely limited.
+    severity: medium
+    categories:
+      - network
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: network_flow_log_more_than_90_days
+      license: Apache-2.0
+    collector: azure.network.flow_log_show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: enabled
+          value: true
+        - op: equals
+          path: retentionPolicy.enabled
+          value: true
+        - op: gt
+          path: retentionPolicy.days
+          value: 90
+    onError:
+      - contains: NetworkWatcherNotFound
+        status: fail
+        message: No Network Watcher / flow log configured for this NSG.
+      - contains: not found
+        status: fail
+        message: No flow log configured for this NSG.
+      - contains: FlowLogNotFound
+        status: fail
+        message: No flow log configured for this NSG.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: NSG flow logs are disabled or retained for 90 days or less.
+    passMessage: NSG flow logs are enabled with retention greater than 90 days.
+    remediation:
+      summary: Enable flow logs and set retention above 90 days.
+      steps:
+        - Enable Network Watcher NSG flow logs targeting a storage account.
+        - Set the retention policy to more than 90 days (operator action).
+      verifyCommand: az network watcher flow-log show --nsg <nsg-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.4"
+    references:
+      - https://learn.microsoft.com/azure/network-watcher/network-watcher-nsg-flow-logging-overview
+  - id: CR-AZURE-NETWORK-155
+    version: 1.0.0
+    provider: azure
+    service: network
+    title: NSG flow logs have Traffic Analytics enabled
+    description: >
+      Verifies each network security group's flow log has Traffic Analytics
+      enabled so flow data is processed for threat and traffic insights.
+    rationale: >
+      Raw flow logs are hard to act on; Traffic Analytics correlates and
+      enriches them to surface malicious traffic, open ports, and anomalous
+      flows that would otherwise go unnoticed.
+    severity: low
+    categories:
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: network_flow_log_captures_all_traffic
+      license: Apache-2.0
+    collector: azure.network.flow_log_show
+    resourceIdField: $resourceKey
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: enabled
+      value: true
+    passWhen:
+      op: equals
+      path: flowAnalyticsConfiguration.networkWatcherFlowAnalyticsConfiguration.enabled
+      value: true
+    onError:
+      - contains: NetworkWatcherNotFound
+        status: fail
+        message: No Network Watcher / flow log configured for this NSG.
+      - contains: not found
+        status: fail
+        message: No flow log configured for this NSG.
+      - contains: FlowLogNotFound
+        status: fail
+        message: No flow log configured for this NSG.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: NSG flow log does not have Traffic Analytics enabled.
+    passMessage: NSG flow log has Traffic Analytics enabled.
+    remediation:
+      summary: Enable Traffic Analytics on the NSG flow log.
+      steps:
+        - Attach a Log Analytics workspace to the NSG flow log configuration.
+        - Enable Traffic Analytics processing (operator action).
+      verifyCommand: az network watcher flow-log show --nsg <nsg-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "6.4"
+    references:
+      - https://learn.microsoft.com/azure/network-watcher/traffic-analytics

@@ -1,0 +1,285 @@
+controls:
+  - id: CR-AWS-EFS-052
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system has automatic backups enabled
+    description: >
+      Verifies each EFS file system has an AWS Backup automatic backup policy in
+      the ENABLED state via describe-backup-policy.
+    rationale: >
+      Without automatic backups, accidental deletion, ransomware, or application
+      corruption of the shared file system is unrecoverable, causing data loss
+      for every workload mounting it.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: efs_have_backup_enabled
+      license: Apache-2.0
+    collector: aws.efs.describe_backup_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: BackupPolicy.Status
+      value: ENABLED
+    onError:
+      - contains: PolicyNotFound
+        status: fail
+        message: No backup policy configured; automatic backups are disabled.
+      - contains: AccessDenied
+        status: error
+      - contains: FileSystemNotFound
+        status: not_applicable
+    failMessage: EFS file system does not have automatic backups enabled.
+    passMessage: EFS file system has automatic backups enabled.
+    remediation:
+      summary: Enable the AWS Backup automatic backup policy for the file system.
+      steps:
+        - Run aws efs put-backup-policy --file-system-id <fs-id> --backup-policy
+          Status=ENABLED.
+        - Confirm the AWS Backup default EFS backup plan retains recovery points
+          per policy.
+      verifyCommand: aws efs describe-backup-policy --file-system-id <fs-id> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/awsbackup.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeBackupPolicy.html
+  - id: CR-AWS-EFS-053
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system policy does not allow anonymous or wildcard access
+    description: >
+      Verifies the EFS resource-based (file system) policy, when attached, does
+      not grant access to a wildcard principal ("*"), which would allow any AWS
+      account or anonymous access to the file system.
+    rationale: >
+      A file system policy with a wildcard principal exposes shared file storage
+      to any AWS identity, enabling unauthorized read or write of sensitive data
+      mounted by production workloads.
+    severity: high
+    categories:
+      - public-exposure
+      - identity
+      - storage
+    source:
+      engine: prowler
+      id: efs_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.efs.describe_file_system_policy
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: exists
+      path: Policy
+    passWhen:
+      op: not
+      expr:
+        op: or
+        exprs:
+          - op: contains
+            path: Policy
+            value: '"Principal":"*"'
+          - op: contains
+            path: Policy
+            value: '"Principal": "*"'
+          - op: contains
+            path: Policy
+            value: '"AWS":"*"'
+          - op: contains
+            path: Policy
+            value: '"AWS": "*"'
+    onError:
+      - contains: PolicyNotFound
+        status: fail
+        message: No file system policy attached; EFS defaults to allowing any NFS client
+          in the VPC.
+      - contains: AccessDenied
+        status: error
+      - contains: FileSystemNotFound
+        status: not_applicable
+    failMessage: EFS file system policy grants access to a wildcard principal (public).
+    passMessage: EFS file system policy does not grant wildcard/anonymous access.
+    remediation:
+      summary: Attach a least-privilege file system policy scoping principals to
+        specific ARNs.
+      steps:
+        - Author a policy granting elasticfilesystem client actions only to
+          specific role or account ARNs.
+        - Apply with aws efs put-file-system-policy --file-system-id <fs-id>
+          --policy file://policy.json.
+        - Include a Deny for requests where aws:SecureTransport is false to
+          force TLS.
+      verifyCommand: aws efs describe-file-system-policy --file-system-id <fs-id>
+        --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/iam-access-control-nfs-efs.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeFileSystemPolicy.html
+  - id: CR-AWS-EFS-054
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS file system policy enforces encryption in transit
+    description: >
+      Verifies the EFS resource-based policy, when attached, contains a
+      statement denying access when aws:SecureTransport is false, forcing all
+      NFS clients to connect over TLS.
+    rationale: >
+      Without an enforced TLS requirement, NFS traffic between clients and the
+      file system can traverse the network in cleartext, exposing shared file
+      data to interception on the VPC network path.
+    severity: medium
+    categories:
+      - encryption
+      - network
+      - storage
+    source:
+      engine: prowler
+      id: efs_not_publicly_accessible
+      license: Apache-2.0
+    collector: aws.efs.describe_file_system_policy
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: exists
+      path: Policy
+    passWhen:
+      op: and
+      exprs:
+        - op: contains
+          path: Policy
+          value: aws:SecureTransport
+        - op: contains
+          path: Policy
+          value: Deny
+    onError:
+      - contains: PolicyNotFound
+        status: fail
+        message: No file system policy attached; encryption in transit is not enforced.
+      - contains: AccessDenied
+        status: error
+      - contains: FileSystemNotFound
+        status: not_applicable
+    failMessage: EFS file system policy does not enforce encryption in transit.
+    passMessage: EFS file system policy denies non-TLS access (encryption in transit
+      enforced).
+    remediation:
+      summary: Add a Deny statement on aws:SecureTransport=false to the file system
+        policy.
+      steps:
+        - Add a statement Effect=Deny, Action=elasticfilesystem:*, Condition
+          Bool aws:SecureTransport=false.
+        - Apply with aws efs put-file-system-policy --file-system-id <fs-id>
+          --policy file://policy.json.
+      verifyCommand: aws efs describe-file-system-policy --file-system-id <fs-id>
+        --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/encryption-in-transit.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeFileSystemPolicy.html
+  - id: CR-AWS-EFS-055
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS access point enforces a POSIX user identity
+    description: >
+      Verifies each EFS access point defines a PosixUser (Uid/Gid) so all file
+      system access through the access point runs as a fixed, enforced identity.
+    rationale: >
+      An access point without an enforced POSIX user lets clients present their
+      own Uid/Gid, defeating the access point's purpose of constraining and
+      isolating application access to the shared file system.
+    severity: medium
+    categories:
+      - identity
+      - storage
+    source:
+      engine: prowler
+      id: efs_access_point_enforce_user_identity
+      license: Apache-2.0
+    collector: aws.efs.describe_access_points
+    resourcesPath: AccessPoints
+    resourceIdField: AccessPointId
+    resourceNameField: Name
+    passWhen:
+      op: exists
+      path: PosixUser.Uid
+    failMessage: EFS access point does not enforce a POSIX user identity.
+    passMessage: EFS access point enforces a fixed POSIX user identity.
+    remediation:
+      summary: Recreate the access point with an enforced PosixUser.
+      steps:
+        - Delete the access point lacking a PosixUser.
+        - Recreate it with aws efs create-access-point specifying --posix-user
+          Uid=<uid>,Gid=<gid>.
+        - Repoint clients to the new access point id.
+      verifyCommand: aws efs describe-access-points --region <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/efs-access-points.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeAccessPoints.html
+  - id: CR-AWS-EFS-056
+    version: 1.0.0
+    provider: aws
+    service: efs
+    title: EFS access point restricts clients to a non-root directory
+    description: >
+      Verifies each EFS access point scopes clients to a subdirectory
+      (RootDirectory.Path is set and not "/") rather than exposing the file
+      system root.
+    rationale: >
+      An access point rooted at "/" grants clients visibility of the entire file
+      system, breaking the tenant/application isolation access points are meant
+      to provide and risking cross-application data exposure.
+    severity: medium
+    categories:
+      - identity
+      - storage
+      - public-exposure
+    source:
+      engine: prowler
+      id: efs_access_point_enforce_root_directory
+      license: Apache-2.0
+    collector: aws.efs.describe_access_points
+    resourcesPath: AccessPoints
+    resourceIdField: AccessPointId
+    resourceNameField: Name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: RootDirectory.Path
+        - op: notEquals
+          path: RootDirectory.Path
+          value: /
+    failMessage: EFS access point exposes the file system root directory.
+    passMessage: EFS access point restricts clients to a non-root subdirectory.
+    remediation:
+      summary: Recreate the access point scoped to a dedicated subdirectory.
+      steps:
+        - Delete the access point rooted at "/".
+        - Recreate it with aws efs create-access-point --root-directory
+          Path=/<app-path>,CreationInfo=...
+        - Repoint clients to the new access point id.
+      verifyCommand: aws efs describe-access-points --region <region> --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://docs.aws.amazon.com/efs/latest/ug/efs-access-points.html
+      - https://docs.aws.amazon.com/efs/latest/ug/API_DescribeAccessPoints.html

@@ -60,7 +60,9 @@
                 "name": "c1",
                 "apiServerAccessProfile": {
                   "enablePrivateCluster": false,
-                  "authorizedIpRanges": ["203.0.113.0/24"]
+                  "authorizedIpRanges": [
+                    "203.0.113.0/24"
+                  ]
                 }
               }
             ]
@@ -258,7 +260,9 @@
                 "aadProfile": {
                   "managed": true,
                   "enableAzureRbac": true,
-                  "adminGroupObjectIDs": ["11111111-1111-1111-1111-111111111111"]
+                  "adminGroupObjectIDs": [
+                    "11111111-1111-1111-1111-111111111111"
+                  ]
                 }
               }
             ]
@@ -340,6 +344,238 @@
                 "name": "c3",
                 "aadProfile": {
                   "managed": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-150",
+    "cases": [
+      {
+        "name": "pass stable channel",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "stable",
+                  "nodeOsUpgradeChannel": "NodeImage"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail no channel",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "none",
+                  "nodeOsUpgradeChannel": "NodeImage"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-151",
+    "cases": [
+      {
+        "name": "pass private cluster",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": true,
+                  "privateDnsZone": "system"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail public cluster",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": false,
+                  "authorizedIpRanges": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-152",
+    "cases": [
+      {
+        "name": "pass defender enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "securityProfile": {
+                  "defender": {
+                    "logAnalyticsWorkspaceResourceId": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.OperationalInsights/workspaces/ws1",
+                    "securityMonitoring": {
+                      "enabled": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail defender absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "securityProfile": {
+                  "defender": {
+                    "securityMonitoring": {
+                      "enabled": false
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-153",
+    "cases": [
+      {
+        "name": "pass security patch channel",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "stable",
+                  "nodeOsUpgradeChannel": "SecurityPatch"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail node os channel none",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "stable",
+                  "nodeOsUpgradeChannel": "None"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-AKS-154",
+    "cases": [
+      {
+        "name": "pass run command disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c1",
+                "name": "c1",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": true,
+                  "disableRunCommand": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail run command enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.aks.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourcegroups/rg/providers/Microsoft.ContainerService/managedClusters/c2",
+                "name": "c2",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": true,
+                  "disableRunCommand": false
                 }
               }
             ]

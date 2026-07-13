@@ -36,7 +36,10 @@
                   {
                     "objectId": "00000000-0000-0000-0000-000000000001",
                     "permissions": {
-                      "secrets": ["get", "list"]
+                      "secrets": [
+                        "get",
+                        "list"
+                      ]
                     }
                   }
                 ]
@@ -420,6 +423,453 @@
                 "enableSoftDelete": true
               }
             }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-150",
+    "cases": [
+      {
+        "name": "all keys have expiry",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "kid": "https://kv-prod.vault.azure.net/keys/enc",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2025-01-01T00:00:00+00:00",
+                  "expires": "2027-01-01T00:00:00+00:00"
+                }
+              },
+              {
+                "kid": "https://kv-prod.vault.azure.net/keys/sign",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2025-01-01T00:00:00+00:00",
+                  "expires": "2027-06-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "one key without expiry",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-dev",
+            "exitCode": 0,
+            "output": [
+              {
+                "kid": "https://kv-dev.vault.azure.net/keys/enc",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2025-01-01T00:00:00+00:00",
+                  "expires": "2027-01-01T00:00:00+00:00"
+                }
+              },
+              {
+                "kid": "https://kv-dev.vault.azure.net/keys/legacy",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2020-01-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no data-plane permission",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-locked",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(Forbidden) The user, group or application does not have keys list permission on key vault 'kv-locked'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-151",
+    "cases": [
+      {
+        "name": "all secrets have expiry",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.secret_list",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "https://kv-prod.vault.azure.net/secrets/db",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2025-01-01T00:00:00+00:00",
+                  "expires": "2026-12-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "secret without expiry",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.secret_list",
+            "resourceKey": "kv-dev",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "https://kv-dev.vault.azure.net/secrets/token",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2024-01-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.secret_list",
+            "resourceKey": "kv-locked",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(Forbidden) The user, group or application does not have secrets list permission on key vault 'kv-locked'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-152",
+    "cases": [
+      {
+        "name": "diagnostic setting to workspace with enabled log",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod/providers/microsoft.insights/diagnosticSettings/audit",
+                  "name": "audit",
+                  "workspaceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/law",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "categoryGroup": null,
+                      "enabled": true
+                    },
+                    {
+                      "category": null,
+                      "categoryGroup": "allLogs",
+                      "enabled": false
+                    }
+                  ],
+                  "metrics": [
+                    {
+                      "category": "AllMetrics",
+                      "enabled": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no diagnostic settings",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-dev",
+            "exitCode": 0,
+            "output": {
+              "value": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "setting exists but all logs disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-metrics",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "name": "metricsonly",
+                  "workspaceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/law",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "categoryGroup": null,
+                      "enabled": false
+                    }
+                  ],
+                  "metrics": [
+                    {
+                      "category": "AllMetrics",
+                      "enabled": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-154",
+    "cases": [
+      {
+        "name": "approved private endpoint connection",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod",
+              "name": "kv-prod",
+              "properties": {
+                "publicNetworkAccess": "Disabled",
+                "privateEndpointConnections": [
+                  {
+                    "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod/privateEndpointConnections/pe1",
+                    "privateEndpoint": {
+                      "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/privateEndpoints/pe1"
+                    },
+                    "privateLinkServiceConnectionState": {
+                      "status": "Approved",
+                      "description": "Auto-approved",
+                      "actionsRequired": "None"
+                    },
+                    "provisioningState": "Succeeded"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no private endpoint connections",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.show",
+            "resourceKey": "kv-public",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-public",
+              "name": "kv-public",
+              "properties": {
+                "publicNetworkAccess": "Enabled",
+                "privateEndpointConnections": []
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-155",
+    "cases": [
+      {
+        "name": "auditevent category enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "name": "audit",
+                  "workspaceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/law",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "categoryGroup": null,
+                      "enabled": true
+                    }
+                  ],
+                  "metrics": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "audit category group enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-grp",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "name": "auditgrp",
+                  "storageAccountId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/logsa",
+                  "logs": [
+                    {
+                      "category": null,
+                      "categoryGroup": "audit",
+                      "enabled": true
+                    }
+                  ],
+                  "metrics": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "only metrics no audit logs",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.diagnostic_settings_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-dev",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "name": "metricsonly",
+                  "workspaceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/law",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "categoryGroup": null,
+                      "enabled": false
+                    }
+                  ],
+                  "metrics": [
+                    {
+                      "category": "AllMetrics",
+                      "enabled": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-KEYVAULT-156",
+    "cases": [
+      {
+        "name": "all enabled keys expire in future",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "kid": "https://kv-prod.vault.azure.net/keys/enc",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2025-01-01T00:00:00+00:00",
+                  "expires": "2027-01-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enabled key already expired",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-stale",
+            "exitCode": 0,
+            "output": [
+              {
+                "kid": "https://kv-stale.vault.azure.net/keys/old",
+                "managed": false,
+                "attributes": {
+                  "enabled": true,
+                  "created": "2020-01-01T00:00:00+00:00",
+                  "expires": "2021-01-01T00:00:00+00:00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "expired but disabled key passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.keyvault.key_list",
+            "resourceKey": "kv-disabled",
+            "exitCode": 0,
+            "output": [
+              {
+                "kid": "https://kv-disabled.vault.azure.net/keys/old",
+                "managed": false,
+                "attributes": {
+                  "enabled": false,
+                  "created": "2020-01-01T00:00:00+00:00",
+                  "expires": "2021-01-01T00:00:00+00:00"
+                }
+              }
+            ]
           }
         ]
       }

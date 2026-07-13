@@ -47,3 +47,41 @@ collectors:
     notes: >
       Returns a JSON array; each entry has login, sid, tenantId,
       administratorType (ActiveDirectory). Empty array when no AAD admin set.
+  - id: azure.sql.atp_setting_show
+    provider: azure
+    service: sql
+    description: Advanced Threat Protection / Microsoft Defender for SQL setting for
+      one SQL logical server.
+    kind: per_resource
+    command: az sql server advanced-threat-protection-setting show --ids {resource}
+      --output json
+    regional: false
+    parent:
+      collector: azure.sql.list_servers
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns an object with state (Enabled/Disabled), creationTime, id, name
+      (Default), and type. state Enabled means Microsoft Defender for SQL /
+      Advanced Threat Protection is turned on at the server level. Requires
+      Microsoft.Sql/servers/advancedThreatProtectionSettings/read.
+  - id: azure.sql.tde_key_show
+    provider: azure
+    service: sql
+    description: Transparent Data Encryption protector (encryption key) for one SQL
+      logical server.
+    kind: per_resource
+    command: az sql server tde-key show --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.sql.list_servers
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns the server TDE protector object with serverKeyType (ServiceManaged
+      or AzureKeyVault), kind (servicemanaged or azurekeyvault), uri (key vault
+      key URI when CMK), serverKeyName, and name. AzureKeyVault serverKeyType
+      indicates a customer-managed key (CMK). Requires
+      Microsoft.Sql/servers/encryptionProtector/read.

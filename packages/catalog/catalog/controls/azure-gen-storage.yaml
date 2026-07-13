@@ -423,7 +423,7 @@ controls:
       - data-protection
     source:
       engine: prowler
-      id: storage_blob_soft_delete_is_enabled
+      id: storage_ensure_file_shares_soft_delete_is_enabled
       license: Apache-2.0
     collector: azure.storage.blob_service_properties_show
     resourceIdField: $resourceKey
@@ -477,7 +477,7 @@ controls:
       - data-protection
     source:
       engine: prowler
-      id: storage_blob_soft_delete_is_enabled
+      id: storage_ensure_file_shares_soft_delete_is_enabled
       license: Apache-2.0
     collector: azure.storage.blob_service_properties_show
     resourceIdField: $resourceKey
@@ -556,3 +556,346 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/storage/blobs/versioning-overview
+  - id: CR-AZURE-STORAGE-150
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account file share soft delete is enabled
+    description: >
+      Verifies file share soft delete (shareDeleteRetentionPolicy.enabled) is on
+      with a retention of at least 7 days.
+    rationale: >
+      Without file share soft delete, an accidentally or maliciously deleted
+      Azure file share (and all its data) is unrecoverable; a retention window
+      provides a resilience buffer against data loss and ransomware.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+      - data-protection
+    source:
+      engine: prowler
+      id: storage_ensure_file_shares_soft_delete_is_enabled
+      license: Apache-2.0
+    collector: azure.storage.file_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: shareDeleteRetentionPolicy.enabled
+          value: true
+        - op: gte
+          path: shareDeleteRetentionPolicy.days
+          value: 7
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: File share soft delete is disabled or retention is under 7 days.
+    passMessage: File share soft delete is enabled with at least 7 days retention.
+    remediation:
+      summary: Enable file share soft delete with a retention period of 7 or more days.
+      steps:
+        - Enable shareDeleteRetentionPolicy on the file service with days >= 7
+          (operator action).
+      verifyCommand: az storage account file-service-properties show --account-name
+        <name> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.11"
+    references:
+      - https://learn.microsoft.com/azure/storage/files/storage-files-enable-soft-delete
+  - id: CR-AZURE-STORAGE-151
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account SMB channel encryption excludes AES-128-CCM
+    description: >
+      Verifies protocolSettings.smb.channelEncryption is configured and does not
+      offer the weaker AES-128-CCM cipher for SMB traffic to Azure file shares.
+    rationale: >
+      AES-128-CCM is the weakest supported SMB channel cipher; offering it lets
+      a client negotiate down to weaker in-transit protection for file share
+      data. Restricting to AES-128-GCM/AES-256-GCM enforces stronger encryption
+      in transit.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: storage_smb_channel_encryption_with_secure_algorithm
+      license: Apache-2.0
+    collector: azure.storage.file_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: protocolSettings.smb.channelEncryption
+        - op: not
+          expr:
+            op: contains
+            path: protocolSettings.smb.channelEncryption
+            value: AES-128-CCM
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SMB channel encryption is unset or still offers AES-128-CCM.
+    passMessage: SMB channel encryption excludes AES-128-CCM.
+    remediation:
+      summary: Restrict SMB channel encryption to AES-128-GCM and AES-256-GCM.
+      steps:
+        - Set protocolSettings.smb.channelEncryption to AES-128-GCM;AES-256-GCM
+          on the file service (operator action).
+      verifyCommand: az storage account file-service-properties show --account-name
+        <name> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/storage/files/files-smb-protocol
+  - id: CR-AZURE-STORAGE-152
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account SMB protocol excludes the legacy SMB 2.1 version
+    description: >
+      Verifies protocolSettings.smb.versions is configured and does not permit
+      SMB2.1 for Azure file share access.
+    rationale: >
+      SMB 2.1 predates SMB encryption and pre-authentication integrity; allowing
+      it lets clients negotiate an unencrypted, weaker dialect. Restricting to
+      SMB3.0/SMB3.1.1 enforces modern, encryptable SMB.
+    severity: medium
+    categories:
+      - storage
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: storage_smb_protocol_version_is_latest
+      license: Apache-2.0
+    collector: azure.storage.file_service_properties_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: protocolSettings.smb.versions
+        - op: not
+          expr:
+            op: contains
+            path: protocolSettings.smb.versions
+            value: SMB2.1
+    onError:
+      - contains: StorageAccountNotFound
+        status: not_applicable
+        message: Account no longer exists.
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SMB versions are unset or still permit the legacy SMB2.1 dialect.
+    passMessage: SMB protocol versions exclude SMB2.1.
+    remediation:
+      summary: Restrict SMB versions to SMB3.0 and SMB3.1.1.
+      steps:
+        - Set protocolSettings.smb.versions to SMB3.0;SMB3.1.1 on the file
+          service (operator action).
+      verifyCommand: az storage account file-service-properties show --account-name
+        <name> --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/storage/files/files-smb-protocol
+  - id: CR-AZURE-STORAGE-153
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account uses geo-redundant replication
+    description: >
+      Verifies the account SKU (sku.name) is a geo-redundant tier
+      (GRS/RAGRS/GZRS/RAGZRS) rather than locally or zone-redundant only.
+    rationale: >
+      Locally-redundant storage keeps all replicas in one region; a regional
+      outage or disaster then causes data loss. Geo-redundant replication copies
+      data to a paired secondary region, meeting durability and business
+      continuity requirements.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: storage_geo_redundant_enabled
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: in
+      path: sku.name
+      values:
+        - Standard_GRS
+        - Standard_RAGRS
+        - Standard_GZRS
+        - Standard_RAGZRS
+    failMessage: Storage account is not geo-redundant (locally or zone-redundant only).
+    passMessage: Storage account uses a geo-redundant replication SKU.
+    remediation:
+      summary: Change the account replication to a geo-redundant SKU.
+      steps:
+        - Confirm the workload tolerates the secondary region and cost of
+          geo-redundancy.
+        - Set the account SKU to Standard_GRS/RAGRS/GZRS/RAGZRS (operator
+          action).
+      verifyCommand: az storage account list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-redundancy
+  - id: CR-AZURE-STORAGE-154
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account uses an approved private endpoint connection
+    description: >
+      Verifies the account has at least one private endpoint connection whose
+      privateLinkServiceConnectionState.status is Approved.
+    rationale: >
+      A private endpoint keeps storage traffic on the Azure backbone and removes
+      the need for public reachability. Without an approved private endpoint,
+      access depends on the public endpoint and network ACLs, widening the
+      exposure surface.
+    severity: medium
+    categories:
+      - storage
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: storage_ensure_private_endpoints_in_storage_accounts
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: anyItem
+      path: privateEndpointConnections
+      condition:
+        op: equals
+        path: privateLinkServiceConnectionState.status
+        value: Approved
+    failMessage: Storage account has no approved private endpoint connection.
+    passMessage: Storage account has an approved private endpoint connection.
+    remediation:
+      summary: Provision and approve a private endpoint for the storage account.
+      steps:
+        - Create a private endpoint for the required storage sub-resource
+          (blob/file/etc.).
+        - Approve the private endpoint connection on the account (operator
+          action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.8"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-private-endpoints
+  - id: CR-AZURE-STORAGE-155
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account allows trusted Microsoft services to bypass the firewall
+    description: >
+      Verifies networkRuleSet.bypass includes AzureServices so trusted Microsoft
+      platform services can reach the account when its firewall denies by
+      default.
+    rationale: >
+      When the storage firewall denies by default, disabling the AzureServices
+      bypass breaks trusted platform integrations (diagnostic logging, backup,
+      Defender, Event Grid). Allowing the trusted-services bypass keeps these
+      security and operational flows working without opening public access.
+    severity: low
+    categories:
+      - storage
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: storage_default_network_access_rule_is_denied
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: networkRuleSet.defaultAction
+      value: Deny
+    passWhen:
+      op: contains
+      path: networkRuleSet.bypass
+      value: AzureServices
+    failMessage: Firewall denies by default but does not allow the trusted Microsoft
+      services bypass.
+    passMessage: Trusted Microsoft services are allowed to bypass the storage firewall.
+    remediation:
+      summary: Enable the AzureServices network bypass on the account.
+      steps:
+        - Set networkRuleSet.bypass to include AzureServices (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.8"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-network-security
+  - id: CR-AZURE-STORAGE-156
+    version: 1.0.0
+    provider: azure
+    service: storage
+    title: Storage account network firewall denies by default
+    description: >
+      Verifies networkRuleSet.defaultAction is Deny so only explicitly allowed
+      networks (and private endpoints) can reach the account.
+    rationale: >
+      A default action of Allow leaves the storage account reachable from any
+      network that resolves its public endpoint; only a default Deny turns the
+      configured IP and virtual-network rules into an actual allow-list.
+    severity: high
+    categories:
+      - storage
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: storage_default_network_access_rule_is_denied
+      license: Apache-2.0
+    collector: azure.storage.list_accounts
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: networkRuleSet.defaultAction
+      value: Deny
+    failMessage: Storage account network firewall defaults to Allow.
+    passMessage: Storage account network firewall defaults to Deny.
+    remediation:
+      summary: Set the storage network rule set default action to Deny.
+      steps:
+        - Add the required IP and virtual-network allow rules first.
+        - Set networkRuleSet.defaultAction to Deny (operator action).
+      verifyCommand: az storage account list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - "3.8"
+    references:
+      - https://learn.microsoft.com/azure/storage/common/storage-network-security

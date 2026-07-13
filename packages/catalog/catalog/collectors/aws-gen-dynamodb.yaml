@@ -1,0 +1,37 @@
+collectors:
+  - id: aws.dynamodb.describe_table
+    provider: aws
+    service: dynamodb
+    description: Full table description for one DynamoDB table (encryption, deletion
+      protection, billing mode, status).
+    kind: per_resource
+    command: aws dynamodb describe-table --table-name {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.dynamodb.list_tables
+      itemsPath: TableNames
+      resourceField: $
+    outputFormat: json
+    notes: TableNames is an array of strings; each string is the {resource}.
+      SSEDescription is present only when server-side encryption uses a KMS key
+      (AWS-managed or customer-managed); tables encrypted with the default
+      AWS-owned key return NO SSEDescription element. DeletionProtectionEnabled
+      and BillingModeSummary are always present on active tables.
+  - id: aws.dynamodb.get_resource_policy
+    provider: aws
+    service: dynamodb
+    description: Resource-based (table) policy document for one DynamoDB table.
+    kind: per_resource
+    command: aws dynamodb get-resource-policy --resource-arn {resource} --region
+      {region} --output json
+    regional: true
+    parent:
+      collector: aws.dynamodb.describe_table
+      itemsPath: Table
+      resourceField: TableArn
+    outputFormat: json
+    notes: Requires the table ARN, sourced from describe-table Table.TableArn.
+      Returns PolicyNotFoundException when the table has no resource-based
+      policy attached; that error state means no cross-account exposure via a
+      table policy.

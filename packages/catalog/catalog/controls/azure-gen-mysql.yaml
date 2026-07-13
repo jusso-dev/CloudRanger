@@ -208,3 +208,288 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/mysql/single-server/concepts-backup
+  - id: CR-AZURE-MYSQL-150
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server requires secure transport (SSL/TLS)
+    description: >
+      Verifies the require_secure_transport server parameter is ON so the MySQL
+      Flexible Server rejects any unencrypted client connection.
+    rationale: >
+      With require_secure_transport OFF, clients can connect over plaintext,
+      exposing credentials and query data to network sniffing and
+      man-in-the-middle attacks.
+    severity: high
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: mysql_flexible_server_ssl_connection_enabled
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_param_require_secure_transport
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: value
+      value: ON
+    onError:
+      - contains: was not found
+        status: error
+      - contains: ResourceNotFound
+        status: error
+    failMessage: MySQL Flexible Server does not require secure transport (SSL/TLS).
+    passMessage: MySQL Flexible Server requires secure transport (SSL/TLS).
+    remediation:
+      summary: Set require_secure_transport to ON.
+      steps:
+        - Set the require_secure_transport server parameter to ON (operator
+          action).
+        - Ensure clients connect using TLS with the Azure CA certificate.
+      verifyCommand: az mysql flexible-server parameter show --ids
+        <server-id>/configurations/require_secure_transport --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.1
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/how-to-connect-tls-ssl
+  - id: CR-AZURE-MYSQL-151
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server enforces TLS 1.2 or higher
+    description: >
+      Verifies the tls_version server parameter does not permit the deprecated
+      TLSv1 or TLSv1.1 protocols on the MySQL Flexible Server.
+    rationale: >
+      Legacy TLS versions (1.0/1.1) are vulnerable to downgrade and interception
+      attacks; restricting to TLS 1.2+ protects database sessions in transit.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: mysql_flexible_server_minimum_tls_version_12
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_param_tls_version
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: value
+        - op: not
+          expr:
+            op: contains
+            path: value
+            value: TLSv1.1
+        - op: not
+          expr:
+            op: matches
+            path: value
+            pattern: (^|,)TLSv1($|,)
+    onError:
+      - contains: was not found
+        status: error
+      - contains: ResourceNotFound
+        status: error
+    failMessage: MySQL Flexible Server permits TLS versions older than 1.2.
+    passMessage: MySQL Flexible Server enforces TLS 1.2 or higher.
+    remediation:
+      summary: Set tls_version to TLSv1.2 (and optionally TLSv1.3) only.
+      steps:
+        - Set the tls_version server parameter to TLSv1.2 (operator action).
+        - Remove TLSv1 and TLSv1.1 from the allowed protocol list.
+      verifyCommand: az mysql flexible-server parameter show --ids
+        <server-id>/configurations/tls_version --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.1
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/how-to-connect-tls-ssl
+  - id: CR-AZURE-MYSQL-152
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server audit logging is enabled
+    description: >
+      Verifies the audit_log_enabled server parameter is ON so the MySQL
+      Flexible Server records server audit events.
+    rationale: >
+      Without server audit logging, there is no record of connections and
+      privileged activity, hampering breach detection and forensic
+      investigation.
+    severity: medium
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: mysql_flexible_server_audit_log_enabled
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_param_audit_log_enabled
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: value
+      value: ON
+    onError:
+      - contains: was not found
+        status: error
+      - contains: ResourceNotFound
+        status: error
+    failMessage: MySQL Flexible Server audit logging is disabled.
+    passMessage: MySQL Flexible Server audit logging is enabled.
+    remediation:
+      summary: Set audit_log_enabled to ON.
+      steps:
+        - Set the audit_log_enabled server parameter to ON (operator action).
+        - Configure audit_log_events to capture CONNECTION and other required
+          events.
+        - Route audit logs to a Log Analytics workspace via diagnostic settings.
+      verifyCommand: az mysql flexible-server parameter show --ids
+        <server-id>/configurations/audit_log_enabled --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.2
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/concepts-audit-logs
+  - id: CR-AZURE-MYSQL-153
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server has geo-redundant backup enabled
+    description: >
+      Verifies each MySQL Flexible Server has backup.geoRedundantBackup set to
+      Enabled so backups are replicated to the paired region.
+    rationale: >
+      Without geo-redundant backup, a regional outage or disaster can make
+      backups unavailable, preventing cross-region recovery and risking data
+      loss.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: mysql_flexible_server_geo_redundant_backup_enabled
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: backup.geoRedundantBackup
+      value: Enabled
+    failMessage: MySQL Flexible Server does not have geo-redundant backup enabled.
+    passMessage: MySQL Flexible Server has geo-redundant backup enabled.
+    remediation:
+      summary: Enable geo-redundant backup on the Flexible Server.
+      steps:
+        - Enable geo-redundant backup when creating the server (operator action).
+        - Note geo-redundancy cannot be changed after creation; recreate/migrate
+          if required.
+      verifyCommand: az mysql flexible-server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.3
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/concepts-backup-restore
+  - id: CR-AZURE-MYSQL-154
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server has high availability enabled
+    description: >
+      Verifies each MySQL Flexible Server has highAvailability.mode set to
+      ZoneRedundant or SameZone rather than Disabled.
+    rationale: >
+      Without high availability, an infrastructure failure causes downtime with
+      no automatic standby failover, breaching availability objectives.
+    severity: low
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: mysql_flexible_server_high_availability_enabled
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: highAvailability.mode
+        - op: notEquals
+          path: highAvailability.mode
+          value: Disabled
+    failMessage: MySQL Flexible Server does not have high availability enabled.
+    passMessage: MySQL Flexible Server has high availability enabled.
+    remediation:
+      summary: Enable zone-redundant or same-zone high availability.
+      steps:
+        - Enable high availability (ZoneRedundant or SameZone) on the server
+          (operator action).
+        - Choose ZoneRedundant in regions that support availability zones.
+      verifyCommand: az mysql flexible-server list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/concepts-high-availability
+  - id: CR-AZURE-MYSQL-155
+    version: 1.0.0
+    provider: azure
+    service: mysql
+    title: MySQL Flexible Server disables public network access
+    description: >
+      Verifies each MySQL Flexible Server has network.publicNetworkAccess set to
+      Disabled so the server is reachable only via private networking.
+    rationale: >
+      Public network access exposes the database endpoint to the internet,
+      widening the attack surface for brute-force and exploitation attempts.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: mysql_flexible_server_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.mysql.flexible_server_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: network.publicNetworkAccess
+      value: Disabled
+    failMessage: MySQL Flexible Server allows public network access.
+    passMessage: MySQL Flexible Server disables public network access.
+    remediation:
+      summary: Disable public network access and use private access (VNet integration).
+      steps:
+        - Deploy or reconfigure the server with private access (VNet
+          integration) so publicNetworkAccess is Disabled (operator action).
+        - Remove any public firewall rules once private connectivity is verified.
+      verifyCommand: az mysql flexible-server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.4.4
+    references:
+      - https://learn.microsoft.com/azure/mysql/flexible-server/concepts-networking

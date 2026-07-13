@@ -262,5 +262,281 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-150",
+    "cases": [
+      {
+        "name": "public zone with dnssec on passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "example-zone",
+                "dnsName": "example.com.",
+                "visibility": "public",
+                "kind": "dns#managedZone",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public zone with dnssec off fails",
+        "expected": "fail",
+        "resourceId": "insecure-zone",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "insecure-zone",
+                "dnsName": "insecure.com.",
+                "visibility": "public",
+                "kind": "dns#managedZone",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "private zone not applicable",
+        "expected": "not_applicable",
+        "resourceId": "internal-zone",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "internal-zone",
+                "dnsName": "internal.corp.",
+                "visibility": "private",
+                "kind": "dns#managedZone",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-151",
+    "cases": [
+      {
+        "name": "all public zones have dnssec on passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "zone-a",
+                "dnsName": "a.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              },
+              {
+                "name": "zone-b",
+                "dnsName": "b.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              },
+              {
+                "name": "internal-zone",
+                "dnsName": "corp.",
+                "visibility": "private",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "one public zone with dnssec off fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "zone-a",
+                "dnsName": "a.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              },
+              {
+                "name": "zone-lagging",
+                "dnsName": "lagging.example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no zones present still evaluates to pass",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-DNS-152",
+    "cases": [
+      {
+        "name": "no rsasha1 anywhere passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "example-zone",
+                "dnsName": "example.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "ecdsap256sha256",
+                      "keyLength": 256,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "ecdsap256sha256",
+                      "keyLength": 256,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "zone-signing key uses rsasha1 fails",
+        "expected": "fail",
+        "resourceId": "weak-zone",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "weak-zone",
+                "dnsName": "weak.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "on",
+                  "nonExistence": "nsec3",
+                  "kind": "dns#managedZoneDnsSecConfig",
+                  "defaultKeySpecs": [
+                    {
+                      "keyType": "keySigning",
+                      "algorithm": "rsasha256",
+                      "keyLength": 2048,
+                      "kind": "dns#dnsKeySpec"
+                    },
+                    {
+                      "keyType": "zoneSigning",
+                      "algorithm": "rsasha1",
+                      "keyLength": 1024,
+                      "kind": "dns#dnsKeySpec"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "dnssec off zone not applicable",
+        "expected": "not_applicable",
+        "resourceId": "off-zone",
+        "records": [
+          {
+            "collectorId": "gcp.dns.managed_zones_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "off-zone",
+                "dnsName": "off.com.",
+                "visibility": "public",
+                "dnssecConfig": {
+                  "state": "off",
+                  "kind": "dns#managedZoneDnsSecConfig"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

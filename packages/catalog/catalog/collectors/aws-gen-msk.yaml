@@ -1,0 +1,15 @@
+collectors:
+  - id: aws.msk.list_clusters_v2
+    provider: aws
+    service: msk
+    description: Lists all Amazon MSK clusters in a region with full cluster
+      configuration (ClusterInfoList[]), including Provisioned broker node
+      group, encryption, client authentication, enhanced monitoring, and broker
+      logging settings.
+    kind: single
+    command: aws kafka list-clusters-v2 --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Requires kafka:ListClustersV2. Serverless clusters populate a Serverless
+      block and omit the Provisioned block; provisioned clusters populate
+      Provisioned. Returns an empty ClusterInfoList when no clusters exist.

@@ -1,0 +1,59 @@
+collectors:
+  - id: azure.keyvault.key_list
+    provider: azure
+    service: keyvault
+    description: >
+      Keys stored in one key vault (JSON Web Key summaries including
+      attributes). One command per vault; output root is a JSON array of key
+      objects.
+    kind: per_resource
+    command: az keyvault key list --vault-name {resource} --output json
+    regional: false
+    parent:
+      collector: azure.keyvault.list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: >
+      Requires the keys/list data-plane permission (RBAC role Key Vault
+      Reader/Crypto User or an access policy granting key list). Returns [] when
+      the vault has no keys. Fails with Forbidden/AccessDenied if the scanning
+      identity lacks data-plane access.
+  - id: azure.keyvault.secret_list
+    provider: azure
+    service: keyvault
+    description: >
+      Secrets stored in one key vault (metadata only, no secret values). One
+      command per vault; output root is a JSON array of secret objects.
+    kind: per_resource
+    command: az keyvault secret list --vault-name {resource} --output json
+    regional: false
+    parent:
+      collector: azure.keyvault.list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: >
+      Returns only metadata (id, attributes, managed) not secret values.
+      Requires the secrets/list data-plane permission. Returns [] when the vault
+      has no secrets. Fails with Forbidden/AccessDenied without data-plane
+      access.
+  - id: azure.keyvault.diagnostic_settings_list
+    provider: azure
+    service: keyvault
+    description: >
+      Azure Monitor diagnostic settings targeting one key vault resource. Output
+      is an object with a top-level 'value' array of settings.
+    kind: per_resource
+    command: az monitor diagnostic-settings list --resource {resource} --output json
+    regional: false
+    parent:
+      collector: azure.keyvault.list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      The {resource} is the vault's full ARM resource id (the 'id' field from az
+      keyvault list). Returns {"value": []} when no diagnostic settings exist.
+      Each setting lists logs[] with category/categoryGroup and enabled plus a
+      destination (workspaceId/storageAccountId/eventHubName).

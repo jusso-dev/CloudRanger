@@ -131,3 +131,278 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-policies.html
+  - id: CR-AWS-COGNITO-004
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool enforces a minimum password length of 14
+    description: The user pool's password policy sets MinimumLength to at least 14
+      characters.
+    rationale: Short minimum password lengths make user accounts far easier to brute
+      force or crack from a leaked hash, undermining the entire identity
+      provider that fronts your applications.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_password_policy_minimum_length_14
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: gte
+      path: UserPool.Policies.PasswordPolicy.MinimumLength
+      value: 14
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool minimum password length is below 14 characters.
+    passMessage: Cognito user pool enforces a minimum password length of at least 14.
+    remediation:
+      summary: Raise the minimum password length to 14 or more.
+      steps:
+        - Update the pool password policy with aws cognito-idp update-user-pool
+          --user-pool-id <id> --policies 'PasswordPolicy={MinimumLength=14}'.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-policies.html
+  - id: CR-AWS-COGNITO-005
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool password policy requires mixed character classes
+    description: The user pool's password policy requires uppercase, lowercase,
+      numeric, and symbol characters.
+    rationale: Passwords without required character-class complexity are more
+      predictable and easier to guess or crack, weakening account protection for
+      every user of the pool.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_password_policy_uppercase
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: UserPool.Policies.PasswordPolicy.RequireUppercase
+          value: true
+        - op: equals
+          path: UserPool.Policies.PasswordPolicy.RequireLowercase
+          value: true
+        - op: equals
+          path: UserPool.Policies.PasswordPolicy.RequireNumbers
+          value: true
+        - op: equals
+          path: UserPool.Policies.PasswordPolicy.RequireSymbols
+          value: true
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool password policy does not require all character
+      classes (uppercase, lowercase, numbers, symbols).
+    passMessage: Cognito user pool password policy requires uppercase, lowercase,
+      numbers, and symbols.
+    remediation:
+      summary: Require all four character classes in the password policy.
+      steps:
+        - Update the pool with aws cognito-idp update-user-pool --user-pool-id
+          <id> --policies
+          'PasswordPolicy={RequireUppercase=true,RequireLowercase=true,RequireNumbers=true,RequireSymbols=true}'.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-policies.html
+  - id: CR-AWS-COGNITO-006
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool requires multi-factor authentication
+    description: The user pool's MfaConfiguration is set to ON so all users must
+      complete MFA.
+    rationale: Without enforced MFA, compromised passwords alone grant full account
+      access, making the identity provider a single point of failure for account
+      takeover.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_mfa_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: equals
+      path: UserPool.MfaConfiguration
+      value: ON
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool does not enforce MFA (MfaConfiguration is not ON).
+    passMessage: Cognito user pool enforces MFA for all users.
+    remediation:
+      summary: Set MFA configuration to ON.
+      steps:
+        - Enable required MFA with aws cognito-idp set-user-pool-mfa-config
+          --user-pool-id <id> --mfa-configuration ON and configure at least one
+          MFA method (SMS or software token).
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa.html
+  - id: CR-AWS-COGNITO-007
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool has MFA available for users
+    description: The user pool's MfaConfiguration is ON or OPTIONAL so users can
+      protect their accounts with a second factor.
+    rationale: When MFA is turned OFF, no user can add a second factor, leaving
+      every account protected by a password alone and vulnerable to credential
+      stuffing and phishing.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_mfa_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: in
+      path: UserPool.MfaConfiguration
+      values:
+        - ON
+        - OPTIONAL
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool has MFA turned off (MfaConfiguration is OFF).
+    passMessage: Cognito user pool allows or requires MFA.
+    remediation:
+      summary: Set MFA configuration to OPTIONAL or ON.
+      steps:
+        - Enable MFA with aws cognito-idp set-user-pool-mfa-config
+          --user-pool-id <id> --mfa-configuration OPTIONAL (or ON) and configure
+          an MFA method.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa.html
+  - id: CR-AWS-COGNITO-008
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool enforces advanced security (threat protection)
+    description: The user pool's UserPoolAddOns.AdvancedSecurityMode is set to
+      ENFORCED so compromised-credential and adaptive-authentication protections
+      are active.
+    rationale: Without enforced advanced security, Cognito does not block sign-ins
+      with known-compromised credentials or apply adaptive risk-based
+      challenges, leaving accounts exposed to credential stuffing and account
+      takeover.
+    severity: high
+    categories:
+      - identity
+      - logging
+    source:
+      engine: prowler
+      id: cognito_user_pool_advanced_security_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: equals
+      path: UserPool.UserPoolAddOns.AdvancedSecurityMode
+      value: ENFORCED
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool does not enforce advanced security (threat
+      protection is OFF, AUDIT, or unconfigured).
+    passMessage: Cognito user pool enforces advanced security (threat protection).
+    remediation:
+      summary: Set the advanced security mode to ENFORCED.
+      steps:
+        - Enable threat protection with aws cognito-idp update-user-pool
+          --user-pool-id <id> --user-pool-add-ons AdvancedSecurityMode=ENFORCED.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-settings-advanced-security.html
+  - id: CR-AWS-COGNITO-009
+    version: 1.0.0
+    provider: aws
+    service: cognito
+    title: Cognito user pool has deletion protection enabled
+    description: The user pool's DeletionProtection is set to ACTIVE so the pool
+      cannot be accidentally or maliciously deleted.
+    rationale: A user pool without deletion protection can be removed in a single
+      API call, destroying all user identities and immediately breaking
+      authentication for every application that depends on it.
+    severity: medium
+    categories:
+      - resilience
+      - identity
+    source:
+      engine: prowler
+      id: cognito_user_pool_deletion_protection_enabled
+      license: Apache-2.0
+    collector: aws.cognito.describe_user_pool
+    resourceIdField: $resourceKey
+    resourceNameField: UserPool.Name
+    passWhen:
+      op: equals
+      path: UserPool.DeletionProtection
+      value: ACTIVE
+    onError:
+      - contains: ResourceNotFoundException
+        status: not_applicable
+        message: User pool no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Cognito user pool does not have deletion protection enabled.
+    passMessage: Cognito user pool has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the user pool.
+      steps:
+        - Turn on deletion protection with aws cognito-idp update-user-pool
+          --user-pool-id <id> --deletion-protection ACTIVE.
+      verifyCommand: aws cognito-idp describe-user-pool --user-pool-id <id> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-settings-deletion-protection.html

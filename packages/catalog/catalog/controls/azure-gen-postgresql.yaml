@@ -171,3 +171,425 @@ controls:
           - 4.3.8
     references:
       - https://learn.microsoft.com/azure/postgresql/single-server/concepts-infrastructure-double-encryption
+  - id: CR-AZURE-POSTGRESQL-150
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server enforces SSL connections
+    description: Verifies each PostgreSQL Flexible Server has the
+      require_secure_transport server parameter set to ON.
+    rationale: >
+      With require_secure_transport off, clients may connect over plaintext,
+      exposing credentials and query data to interception on the network path.
+    severity: high
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_enforce_ssl_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: require_secure_transport
+          - op: equals
+            path: value
+            value: ON
+    failMessage: PostgreSQL Flexible Server does not enforce SSL
+      (require_secure_transport is not ON).
+    passMessage: PostgreSQL Flexible Server enforces SSL connections.
+    remediation:
+      summary: Set require_secure_transport to ON.
+      steps:
+        - Ensure clients are configured to connect using TLS before enabling.
+        - Set the server parameter require_secure_transport to ON (operator
+          action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.1
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-networking-ssl-tls
+  - id: CR-AZURE-POSTGRESQL-151
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server has connection throttling enabled
+    description: Verifies each PostgreSQL Flexible Server has the
+      connection_throttle.enable parameter set to ON.
+    rationale: >
+      Connection throttling temporarily blocks a host after repeated failed
+      logins, blunting password brute-force and credential-stuffing attacks
+      against the database endpoint.
+    severity: medium
+    categories:
+      - database
+      - identity
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_connection_throttling_on
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: connection_throttle.enable
+          - op: equals
+            path: value
+            value: ON
+    failMessage: PostgreSQL Flexible Server does not have connection throttling enabled.
+    passMessage: PostgreSQL Flexible Server has connection throttling enabled.
+    remediation:
+      summary: Set connection_throttle.enable to ON.
+      steps:
+        - Set the server parameter connection_throttle.enable to ON (operator
+          action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.6
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-server-parameters
+  - id: CR-AZURE-POSTGRESQL-152
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server logs checkpoints
+    description: Verifies each PostgreSQL Flexible Server has the log_checkpoints
+      parameter set to ON.
+    rationale: >
+      Logging checkpoints provides an audit trail of write-ahead log activity
+      that supports forensic reconstruction and performance/incident analysis.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_log_checkpoints_on
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_checkpoints
+          - op: equals
+            path: value
+            value: ON
+    failMessage: PostgreSQL Flexible Server does not log checkpoints.
+    passMessage: PostgreSQL Flexible Server logs checkpoints.
+    remediation:
+      summary: Set log_checkpoints to ON.
+      steps:
+        - Set the server parameter log_checkpoints to ON (operator action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.2
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-server-parameters
+  - id: CR-AZURE-POSTGRESQL-153
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server logs connections
+    description: Verifies each PostgreSQL Flexible Server has the log_connections
+      parameter set to ON.
+    rationale: >
+      Logging successful and attempted connections records who accessed the
+      database and from where, which is essential for detecting unauthorized
+      access and for incident investigation.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_log_connections_on
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_connections
+          - op: equals
+            path: value
+            value: ON
+    failMessage: PostgreSQL Flexible Server does not log connections.
+    passMessage: PostgreSQL Flexible Server logs connections.
+    remediation:
+      summary: Set log_connections to ON.
+      steps:
+        - Set the server parameter log_connections to ON (operator action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.3
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-server-parameters
+  - id: CR-AZURE-POSTGRESQL-154
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server logs disconnections
+    description: Verifies each PostgreSQL Flexible Server has the log_disconnections
+      parameter set to ON.
+    rationale: >
+      Logging disconnections captures session end and duration, completing the
+      connection audit trail and aiding detection of anomalous session patterns.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_log_disconnections_on
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_disconnections
+          - op: equals
+            path: value
+            value: ON
+    failMessage: PostgreSQL Flexible Server does not log disconnections.
+    passMessage: PostgreSQL Flexible Server logs disconnections.
+    remediation:
+      summary: Set log_disconnections to ON.
+      steps:
+        - Set the server parameter log_disconnections to ON (operator action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.4
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-server-parameters
+  - id: CR-AZURE-POSTGRESQL-155
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server log retention is at least 3 days
+    description: Verifies each PostgreSQL Flexible Server has the log_retention_days
+      parameter set to 3 or more days.
+    rationale: >
+      Retaining server logs for an adequate window ensures evidence remains
+      available for investigation; too short a retention discards logs before an
+      incident can be detected and analyzed.
+    severity: low
+    categories:
+      - database
+      - logging
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_log_retention_days_greater_3
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_parameter_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: log_retention_days
+          - op: gte
+            path: value
+            value: 3
+    failMessage: PostgreSQL Flexible Server log_retention_days is below 3 days.
+    passMessage: PostgreSQL Flexible Server retains logs for at least 3 days.
+    remediation:
+      summary: Set log_retention_days to 3 or higher.
+      steps:
+        - Set the server parameter log_retention_days to at least 3 (operator
+          action).
+      verifyCommand: az postgres flexible-server parameter list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.5
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-server-parameters
+  - id: CR-AZURE-POSTGRESQL-156
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server has geo-redundant backup enabled
+    description: Verifies each PostgreSQL Flexible Server has
+      backup.geoRedundantBackup set to Enabled.
+    rationale: >
+      Geo-redundant backups replicate backups to a paired region, allowing
+      recovery of the database if the primary region suffers a prolonged outage
+      or data loss.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_geo_redundant_backup_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: backup.geoRedundantBackup
+      value: Enabled
+    failMessage: PostgreSQL Flexible Server does not have geo-redundant backup enabled.
+    passMessage: PostgreSQL Flexible Server has geo-redundant backup enabled.
+    remediation:
+      summary: Enable geo-redundant backup on the Flexible Server.
+      steps:
+        - Geo-redundant backup must be selected at server creation; recreate the
+          server with geo-redundant backup enabled and migrate data (operator
+          action).
+      verifyCommand: az postgres flexible-server list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-backup-restore
+  - id: CR-AZURE-POSTGRESQL-157
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server has high availability enabled
+    description: Verifies each PostgreSQL Flexible Server has highAvailability.mode
+      set to a value other than Disabled.
+    rationale: >
+      Without high availability there is no standby replica, so a zone or node
+      failure causes an extended outage; zone-redundant or same-zone HA provides
+      automatic failover for critical workloads.
+    severity: medium
+    categories:
+      - database
+      - resilience
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_high_availability_enabled
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: highAvailability.mode
+        - op: notEquals
+          path: highAvailability.mode
+          value: Disabled
+    failMessage: PostgreSQL Flexible Server does not have high availability enabled.
+    passMessage: PostgreSQL Flexible Server has high availability enabled.
+    remediation:
+      summary: Enable zone-redundant or same-zone high availability.
+      steps:
+        - Enable high availability (ZoneRedundant or SameZone) on the server
+          (operator action).
+      verifyCommand: az postgres flexible-server list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-high-availability
+  - id: CR-AZURE-POSTGRESQL-158
+    version: 1.0.0
+    provider: azure
+    service: postgresql
+    title: PostgreSQL Flexible Server does not allow access from all Azure services
+    description: Verifies no firewall rule on the Flexible Server permits access
+      from all Azure services (the 0.0.0.0 to 0.0.0.0 catch-all rule).
+    rationale: >
+      A firewall rule spanning 0.0.0.0 to 0.0.0.0 permits connections from any
+      Azure resource in any tenant, dramatically widening the network attack
+      surface beyond the account's own workloads.
+    severity: high
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: postgresql_flexible_server_allow_access_services_disabled
+      license: Apache-2.0
+    collector: azure.postgresql.flexible_firewall_rule_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: startIpAddress
+            value: 0.0.0.0
+          - op: equals
+            path: endIpAddress
+            value: 0.0.0.0
+    failMessage: PostgreSQL Flexible Server allows access from all Azure services.
+    passMessage: PostgreSQL Flexible Server does not allow access from all Azure services.
+    remediation:
+      summary: Remove the allow-all-Azure-services firewall rule.
+      steps:
+        - Delete the firewall rule with range 0.0.0.0 to 0.0.0.0 (operator
+          action).
+        - Replace it with specific client IP ranges or private access.
+      verifyCommand: az postgres flexible-server firewall-rule list --ids <server-id>
+        --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.3.7
+    references:
+      - https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-firewall-rules

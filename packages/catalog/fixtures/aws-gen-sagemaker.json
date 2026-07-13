@@ -318,5 +318,354 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-006",
+    "cases": [
+      {
+        "name": "pass network isolation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-secure",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-secure",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-secure",
+              "TrainingJobStatus": "Completed",
+              "EnableNetworkIsolation": true,
+              "EnableInterContainerTrafficEncryption": true,
+              "VpcConfig": {
+                "SecurityGroupIds": ["sg-0123456789abcdef0"],
+                "Subnets": ["subnet-0a1b2c3d"]
+              },
+              "ResourceConfig": {
+                "InstanceType": "ml.m5.large",
+                "InstanceCount": 1,
+                "VolumeSizeInGB": 30,
+                "VolumeKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+              },
+              "OutputDataConfig": {
+                "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                "S3OutputPath": "s3://my-bucket/output/"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail network isolation absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-open",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-open",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-open",
+              "TrainingJobStatus": "Completed",
+              "EnableInterContainerTrafficEncryption": false,
+              "ResourceConfig": {
+                "InstanceType": "ml.m5.large",
+                "InstanceCount": 1,
+                "VolumeSizeInGB": 30
+              },
+              "OutputDataConfig": {
+                "S3OutputPath": "s3://my-bucket/output/"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not_applicable deleted job",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-gone",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFound) when calling the DescribeTrainingJob operation: Requested resource not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-007",
+    "cases": [
+      {
+        "name": "pass intercontainer encryption enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-secure",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-secure",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-secure",
+              "TrainingJobStatus": "Completed",
+              "EnableNetworkIsolation": true,
+              "EnableInterContainerTrafficEncryption": true,
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail intercontainer encryption false",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-plain",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-plain",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-plain",
+              "TrainingJobStatus": "Completed",
+              "EnableNetworkIsolation": false,
+              "EnableInterContainerTrafficEncryption": false,
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-008",
+    "cases": [
+      {
+        "name": "pass volume and output kms set",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-secure",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-secure",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-secure",
+              "TrainingJobStatus": "Completed",
+              "ResourceConfig": {
+                "InstanceType": "ml.m5.large",
+                "InstanceCount": 1,
+                "VolumeSizeInGB": 30,
+                "VolumeKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+              },
+              "OutputDataConfig": {
+                "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                "S3OutputPath": "s3://my-bucket/output/"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail output kms missing",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-partial",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-partial",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-partial",
+              "TrainingJobStatus": "Completed",
+              "ResourceConfig": {
+                "InstanceType": "ml.m5.large",
+                "InstanceCount": 1,
+                "VolumeSizeInGB": 30,
+                "VolumeKmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+              },
+              "OutputDataConfig": {
+                "S3OutputPath": "s3://my-bucket/output/"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-009",
+    "cases": [
+      {
+        "name": "pass vpc with subnet",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-vpc",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-vpc",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-vpc",
+              "TrainingJobStatus": "Completed",
+              "VpcConfig": {
+                "SecurityGroupIds": ["sg-0123456789abcdef0"],
+                "Subnets": ["subnet-0a1b2c3d", "subnet-0e1f2a3b"]
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no vpc config",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_training_job",
+            "region": "us-east-1",
+            "resourceKey": "job-novpc",
+            "exitCode": 0,
+            "output": {
+              "TrainingJobName": "job-novpc",
+              "TrainingJobArn": "arn:aws:sagemaker:us-east-1:111122223333:training-job/job-novpc",
+              "TrainingJobStatus": "Completed",
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-010",
+    "cases": [
+      {
+        "name": "pass model network isolation enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_model",
+            "region": "us-east-1",
+            "resourceKey": "model-secure",
+            "exitCode": 0,
+            "output": {
+              "ModelName": "model-secure",
+              "ModelArn": "arn:aws:sagemaker:us-east-1:111122223333:model/model-secure",
+              "ExecutionRoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "EnableNetworkIsolation": true,
+              "PrimaryContainer": {
+                "Image": "111122223333.dkr.ecr.us-east-1.amazonaws.com/model:latest",
+                "ModelDataUrl": "s3://my-bucket/model.tar.gz"
+              },
+              "VpcConfig": {
+                "SecurityGroupIds": ["sg-0123456789abcdef0"],
+                "Subnets": ["subnet-0a1b2c3d"]
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail model network isolation absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_model",
+            "region": "us-east-1",
+            "resourceKey": "model-open",
+            "exitCode": 0,
+            "output": {
+              "ModelName": "model-open",
+              "ModelArn": "arn:aws:sagemaker:us-east-1:111122223333:model/model-open",
+              "ExecutionRoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "PrimaryContainer": {
+                "Image": "111122223333.dkr.ecr.us-east-1.amazonaws.com/model:latest",
+                "ModelDataUrl": "s3://my-bucket/model.tar.gz"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "not_applicable deleted model",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_model",
+            "region": "us-east-1",
+            "resourceKey": "model-gone",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFound) when calling the DescribeModel operation: Could not find model \"model-gone\"."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-SAGEMAKER-011",
+    "cases": [
+      {
+        "name": "pass model vpc with subnet",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_model",
+            "region": "us-east-1",
+            "resourceKey": "model-vpc",
+            "exitCode": 0,
+            "output": {
+              "ModelName": "model-vpc",
+              "ModelArn": "arn:aws:sagemaker:us-east-1:111122223333:model/model-vpc",
+              "ExecutionRoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "EnableNetworkIsolation": true,
+              "VpcConfig": {
+                "SecurityGroupIds": ["sg-0123456789abcdef0"],
+                "Subnets": ["subnet-0a1b2c3d"]
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail model no vpc config",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.sagemaker.describe_model",
+            "region": "us-east-1",
+            "resourceKey": "model-novpc",
+            "exitCode": 0,
+            "output": {
+              "ModelName": "model-novpc",
+              "ModelArn": "arn:aws:sagemaker:us-east-1:111122223333:model/model-novpc",
+              "ExecutionRoleArn": "arn:aws:iam::111122223333:role/SageMakerRole",
+              "EnableNetworkIsolation": false,
+              "PrimaryContainer": {
+                "Image": "111122223333.dkr.ecr.us-east-1.amazonaws.com/model:latest",
+                "ModelDataUrl": "s3://my-bucket/model.tar.gz"
+              },
+              "CreationTime": "2026-01-10T12:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

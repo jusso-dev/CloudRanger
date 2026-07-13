@@ -1,0 +1,253 @@
+[
+  {
+    "controlId": "CR-AWS-DYNAMODB-002",
+    "cases": [
+      {
+        "name": "pass kms sse enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "orders",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "orders",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/orders",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": true,
+                "BillingModeSummary": {
+                  "BillingMode": "PAY_PER_REQUEST"
+                },
+                "SSEDescription": {
+                  "Status": "ENABLED",
+                  "SSEType": "KMS",
+                  "KMSMasterKeyArn": "arn:aws:kms:us-east-1:111122223333:key/abcd-1234"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail default aws-owned key (no SSEDescription)",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "sessions",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "sessions",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/sessions",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": false,
+                "BillingModeSummary": {
+                  "BillingMode": "PROVISIONED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DYNAMODB-003",
+    "cases": [
+      {
+        "name": "pass deletion protection on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "orders",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "orders",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/orders",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": true,
+                "BillingModeSummary": {
+                  "BillingMode": "PAY_PER_REQUEST"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail deletion protection off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "sessions",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "sessions",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/sessions",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": false,
+                "BillingModeSummary": {
+                  "BillingMode": "PROVISIONED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DYNAMODB-004",
+    "cases": [
+      {
+        "name": "pass on-demand",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "orders",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "orders",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/orders",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": true,
+                "BillingModeSummary": {
+                  "BillingMode": "PAY_PER_REQUEST"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail provisioned",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.describe_table",
+            "region": "us-east-1",
+            "resourceKey": "sessions",
+            "exitCode": 0,
+            "output": {
+              "Table": {
+                "TableName": "sessions",
+                "TableArn": "arn:aws:dynamodb:us-east-1:111122223333:table/sessions",
+                "TableStatus": "ACTIVE",
+                "DeletionProtectionEnabled": true,
+                "BillingModeSummary": {
+                  "BillingMode": "PROVISIONED"
+                },
+                "ProvisionedThroughput": {
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-DYNAMODB-005",
+    "cases": [
+      {
+        "name": "pass policy scoped to specific account",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.get_resource_policy",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:dynamodb:us-east-1:111122223333:table/orders",
+            "exitCode": 0,
+            "output": {
+              "Policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Sid": "TrustedAccount",
+                    "Effect": "Allow",
+                    "Principal": {
+                      "AWS": "arn:aws:iam::444455556666:root"
+                    },
+                    "Action": "dynamodb:GetItem",
+                    "Resource": "arn:aws:dynamodb:us-east-1:111122223333:table/orders"
+                  }
+                ]
+              },
+              "RevisionId": "1"
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail wildcard principal",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.get_resource_policy",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:dynamodb:us-east-1:111122223333:table/public",
+            "exitCode": 0,
+            "output": {
+              "Policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Sid": "OpenToAll",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "dynamodb:GetItem",
+                    "Resource": "arn:aws:dynamodb:us-east-1:111122223333:table/public"
+                  }
+                ]
+              },
+              "RevisionId": "2"
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass no policy attached",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.get_resource_policy",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:dynamodb:us-east-1:111122223333:table/nopolicy",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (PolicyNotFoundException) when calling the GetResourcePolicy operation: No resource policy exists for the specified resource."
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.dynamodb.get_resource_policy",
+            "region": "us-east-1",
+            "resourceKey": "arn:aws:dynamodb:us-east-1:111122223333:table/denied",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the GetResourcePolicy operation: User is not authorized to perform dynamodb:GetResourcePolicy"
+          }
+        ]
+      }
+    ]
+  }
+]

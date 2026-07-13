@@ -322,5 +322,414 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-150",
+    "cases": [
+      {
+        "name": "Arm plan Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/Arm",
+                  "name": "Arm",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                },
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/VirtualMachines",
+                  "name": "VirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Arm plan Free fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/Arm",
+                  "name": "Arm",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-151",
+    "cases": [
+      {
+        "name": "Dns plan Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/Dns",
+                  "name": "Dns",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Dns plan absent fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/VirtualMachines",
+                  "name": "VirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-152",
+    "cases": [
+      {
+        "name": "OpenSourceRelationalDatabases Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/OpenSourceRelationalDatabases",
+                  "name": "OpenSourceRelationalDatabases",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "OpenSourceRelationalDatabases Free fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/OpenSourceRelationalDatabases",
+                  "name": "OpenSourceRelationalDatabases",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-153",
+    "cases": [
+      {
+        "name": "CosmosDbs Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/CosmosDbs",
+                  "name": "CosmosDbs",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CosmosDbs Free fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/CosmosDbs",
+                  "name": "CosmosDbs",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-154",
+    "cases": [
+      {
+        "name": "MCAS enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.settings_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/MCAS",
+                "kind": "DataExportSettings",
+                "name": "MCAS",
+                "type": "Microsoft.Security/settings",
+                "enabled": true
+              },
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/WDATP",
+                "kind": "DataExportSettings",
+                "name": "WDATP",
+                "type": "Microsoft.Security/settings",
+                "enabled": true
+              },
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/Sentinel",
+                "kind": "DataExportSettings",
+                "name": "Sentinel",
+                "type": "Microsoft.Security/settings",
+                "enabled": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "MCAS disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.settings_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/MCAS",
+                "kind": "DataExportSettings",
+                "name": "MCAS",
+                "type": "Microsoft.Security/settings",
+                "enabled": false
+              },
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/WDATP",
+                "kind": "DataExportSettings",
+                "name": "WDATP",
+                "type": "Microsoft.Security/settings",
+                "enabled": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "MCAS absent fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.settings_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/Sentinel",
+                "kind": "DataExportSettings",
+                "name": "Sentinel",
+                "type": "Microsoft.Security/settings",
+                "enabled": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-155",
+    "cases": [
+      {
+        "name": "WDATP enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.settings_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/WDATP",
+                "kind": "DataExportSettings",
+                "name": "WDATP",
+                "type": "Microsoft.Security/settings",
+                "enabled": true
+              },
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/MCAS",
+                "kind": "DataExportSettings",
+                "name": "MCAS",
+                "type": "Microsoft.Security/settings",
+                "enabled": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "WDATP disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.settings_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/settings/WDATP",
+                "kind": "DataExportSettings",
+                "name": "WDATP",
+                "type": "Microsoft.Security/settings",
+                "enabled": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-156",
+    "cases": [
+      {
+        "name": "CloudPosture Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/CloudPosture",
+                  "name": "CloudPosture",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CloudPosture Free fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/CloudPosture",
+                  "name": "CloudPosture",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-DEFENDER-157",
+    "cases": [
+      {
+        "name": "SqlServerVirtualMachines Standard passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/SqlServerVirtualMachines",
+                  "name": "SqlServerVirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Standard"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "SqlServerVirtualMachines Free fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.security.pricings_list",
+            "exitCode": 0,
+            "output": {
+              "value": [
+                {
+                  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/SqlServerVirtualMachines",
+                  "name": "SqlServerVirtualMachines",
+                  "type": "Microsoft.Security/pricings",
+                  "pricingTier": "Free"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

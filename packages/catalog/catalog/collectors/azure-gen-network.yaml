@@ -1,0 +1,35 @@
+collectors:
+  - id: azure.network.list_vnets
+    provider: azure
+    service: network
+    description: >
+      All virtual networks in the subscription, including DDoS protection state
+      and each VNet's subnets with any associated NSG.
+    kind: single
+    command: az network vnet list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Reader on the subscription. Subscription-wide listing (no
+      resource group) mirrors the existing az network nsg list collector. DDoS
+      state is exposed as enableDdosProtection; each subnet carries
+      networkSecurityGroup.id only when an NSG is associated.
+  - id: azure.network.flow_log_show
+    provider: azure
+    service: network
+    description: >
+      Network Watcher flow log configuration for one network security group
+      (enabled state and retention policy).
+    kind: per_resource
+    command: az network watcher flow-log show --nsg {resource} --output json
+    regional: false
+    parent:
+      collector: azure.network.list_nsgs
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      {resource} is the full ARM id of the NSG; the resource group and region
+      are derived from the id so no separate --location is required. Returns a
+      NetworkWatcher not-found or flow-log not-found error when no flow log is
+      configured for the NSG.

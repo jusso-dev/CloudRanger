@@ -22,3 +22,30 @@ collectors:
       ingressSettings enum values are ALLOW_ALL, ALLOW_INTERNAL_ONLY,
       ALLOW_INTERNAL_AND_GCLB. ingressSettings and vpcConnector may be absent
       when never configured (absence means default ALLOW_ALL / no connector).'
+  - id: gcp.functions.get_iam_policy
+    provider: gcp
+    service: cloudfunctions
+    description: IAM policy for one Cloud Function, used to detect public
+      (allUsers/allAuthenticatedUsers) invoker bindings that make the function
+      endpoint reachable without authentication.
+    kind: per_resource
+    command: gcloud functions get-iam-policy {resource} --project {project} --format
+      json
+    regional: false
+    parent:
+      collector: gcp.functions.list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: Requires cloudfunctions.functions.getIamPolicy. Returns a standard Google
+      IAM policy object with a bindings array; each binding has role and
+      members[] (plus optional condition), alongside etag and version. A
+      publicly invokable function has allUsers or allAuthenticatedUsers in the
+      members of a binding whose role grants invocation -
+      roles/cloudfunctions.invoker for 1st gen and roles/run.invoker for 2nd gen
+      (the check is role-agnostic and flags any public member). {resource} is
+      the fully qualified function name
+      (projects/PROJECT/locations/REGION/functions/NAME) taken from the parent
+      list output, which is region-qualified so no --region flag is needed. When
+      a function has no explicit IAM policy gcloud returns an object with only
+      an etag/version and no bindings key.
