@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - name: Build release archive
+        run: >-
+          tar -czf "cloudranger-${GITHUB_REF_NAME}.tgz"
+          README.md LICENSE package.json pnpm-lock.yaml
+          apps/cli/dist apps/mcp-server/dist
+          packages/engine/dist packages/catalog/dist packages/catalog/catalog
+          packages/db/dist packages/db/drizzle
+      - name: Attest release provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: "cloudranger-${{ github.ref_name }}.tgz"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          "cloudranger-${GITHUB_REF_NAME}.tgz"
+          --verify-tag --generate-notes

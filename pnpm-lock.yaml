@@ -75,8 +75,8 @@ importers:
         specifier: ^1.17.0
         version: 1.29.0(zod@3.25.76)
       nodemailer:
-        specifier: ^7.0.5
-        version: 7.0.13
+        specifier: ^9.0.3
+        version: 9.0.3
       zod:
         specifier: ^3.25.0
         version: 3.25.76
@@ -2544,10 +2544,10 @@ packages:
       }
     engines: { node: ">=10" }
 
-  nodemailer@7.0.13:
+  nodemailer@9.0.3:
     resolution:
       {
-        integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==,
+        integrity: sha512-n+YP+NKwR5zRWa60k3GiQ6Q3B4KXCoAw40dAKeCtYn020iNN74aWK2liXIC3ZEATeGql7we3tE3t8QwhY0eskw==,
       }
     engines: { node: ">=6.0.0" }
 
@@ -4566,7 +4566,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  nodemailer@7.0.13: {}
+  nodemailer@9.0.3: {}
 
   object-assign@4.1.1: {}
 
