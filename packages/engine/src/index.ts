@@ -26,3 +26,9 @@ export {
   type FixtureCaseResult,
 } from "./fixtures.js";
 export { validateCatalogDocument, controlTemplate, type CustomDocumentResult } from "./custom.js";
+export {
+  isRetryableCollectorError,
+  runCollector,
+  type CollectorRuntimeOptions,
+  type CollectorRuntimeResult,
+} from "./collector-runtime.js";
