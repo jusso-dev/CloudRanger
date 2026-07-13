@@ -27,6 +27,7 @@ import type { CloudRangerRepository, ScanRow } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
 import { createNotificationSender } from "./notifications.js";
+import { buildScanDigest, listDestinations, sendToDestination } from "./hooks.js";
 import { authorizeTool, type CloudRangerRole } from "./authorization.js";
 
 const MAX_RECORDS_PER_SUBMIT = 200;
@@ -484,6 +485,61 @@ export function createServer(deps: ServerDeps): McpServer {
         };
       },
     ),
+  );
+
+  // ---------- agent-driven notification hooks ----------
+
+  server.registerTool(
+    "notify_destinations",
+    {
+      title: "List operator-configured notification destinations",
+      description:
+        "Destination names the agent may send scan digests to (operator allow-list from the environment). URLs are never exposed; the agent only ever selects a name.",
+      inputSchema: {},
+      annotations: readOnly,
+    },
+    audited("notify_destinations", () => ({
+      destinations: listDestinations(process.env).map(({ name, kind }) => ({ name, kind })),
+      note: "Configure with CLOUDRANGER_SLACK_WEBHOOK_URL and CLOUDRANGER_NOTIFY_WEBHOOKS (name=https://…, comma-separated). Webhook deliveries are HMAC-signed when CLOUDRANGER_NOTIFY_HMAC_SECRET is set.",
+    })),
+  );
+
+  server.registerTool(
+    "notify_scan_digest",
+    {
+      title: "Send a scan digest to an allow-listed destination",
+      description:
+        "Build a digest (summary + finding references, never evidence) from an evaluated scan and deliver it to one operator-allow-listed destination. Call after scan_evaluate when the operator should be told about the result. Emission is always an explicit action — nothing is sent automatically.",
+      inputSchema: {
+        scanId: z.string(),
+        destination: z.string().describe("A name from notify_destinations"),
+      },
+      annotations: { ...readOnly, readOnlyHint: false, openWorldHint: true },
+    },
+    audited("notify_scan_digest", async (args: { scanId: string; destination: string }) => {
+      const destination = listDestinations(process.env).find(
+        (candidate) => candidate.name === args.destination,
+      );
+      if (!destination) {
+        throw new Error(
+          `destination "${args.destination}" is not on the operator allow-list (see notify_destinations)`,
+        );
+      }
+      const scan = await store.getScan(args.scanId);
+      if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
+      if (scan.status !== "evaluated") throw new Error("scan is not evaluated yet");
+      const { findings } = await store.searchFindings({
+        provider: scan.provider,
+        scopeId: scan.scopeId,
+        state: ["open", "reopened"],
+        limit: 20,
+      });
+      const digest = buildScanDigest(scan, findings);
+      const result = await sendToDestination(destination, digest, {
+        hmacSecret: process.env.CLOUDRANGER_NOTIFY_HMAC_SECRET,
+      });
+      return { ...result, findingsIncluded: digest.topFindings.length };
+    }),
   );
 
   // ---------- imported provider-native signals ----------

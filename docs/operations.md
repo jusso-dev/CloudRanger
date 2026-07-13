@@ -100,3 +100,18 @@ validation (read-only collector allowlist, schema, parameter coherence) and
 rejects packs whose fixtures disagree with the engine — a valid signature on
 a mutating collector still fails. Installed files land in the custom catalog
 prefixed with the pack name.
+
+## Agent-driven notification hooks
+
+```
+CLOUDRANGER_SLACK_WEBHOOK_URL=https://hooks.slack.com/…      # destination "slack"
+CLOUDRANGER_NOTIFY_WEBHOOKS="soc=https://soc.example/hook"   # named generic webhooks (https only)
+CLOUDRANGER_NOTIFY_HMAC_SECRET=…                             # sign webhook bodies (x-cloudranger-signature)
+```
+
+After `scan_evaluate`, an agent may call `notify_scan_digest { scanId,
+destination }`. The agent only ever selects a destination **name** from the
+operator allow-list — URLs are never exposed to or accepted from the agent,
+so there is no SSRF surface. Digest payloads contain scan summaries and
+finding references only; raw evidence never leaves the store through
+notifications. Nothing is ever sent automatically.
