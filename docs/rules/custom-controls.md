@@ -113,6 +113,29 @@ packages/catalog/fixtures/<file>.json   # one entry per control, ≥1 pass + ≥
 cloudranger catalog test                # runs every fixture deterministically
 ```
 
+### Capturing fixtures from real output
+
+`cloudranger fixtures capture` turns real CLI output into a fixture case in
+one step — sanitised, verdict-checked, and appended to a fixture file:
+
+```
+aws iam get-account-password-policy --output json \
+  | cloudranger fixtures capture --control CR-AWS-IAM-016 --expected pass
+
+# or let the recorder run the control's own collector command:
+cloudranger fixtures capture --control CR-AWS-IAM-016 --expected pass --run
+```
+
+Before anything is written the recorder (a) sanitises account IDs, UUIDs,
+emails and public IPs to stable placeholders (rule-bearing values like
+`0.0.0.0/0` and private addresses are preserved so verdicts don't change),
+and (b) evaluates the case — if the engine's verdict disagrees with
+`--expected`, nothing is written. Raw output never touches disk. `--run` only
+executes commands that pass the read-only safety validation. Output defaults
+to `<custom-catalog>/fixtures/<control>.json`, which `cloudranger catalog
+test` picks up automatically; repo contributors point `--output` at
+`packages/catalog/fixtures/`.
+
 ## Bulk porting from Prowler
 
 `scripts/prowler-import.mjs` turns a local Prowler checkout's `metadata.json`

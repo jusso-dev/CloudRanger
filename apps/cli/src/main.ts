@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename } from "node:path";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { writeHtmlReport, writePdfReport } from "./report.js";
+import { fixturesCapture } from "./fixtures-capture.js";
 import { complianceCoverage } from "./compliance.js";
 import {
   catalogDir,
@@ -52,6 +53,11 @@ Usage:
                                         Print a custom-control YAML template
   cloudranger controls add <file.yaml>  Validate + install a custom control
   cloudranger controls dir              Print the custom catalog directory
+  cloudranger fixtures capture --control <id> --expected pass|fail|not_applicable|error
+                               [--name <case>] [--resource <id>] [--region <r>]
+                               [--resource-key <k>] [--scope <id>] [--output <file.json>]
+                               [--from-file <raw.json> | --run]   (default: reads stdin)
+                                        Sanitise real CLI output into a fixture case
   cloudranger mcp-config [--client claude-code|claude-desktop|codex]
   cloudranger db-path                   Print the database location
 
@@ -87,12 +93,53 @@ async function main(): Promise<number> {
     return 0;
   }
 
+  if (command === "fixtures" && subcommand === "capture") {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        control: { type: "string" },
+        expected: { type: "string" },
+        name: { type: "string" },
+        resource: { type: "string" },
+        region: { type: "string" },
+        "resource-key": { type: "string" },
+        scope: { type: "string" },
+        "from-file": { type: "string" },
+        run: { type: "boolean" },
+        output: { type: "string" },
+      },
+    });
+    return fixturesCapture({
+      control: values.control,
+      expected: values.expected,
+      name: values.name,
+      resource: values.resource,
+      region: values.region,
+      resourceKey: values["resource-key"],
+      scope: values.scope,
+      fromFile: values["from-file"],
+      run: values.run,
+      output: values.output,
+    });
+  }
+
   if (command === "catalog" && subcommand === "test") {
     const catalog = loadDefaultCatalog();
     let failures = 0;
     let cases = 0;
-    for (const file of readdirSync(fixturesDir()).filter((f) => f.endsWith(".json"))) {
-      const fixtures = JSON.parse(readFileSync(join(fixturesDir(), file), "utf8")) as unknown[];
+    const customFixturesDir = join(customCatalogDir(), "fixtures");
+    const fixtureFiles = [
+      ...readdirSync(fixturesDir())
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => join(fixturesDir(), f)),
+      ...(existsSync(customFixturesDir)
+        ? readdirSync(customFixturesDir)
+            .filter((f) => f.endsWith(".json"))
+            .map((f) => join(customFixturesDir, f))
+        : []),
+    ];
+    for (const file of fixtureFiles) {
+      const fixtures = JSON.parse(readFileSync(file, "utf8")) as unknown[];
       for (const raw of fixtures) {
         const fixture = fixtureFileSchema.parse(raw);
         for (const result of runFixtureFile(fixture, catalog.controls, catalog.collectors)) {

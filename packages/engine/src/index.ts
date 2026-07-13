@@ -14,6 +14,7 @@ export {
   validatePreparationCommand,
 } from "./safety.js";
 export { parseCsv, decodeBase64Csv, decodeEvidenceRecord, type CsvDecodeResult } from "./csv.js";
+export { createSanitizer, type Sanitizer } from "./sanitize.js";
 export {
   collectParamRefs,
   effectiveParameterValues,
