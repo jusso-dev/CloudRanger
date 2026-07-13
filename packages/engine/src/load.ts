@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { collectorSchema, controlSchema } from "./schema.js";
 import type { CollectorDefinition, ControlDefinition } from "./types.js";
-import { validateReadOnlyCommand } from "./safety.js";
+import { validatePreparationCommand, validateReadOnlyCommand } from "./safety.js";
 
 export interface CatalogIssue {
   file: string;
@@ -79,6 +79,16 @@ export function loadCatalog(rootDirs: string | string[]): LoadedCatalog {
         if (!safety.safe) {
           issues.push({ file, message: `${parsed.data.id}: unsafe command — ${safety.reason}` });
           continue;
+        }
+        if (parsed.data.prepareCommand) {
+          const prepSafety = validatePreparationCommand(parsed.data.prepareCommand);
+          if (!prepSafety.safe) {
+            issues.push({
+              file,
+              message: `${parsed.data.id}: unsafe prepare command — ${prepSafety.reason}`,
+            });
+            continue;
+          }
         }
         if (rootCollectorIds.has(parsed.data.id)) {
           issues.push({ file, message: `${parsed.data.id}: duplicate collector id` });

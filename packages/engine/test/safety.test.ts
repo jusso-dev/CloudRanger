@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { validateParamValue, validateReadOnlyCommand } from "../src/safety.js";
+import {
+  validateParamValue,
+  validatePreparationCommand,
+  validateReadOnlyCommand,
+} from "../src/safety.js";
 
 describe("read-only command validation", () => {
   it("accepts read-only provider commands", () => {
@@ -58,5 +62,28 @@ describe("read-only command validation", () => {
     expect(validateParamValue("x;rm")).toBe(false);
     expect(validateParamValue("$(id)")).toBe(false);
     expect(validateParamValue("")).toBe(false);
+  });
+});
+
+describe("preparation command validation", () => {
+  it("accepts only exact allow-listed preparation commands", () => {
+    expect(validatePreparationCommand("aws iam generate-credential-report")).toEqual({
+      safe: true,
+    });
+    expect(validatePreparationCommand(" aws iam generate-credential-report ").safe).toBe(true);
+  });
+
+  it("rejects everything else, including near misses and injection", () => {
+    const commands = [
+      "aws iam generate-credential-report --output json",
+      "aws iam generate-service-last-accessed-details --arn a",
+      "aws iam create-user --user-name x",
+      "aws iam generate-credential-report; rm -rf /",
+      "az ad app credential reset",
+      "",
+    ];
+    for (const command of commands) {
+      expect(validatePreparationCommand(command).safe).toBe(false);
+    }
   });
 });

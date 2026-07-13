@@ -112,3 +112,44 @@ describe("buildPlan", () => {
     expect(plan.steps.map((s) => s.collectorId)).toEqual(["aws.ec2.describe_security_groups"]);
   });
 });
+
+describe("buildPlan preparation commands", () => {
+  const prepared = (prepareCommand: string): Map<string, CollectorDefinition> =>
+    new Map([
+      [
+        "aws.iam.get_credential_report",
+        {
+          id: "aws.iam.get_credential_report",
+          provider: "aws",
+          service: "iam",
+          description: "credential report",
+          kind: "single",
+          command: "aws iam get-credential-report --output json",
+          regional: false,
+          outputFormat: "json",
+          prepareCommand,
+        },
+      ],
+    ]);
+
+  it("includes an allow-listed prepareCommand on the step", () => {
+    const plan = buildPlan(
+      [control("CR-AWS-IAM-025", "aws.iam.get_credential_report")],
+      prepared("aws iam generate-credential-report"),
+      { provider: "aws", regions: ["us-east-1"] },
+    );
+    expect(plan.steps).toHaveLength(1);
+    expect(plan.steps[0]!.prepareCommand).toBe("aws iam generate-credential-report");
+    expect(plan.instructions).toContain("prepareCommand");
+  });
+
+  it("rejects a prepareCommand outside the allowlist", () => {
+    expect(() =>
+      buildPlan(
+        [control("CR-AWS-IAM-025", "aws.iam.get_credential_report")],
+        prepared("aws iam create-user --user-name x"),
+        { provider: "aws", regions: ["us-east-1"] },
+      ),
+    ).toThrow(/prepare command failed safety validation/);
+  });
+});

@@ -1,5 +1,9 @@
 import type { CollectorDefinition, ControlDefinition, Provider } from "./types.js";
-import { validateParamValue, validateReadOnlyCommand } from "./safety.js";
+import {
+  validateParamValue,
+  validatePreparationCommand,
+  validateReadOnlyCommand,
+} from "./safety.js";
 
 /**
  * Collection plan builder. Given the controls a scan should evaluate, resolve
@@ -13,6 +17,8 @@ export interface PlanStep {
   description: string;
   /** Rendered command, or command template for per_resource steps. */
   command: string;
+  /** Allow-listed idempotent command to run once before `command`; output ignored. */
+  prepareCommand?: string;
   regional: boolean;
   region?: string;
   kind: "single" | "per_resource";
@@ -42,7 +48,7 @@ export interface CollectionPlan {
   instructions: string;
 }
 
-const PLAN_INSTRUCTIONS = `Run each step's command exactly as given using your shell. All commands are read-only (list/describe/get/show). Do not modify any command or run any mutating command. Apply each step's runtime policy: stop an attempt at timeoutMs, retry only transient/throttling/timeout failures up to maxAttempts, and use exponential backoff capped at maxBackoffMs. For regional steps, the command is already rendered per region. For per_resource steps, first look at the referenced parent step's JSON output, extract the resource identifiers at itemsPath/resourceField, then run the command once per resource substituting {resource}. Submit every attempt's final parsed JSON output via evidence_submit, including the exact error text plus exit code when a command fails. Never omit failed commands — coverage accounting depends on them.`;
+const PLAN_INSTRUCTIONS = `Run each step's command exactly as given using your shell. All commands are read-only (list/describe/get/show). Do not modify any command or run any mutating command. If a step includes prepareCommand, run it once before the main command exactly as given and ignore its output — it is an allow-listed idempotent preparation call (if the main command then reports the prepared resource is not ready yet, wait briefly and retry the main command only). Apply each step's runtime policy: stop an attempt at timeoutMs, retry only transient/throttling/timeout failures up to maxAttempts, and use exponential backoff capped at maxBackoffMs. For regional steps, the command is already rendered per region. For per_resource steps, first look at the referenced parent step's JSON output, extract the resource identifiers at itemsPath/resourceField, then run the command once per resource substituting {resource}. Submit every attempt's final parsed JSON output via evidence_submit, including the exact error text plus exit code when a command fails. Never omit failed commands — coverage accounting depends on them.`;
 
 export function buildPlan(
   controls: ControlDefinition[],
@@ -92,6 +98,14 @@ export function buildPlan(
     if (!safety.safe) {
       throw new Error(`collector ${collector.id} failed safety validation: ${safety.reason}`);
     }
+    if (collector.prepareCommand) {
+      const prepSafety = validatePreparationCommand(collector.prepareCommand);
+      if (!prepSafety.safe) {
+        throw new Error(
+          `collector ${collector.id} prepare command failed safety validation: ${prepSafety.reason}`,
+        );
+      }
+    }
     const expandRegions = collector.regional ? options.regions : [undefined];
     for (const region of expandRegions) {
       n += 1;
@@ -107,6 +121,7 @@ export function buildPlan(
         collectorId: collector.id,
         description: collector.description,
         command,
+        prepareCommand: collector.prepareCommand,
         regional: collector.regional,
         region,
         kind: collector.kind,

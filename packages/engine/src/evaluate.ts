@@ -10,6 +10,7 @@ import type {
 } from "./types.js";
 import { evaluateExpression, type ExprContext } from "./expr.js";
 import { getPath } from "./path.js";
+import { decodeEvidenceRecord } from "./csv.js";
 
 export interface EvaluateOptions {
   now?: Date;
@@ -170,6 +171,16 @@ export function evaluateControls(
     const list = byCollector.get(record.collectorId) ?? [];
     list.push(record);
     byCollector.set(record.collectorId, list);
+  }
+  // Apply declared evidence decoding (e.g. base64 CSV credential reports)
+  // once per record, before any control looks at the output.
+  for (const [collectorId, records] of byCollector) {
+    const collector = collectors.get(collectorId);
+    if (!collector?.decode) continue;
+    byCollector.set(
+      collectorId,
+      records.map((record) => decodeEvidenceRecord(collector, record)),
+    );
   }
 
   const results: EvaluationResult[] = [];

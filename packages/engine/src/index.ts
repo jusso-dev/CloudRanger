@@ -8,7 +8,12 @@ export {
   providerSchema,
   severitySchema,
 } from "./schema.js";
-export { validateReadOnlyCommand, validateParamValue } from "./safety.js";
+export {
+  validateReadOnlyCommand,
+  validateParamValue,
+  validatePreparationCommand,
+} from "./safety.js";
+export { parseCsv, decodeBase64Csv, decodeEvidenceRecord, type CsvDecodeResult } from "./csv.js";
 export { evaluateControls, type EvaluateOptions } from "./evaluate.js";
 export { findingFingerprint, evidenceHash } from "./fingerprint.js";
 export {
