@@ -2535,8 +2535,8 @@
       "title": "Security group does not allow ingress from 0.0.0.0/0 or ::/0 to Postgres TCP port 5432",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EC2-150"]
     },
     {
       "provider": "aws",
@@ -6407,8 +6407,8 @@
       "title": "Function app redirects HTTP to HTTPS",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AZURE-APP-050"]
     },
     {
       "provider": "azure",
@@ -8732,8 +8732,8 @@
       "title": "VM instance does not have a public IP address",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-GCP-COMPUTE-150"]
     },
     {
       "provider": "gcp",

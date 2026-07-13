@@ -1,0 +1,9 @@
+collectors:
+  - id: azure.app.functionapps_list
+    provider: azure
+    service: app
+    description: Function Apps in the target subscription.
+    kind: single
+    command: az functionapp list --subscription {subscription} --output json
+    regional: false
+    outputFormat: json

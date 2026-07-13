@@ -1,0 +1,185 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-150",
+    "cases": [
+      {
+        "name": "passes when PostgreSQL is private",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-private",
+                  "GroupName": "database",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 5432,
+                      "ToPort": 5432,
+                      "IpRanges": [{ "CidrIp": "10.0.0.0/16" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when PostgreSQL is public",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 0,
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-public",
+                  "GroupName": "database",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 5432,
+                      "ToPort": 5432,
+                      "IpRanges": [{ "CidrIp": "0.0.0.0/0" }],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "reports denied EC2 inventory access",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "AccessDenied: not authorized to call ec2:DescribeSecurityGroups"
+          }
+        ]
+      },
+      { "name": "does not assess without evidence", "expected": "no_results", "records": [] }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-APP-050",
+    "cases": [
+      {
+        "name": "passes with HTTPS only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.app.functionapps_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/secure-function",
+                "name": "secure-function",
+                "httpsOnly": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails when HTTP is allowed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.app.functionapps_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Web/sites/open-function",
+                "name": "open-function",
+                "httpsOnly": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "reports denied Function App inventory access",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.app.functionapps_list",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "AuthorizationFailed: not permitted to list Microsoft.Web/sites"
+          }
+        ]
+      },
+      { "name": "does not assess without evidence", "expected": "no_results", "records": [] }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-150",
+    "cases": [
+      {
+        "name": "passes for private VM",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "private-vm",
+                "networkInterfaces": [{ "name": "nic0", "networkIP": "10.0.0.5" }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails for public VM",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "public-vm",
+                "networkInterfaces": [
+                  {
+                    "name": "nic0",
+                    "networkIP": "10.0.0.6",
+                    "accessConfigs": [{ "name": "External NAT", "natIP": "34.1.2.3" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "reports denied Compute inventory access",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "PERMISSION_DENIED: compute.instances.list"
+          }
+        ]
+      },
+      { "name": "does not assess without evidence", "expected": "no_results", "records": [] }
+    ]
+  }
+]
