@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
+import { and, desc, eq } from "drizzle-orm";
 import {
   evidenceHash,
   findingFingerprint,
@@ -11,7 +12,8 @@ import {
   type Provider,
   type WorkflowState,
 } from "@cloudranger/engine";
-import { createPostgresDatabase } from "./postgres.js";
+import { scans } from "./drizzle-schema.js";
+import { createPostgresDatabase, type PostgresDatabase } from "./postgres.js";
 import type { CloudRangerRepository } from "./repository.js";
 import type {
   FindingEventRow,
@@ -39,6 +41,21 @@ function scanRow(row: any): ScanRow {
     evaluatedAt: iso(row.evaluated_at),
     coverage: row.coverage ?? undefined,
     summary: row.summary ?? undefined,
+  };
+}
+
+function typedScanRow(row: typeof scans.$inferSelect): ScanRow {
+  return {
+    id: row.id,
+    provider: row.provider as Provider,
+    scopeId: row.scopeId,
+    regions: row.regions,
+    controlIds: row.controlIds,
+    status: row.status as ScanRow["status"],
+    createdAt: row.createdAt.toISOString(),
+    evaluatedAt: row.evaluatedAt?.toISOString(),
+    coverage: row.coverage as ControlCoverage[] | undefined,
+    summary: row.summary as ScanSummary | undefined,
   };
 }
 
@@ -74,9 +91,12 @@ function findingRow(row: any): FindingRow {
 
 export class PostgresCloudRangerStore implements CloudRangerRepository {
   readonly pool: Pool;
+  readonly db: PostgresDatabase;
 
   constructor(connectionString?: string) {
-    this.pool = createPostgresDatabase(connectionString).pool;
+    const connection = createPostgresDatabase(connectionString);
+    this.pool = connection.pool;
+    this.db = connection.db;
   }
 
   async close(): Promise<void> {
@@ -91,31 +111,30 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
   }): Promise<ScanRow> {
     const id = randomUUID();
     const createdAt = new Date().toISOString();
-    await this.pool.query(
-      `INSERT INTO scans (id, provider, scope_id, regions, control_ids, status, created_at)
-       VALUES ($1,$2,$3,$4,$5,'collecting',$6)`,
-      [
-        id,
-        input.provider,
-        input.scopeId,
-        JSON.stringify(input.regions),
-        JSON.stringify(input.controlIds),
-        createdAt,
-      ],
-    );
+    await this.db.insert(scans).values({
+      id,
+      provider: input.provider,
+      scopeId: input.scopeId,
+      regions: input.regions,
+      controlIds: input.controlIds,
+      status: "collecting",
+      createdAt: new Date(createdAt),
+    });
     return (await this.getScan(id))!;
   }
 
   async getScan(id: string): Promise<ScanRow | undefined> {
-    const result = await this.pool.query("SELECT * FROM scans WHERE id = $1", [id]);
-    return result.rows[0] ? scanRow(result.rows[0]) : undefined;
+    const row = await this.db.query.scans.findFirst({ where: eq(scans.id, id) });
+    return row ? typedScanRow(row) : undefined;
   }
 
   async listScans(limit = 20): Promise<ScanRow[]> {
-    const result = await this.pool.query("SELECT * FROM scans ORDER BY created_at DESC LIMIT $1", [
-      Math.min(limit, 200),
-    ]);
-    return result.rows.map(scanRow);
+    const rows = await this.db
+      .select()
+      .from(scans)
+      .orderBy(desc(scans.createdAt))
+      .limit(Math.min(limit, 200));
+    return rows.map(typedScanRow);
   }
 
   async compareScans(baselineScanId: string, currentScanId: string): Promise<ScanComparison> {
@@ -205,10 +224,10 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
   }
 
   async cancelScan(id: string): Promise<void> {
-    await this.pool.query(
-      "UPDATE scans SET status='cancelled' WHERE id=$1 AND status='collecting'",
-      [id],
-    );
+    await this.db
+      .update(scans)
+      .set({ status: "cancelled" })
+      .where(and(eq(scans.id, id), eq(scans.status, "collecting")));
   }
 
   async addEvidence(
