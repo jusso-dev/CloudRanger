@@ -36,6 +36,16 @@ Code permission prompts), and CloudRanger never asks for anything mutating.
 Same allowlist rejects it at load; catalog tests assert every collector and
 verifyCommand is read-only. Catalog changes ship via reviewed PRs.
 
+One narrow exception exists to the read-only verb rules: a collector may
+declare a `prepareCommand`, validated against an **exact-match** allowlist
+(`engine/src/safety.ts`). The only entry is
+`aws iam generate-credential-report`, which is idempotent and only asks AWS to
+(re)build its own server-side credential report — it creates, modifies, and
+deletes no operator resources. Prepare commands are re-validated at catalog
+load, custom-document validation, and plan generation; anything not an exact
+allowlist match (including the same command with extra arguments) is rejected.
+Additions to this allowlist require a threat-model update in the same PR.
+
 **T3 — Agent submits fabricated or wrong-scope evidence.**
 Deterministic evaluation makes results reproducible from stored evidence
 (hashed at ingest); the workflow prompt requires the agent to verify CLI

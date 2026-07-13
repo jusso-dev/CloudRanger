@@ -26,8 +26,11 @@ catalog directory with override semantics, and a Prowler metadata importer
    org policies. Target 100+.
 5. Fixture recorder: `cloudranger fixtures capture` — sanitise real CLI
    output into fixture cases.
-6. Credential-report support (CSV evidence type) for the full CIS 1.x IAM
-   family.
+6. ~~Credential-report support (CSV evidence type) for the full CIS 1.x IAM
+   family.~~ **Done** — engine-side `decode: base64Csv` on collectors, the
+   exact-allowlisted `prepareCommand` mechanism, and controls
+   CR-AWS-IAM-025…029 (root usage, unused keys/passwords, never-used keys,
+   dual active keys) with fixtures.
 
 ## Phase 3 — Engine depth
 

@@ -24,6 +24,18 @@ export type WorkflowState =
 /** How a collector's evidence is shaped. */
 export type CollectorKind = "single" | "per_resource";
 
+/**
+ * Declarative post-processing the engine applies to a record's parsed JSON
+ * output before evaluation. base64Csv: `contentPath` selects a base64-encoded
+ * CSV string (header row required); the decoded rows — one object per row,
+ * keyed by header names — replace the output. Raw output is what gets
+ * persisted; decoding happens only on the evaluation path.
+ */
+export interface EvidenceDecode {
+  type: "base64Csv";
+  contentPath: string;
+}
+
 export interface CollectorDefinition {
   /** Stable ID, e.g. "aws.s3.list_buckets". */
   id: string;
@@ -52,6 +64,15 @@ export interface CollectorDefinition {
   };
   /** Output format produced by the command. Only JSON is evaluated. */
   outputFormat: "json";
+  /** Engine-side decoding applied to the output before evaluation. */
+  decode?: EvidenceDecode;
+  /**
+   * Optional idempotent preparation command the agent runs once before the
+   * main command, ignoring its output (e.g. `aws iam generate-credential-report`
+   * before `get-credential-report`). Must be on the exact-match preparation
+   * allowlist (see safety.ts) — the read-only verb rules alone do not admit it.
+   */
+  prepareCommand?: string;
   /** Maximum wall-clock time for one attempt. */
   timeoutMs?: number;
   /** Maximum number of attempts for transient provider failures. */

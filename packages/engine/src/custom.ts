@@ -1,7 +1,7 @@
 import { parse as parseYaml } from "yaml";
 import { collectorSchema, controlSchema } from "./schema.js";
 import type { CollectorDefinition, ControlDefinition } from "./types.js";
-import { validateReadOnlyCommand } from "./safety.js";
+import { validatePreparationCommand, validateReadOnlyCommand } from "./safety.js";
 
 /**
  * Validate a standalone catalog YAML document (as authored by an operator or
@@ -52,6 +52,13 @@ export function validateCatalogDocument(
     if (!safety.safe) {
       errors.push(`collector ${parsed.data.id}: unsafe command — ${safety.reason}`);
       continue;
+    }
+    if (parsed.data.prepareCommand) {
+      const prepSafety = validatePreparationCommand(parsed.data.prepareCommand);
+      if (!prepSafety.safe) {
+        errors.push(`collector ${parsed.data.id}: unsafe prepare command — ${prepSafety.reason}`);
+        continue;
+      }
     }
     collectors.push(parsed.data as CollectorDefinition);
   }

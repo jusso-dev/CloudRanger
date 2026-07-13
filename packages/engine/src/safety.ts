@@ -70,6 +70,25 @@ export function validateReadOnlyCommand(command: string): CommandSafetyResult {
 }
 
 /**
+ * Exact-match allowlist of idempotent preparation commands. These do not pass
+ * the read-only verb rules but mutate nothing an operator cares about:
+ * generate-credential-report only (re)builds AWS's own server-side report so
+ * the subsequent get-credential-report has something to return. Additions
+ * require a threat-model update.
+ */
+const PREPARATION_COMMANDS = new Set(["aws iam generate-credential-report"]);
+
+export function validatePreparationCommand(command: string): CommandSafetyResult {
+  if (SHELL_METACHARACTERS.test(command)) {
+    return { safe: false, reason: "preparation command contains shell metacharacters" };
+  }
+  if (!PREPARATION_COMMANDS.has(command.trim())) {
+    return { safe: false, reason: "preparation command is not on the exact-match allowlist" };
+  }
+  return { safe: true };
+}
+
+/**
  * Validate a parameter value substituted into a command placeholder.
  * Region names, account IDs, resource names — strict charset, no spaces.
  */

@@ -14,9 +14,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-020"
-      ]
+      "controlIds": ["CR-AWS-IAM-020"]
     },
     {
       "provider": "aws",
@@ -77,9 +75,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ACM-003"
-      ]
+      "controlIds": ["CR-AWS-ACM-003"]
     },
     {
       "provider": "aws",
@@ -89,9 +85,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ACM-001"
-      ]
+      "controlIds": ["CR-AWS-ACM-001"]
     },
     {
       "provider": "aws",
@@ -101,10 +95,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ACM-002",
-        "CR-AWS-ACM-004"
-      ]
+      "controlIds": ["CR-AWS-ACM-002", "CR-AWS-ACM-004"]
     },
     {
       "provider": "aws",
@@ -144,9 +135,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-APIGATEWAY-006"
-      ]
+      "controlIds": ["CR-AWS-APIGATEWAY-006"]
     },
     {
       "provider": "aws",
@@ -156,10 +145,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-APIGATEWAY-002",
-        "CR-AWS-APIGATEWAY-004"
-      ]
+      "controlIds": ["CR-AWS-APIGATEWAY-002", "CR-AWS-APIGATEWAY-004"]
     },
     {
       "provider": "aws",
@@ -169,9 +155,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-APIGATEWAY-001"
-      ]
+      "controlIds": ["CR-AWS-APIGATEWAY-001"]
     },
     {
       "provider": "aws",
@@ -211,9 +195,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-APIGATEWAY-005"
-      ]
+      "controlIds": ["CR-AWS-APIGATEWAY-005"]
     },
     {
       "provider": "aws",
@@ -223,9 +205,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-APIGATEWAY-003"
-      ]
+      "controlIds": ["CR-AWS-APIGATEWAY-003"]
     },
     {
       "provider": "aws",
@@ -315,10 +295,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ATHENA-002",
-        "CR-AWS-ATHENA-004"
-      ]
+      "controlIds": ["CR-AWS-ATHENA-002", "CR-AWS-ATHENA-004"]
     },
     {
       "provider": "aws",
@@ -328,9 +305,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ATHENA-001"
-      ]
+      "controlIds": ["CR-AWS-ATHENA-001"]
     },
     {
       "provider": "aws",
@@ -381,9 +356,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-AUTOSCALING-002"
-      ]
+      "controlIds": ["CR-AWS-AUTOSCALING-002"]
     },
     {
       "provider": "aws",
@@ -403,9 +376,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-AUTOSCALING-001"
-      ]
+      "controlIds": ["CR-AWS-AUTOSCALING-001"]
     },
     {
       "provider": "aws",
@@ -445,9 +416,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LAMBDA-003"
-      ]
+      "controlIds": ["CR-AWS-LAMBDA-003"]
     },
     {
       "provider": "aws",
@@ -487,9 +456,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LAMBDA-006"
-      ]
+      "controlIds": ["CR-AWS-LAMBDA-006"]
     },
     {
       "provider": "aws",
@@ -499,9 +466,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LAMBDA-001"
-      ]
+      "controlIds": ["CR-AWS-LAMBDA-001"]
     },
     {
       "provider": "aws",
@@ -521,9 +486,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LAMBDA-002"
-      ]
+      "controlIds": ["CR-AWS-LAMBDA-002"]
     },
     {
       "provider": "aws",
@@ -543,9 +506,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LAMBDA-004"
-      ]
+      "controlIds": ["CR-AWS-LAMBDA-004"]
     },
     {
       "provider": "aws",
@@ -565,9 +526,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-BACKUP-001"
-      ]
+      "controlIds": ["CR-AWS-BACKUP-001"]
     },
     {
       "provider": "aws",
@@ -587,9 +546,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-BACKUP-002"
-      ]
+      "controlIds": ["CR-AWS-BACKUP-002"]
     },
     {
       "provider": "aws",
@@ -759,9 +716,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFORMATION-002"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFORMATION-002"]
     },
     {
       "provider": "aws",
@@ -771,9 +726,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFORMATION-001"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFORMATION-001"]
     },
     {
       "provider": "aws",
@@ -783,9 +736,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-013"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-013"]
     },
     {
       "provider": "aws",
@@ -795,9 +746,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-008"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-008"]
     },
     {
       "provider": "aws",
@@ -807,9 +756,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-010"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-010"]
     },
     {
       "provider": "aws",
@@ -819,9 +766,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-006"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-006"]
     },
     {
       "provider": "aws",
@@ -831,10 +776,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-001",
-        "CR-AWS-CLOUDFRONT-002"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-001", "CR-AWS-CLOUDFRONT-002"]
     },
     {
       "provider": "aws",
@@ -854,9 +796,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-007"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-007"]
     },
     {
       "provider": "aws",
@@ -866,9 +806,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-012"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-012"]
     },
     {
       "provider": "aws",
@@ -918,11 +856,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-003",
-        "CR-AWS-CLOUDFRONT-005",
-        "CR-AWS-CLOUDFRONT-011"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-003", "CR-AWS-CLOUDFRONT-005", "CR-AWS-CLOUDFRONT-011"]
     },
     {
       "provider": "aws",
@@ -932,9 +866,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDFRONT-004"
-      ]
+      "controlIds": ["CR-AWS-CLOUDFRONT-004"]
     },
     {
       "provider": "aws",
@@ -954,9 +886,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-015"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-015"]
     },
     {
       "provider": "aws",
@@ -966,9 +896,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-011"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-011"]
     },
     {
       "provider": "aws",
@@ -988,9 +916,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-010"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-010"]
     },
     {
       "provider": "aws",
@@ -1000,9 +926,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-002"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-002"]
     },
     {
       "provider": "aws",
@@ -1012,9 +936,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-013"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-013"]
     },
     {
       "provider": "aws",
@@ -1024,9 +946,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-012"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-012"]
     },
     {
       "provider": "aws",
@@ -1036,10 +956,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-001",
-        "CR-AWS-CLOUDTRAIL-014"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-001", "CR-AWS-CLOUDTRAIL-014"]
     },
     {
       "provider": "aws",
@@ -1049,9 +966,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDTRAIL-003"
-      ]
+      "controlIds": ["CR-AWS-CLOUDTRAIL-003"]
     },
     {
       "provider": "aws",
@@ -1111,9 +1026,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDWATCH-001"
-      ]
+      "controlIds": ["CR-AWS-CLOUDWATCH-001"]
     },
     {
       "provider": "aws",
@@ -1123,9 +1036,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CLOUDWATCH-002"
-      ]
+      "controlIds": ["CR-AWS-CLOUDWATCH-002"]
     },
     {
       "provider": "aws",
@@ -1185,9 +1096,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LOGS-003"
-      ]
+      "controlIds": ["CR-AWS-LOGS-003"]
     },
     {
       "provider": "aws",
@@ -1217,9 +1126,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-LOGS-001"
-      ]
+      "controlIds": ["CR-AWS-LOGS-001"]
     },
     {
       "provider": "aws",
@@ -1349,9 +1256,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CODEBUILD-006"
-      ]
+      "controlIds": ["CR-AWS-CODEBUILD-006"]
     },
     {
       "provider": "aws",
@@ -1361,10 +1266,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CODEBUILD-002",
-        "CR-AWS-CODEBUILD-007"
-      ]
+      "controlIds": ["CR-AWS-CODEBUILD-002", "CR-AWS-CODEBUILD-007"]
     },
     {
       "provider": "aws",
@@ -1394,9 +1296,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CODEBUILD-004"
-      ]
+      "controlIds": ["CR-AWS-CODEBUILD-004"]
     },
     {
       "provider": "aws",
@@ -1406,9 +1306,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CODEBUILD-005"
-      ]
+      "controlIds": ["CR-AWS-CODEBUILD-005"]
     },
     {
       "provider": "aws",
@@ -1478,10 +1376,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-COGNITO-002",
-        "CR-AWS-COGNITO-008"
-      ]
+      "controlIds": ["CR-AWS-COGNITO-002", "CR-AWS-COGNITO-008"]
     },
     {
       "provider": "aws",
@@ -1531,9 +1426,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-COGNITO-009"
-      ]
+      "controlIds": ["CR-AWS-COGNITO-009"]
     },
     {
       "provider": "aws",
@@ -1543,11 +1436,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-COGNITO-001",
-        "CR-AWS-COGNITO-006",
-        "CR-AWS-COGNITO-007"
-      ]
+      "controlIds": ["CR-AWS-COGNITO-001", "CR-AWS-COGNITO-006", "CR-AWS-COGNITO-007"]
     },
     {
       "provider": "aws",
@@ -1567,10 +1456,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-COGNITO-003",
-        "CR-AWS-COGNITO-004"
-      ]
+      "controlIds": ["CR-AWS-COGNITO-003", "CR-AWS-COGNITO-004"]
     },
     {
       "provider": "aws",
@@ -1600,9 +1486,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-COGNITO-005"
-      ]
+      "controlIds": ["CR-AWS-COGNITO-005"]
     },
     {
       "provider": "aws",
@@ -1652,9 +1536,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-CONFIG-001"
-      ]
+      "controlIds": ["CR-AWS-CONFIG-001"]
     },
     {
       "provider": "aws",
@@ -1824,9 +1706,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DMS-002"
-      ]
+      "controlIds": ["CR-AWS-DMS-002"]
     },
     {
       "provider": "aws",
@@ -1836,9 +1716,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DMS-003"
-      ]
+      "controlIds": ["CR-AWS-DMS-003"]
     },
     {
       "provider": "aws",
@@ -1848,9 +1726,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DMS-001"
-      ]
+      "controlIds": ["CR-AWS-DMS-001"]
     },
     {
       "provider": "aws",
@@ -1890,9 +1766,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DOCDB-003"
-      ]
+      "controlIds": ["CR-AWS-DOCDB-003"]
     },
     {
       "provider": "aws",
@@ -1902,9 +1776,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DOCDB-002"
-      ]
+      "controlIds": ["CR-AWS-DOCDB-002"]
     },
     {
       "provider": "aws",
@@ -1934,9 +1806,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DOCDB-001"
-      ]
+      "controlIds": ["CR-AWS-DOCDB-001"]
     },
     {
       "provider": "aws",
@@ -1986,9 +1856,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DYNAMODB-004"
-      ]
+      "controlIds": ["CR-AWS-DYNAMODB-004"]
     },
     {
       "provider": "aws",
@@ -1998,9 +1866,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DYNAMODB-005"
-      ]
+      "controlIds": ["CR-AWS-DYNAMODB-005"]
     },
     {
       "provider": "aws",
@@ -2010,9 +1876,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DYNAMODB-003"
-      ]
+      "controlIds": ["CR-AWS-DYNAMODB-003"]
     },
     {
       "provider": "aws",
@@ -2032,9 +1896,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DYNAMODB-002"
-      ]
+      "controlIds": ["CR-AWS-DYNAMODB-002"]
     },
     {
       "provider": "aws",
@@ -2044,9 +1906,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-DYNAMODB-001"
-      ]
+      "controlIds": ["CR-AWS-DYNAMODB-001"]
     },
     {
       "provider": "aws",
@@ -2066,9 +1926,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-049"
-      ]
+      "controlIds": ["CR-AWS-EC2-049"]
     },
     {
       "provider": "aws",
@@ -2088,10 +1946,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-003",
-        "CR-AWS-EC2-046"
-      ]
+      "controlIds": ["CR-AWS-EC2-003", "CR-AWS-EC2-046"]
     },
     {
       "provider": "aws",
@@ -2101,9 +1956,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-048"
-      ]
+      "controlIds": ["CR-AWS-EC2-048"]
     },
     {
       "provider": "aws",
@@ -2123,10 +1976,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-007",
-        "CR-AWS-EC2-047"
-      ]
+      "controlIds": ["CR-AWS-EC2-007", "CR-AWS-EC2-047"]
     },
     {
       "provider": "aws",
@@ -2136,10 +1986,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-006",
-        "CR-AWS-EC2-045"
-      ]
+      "controlIds": ["CR-AWS-EC2-006", "CR-AWS-EC2-045"]
     },
     {
       "provider": "aws",
@@ -2179,10 +2026,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-028",
-        "CR-AWS-EC2-151"
-      ]
+      "controlIds": ["CR-AWS-EC2-028", "CR-AWS-EC2-151"]
     },
     {
       "provider": "aws",
@@ -2202,9 +2046,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-043"
-      ]
+      "controlIds": ["CR-AWS-EC2-043"]
     },
     {
       "provider": "aws",
@@ -2214,12 +2056,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-004",
-        "CR-AWS-EC2-040",
-        "CR-AWS-EC2-041",
-        "CR-AWS-EC2-154"
-      ]
+      "controlIds": ["CR-AWS-EC2-004", "CR-AWS-EC2-040", "CR-AWS-EC2-041", "CR-AWS-EC2-154"]
     },
     {
       "provider": "aws",
@@ -2229,9 +2066,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-152"
-      ]
+      "controlIds": ["CR-AWS-EC2-152"]
     },
     {
       "provider": "aws",
@@ -2241,9 +2076,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-050"
-      ]
+      "controlIds": ["CR-AWS-EC2-050"]
     },
     {
       "provider": "aws",
@@ -2253,9 +2086,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-153"
-      ]
+      "controlIds": ["CR-AWS-EC2-153"]
     },
     {
       "provider": "aws",
@@ -2445,9 +2276,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-044"
-      ]
+      "controlIds": ["CR-AWS-EC2-044"]
     },
     {
       "provider": "aws",
@@ -2457,10 +2286,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-008",
-        "CR-AWS-EC2-042"
-      ]
+      "controlIds": ["CR-AWS-EC2-008", "CR-AWS-EC2-042"]
     },
     {
       "provider": "aws",
@@ -2530,9 +2356,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-030"
-      ]
+      "controlIds": ["CR-AWS-EC2-030"]
     },
     {
       "provider": "aws",
@@ -2542,9 +2366,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-023"
-      ]
+      "controlIds": ["CR-AWS-EC2-023"]
     },
     {
       "provider": "aws",
@@ -2554,9 +2376,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-024"
-      ]
+      "controlIds": ["CR-AWS-EC2-024"]
     },
     {
       "provider": "aws",
@@ -2586,9 +2406,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-025"
-      ]
+      "controlIds": ["CR-AWS-EC2-025"]
     },
     {
       "provider": "aws",
@@ -2608,9 +2426,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-026"
-      ]
+      "controlIds": ["CR-AWS-EC2-026"]
     },
     {
       "provider": "aws",
@@ -2620,9 +2436,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-001"
-      ]
+      "controlIds": ["CR-AWS-EC2-001"]
     },
     {
       "provider": "aws",
@@ -2632,9 +2446,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-002"
-      ]
+      "controlIds": ["CR-AWS-EC2-002"]
     },
     {
       "provider": "aws",
@@ -2724,9 +2536,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-150"
-      ]
+      "controlIds": ["CR-AWS-EC2-150"]
     },
     {
       "provider": "aws",
@@ -2776,10 +2586,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-005",
-        "CR-AWS-EC2-022"
-      ]
+      "controlIds": ["CR-AWS-EC2-005", "CR-AWS-EC2-022"]
     },
     {
       "provider": "aws",
@@ -2839,9 +2646,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECR-004"
-      ]
+      "controlIds": ["CR-AWS-ECR-004"]
     },
     {
       "provider": "aws",
@@ -2851,11 +2656,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECR-003",
-        "CR-AWS-ECR-005",
-        "CR-AWS-ECR-006"
-      ]
+      "controlIds": ["CR-AWS-ECR-003", "CR-AWS-ECR-005", "CR-AWS-ECR-006"]
     },
     {
       "provider": "aws",
@@ -2865,9 +2666,7 @@
       "severity": "medium",
       "deprecated": true,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECR-001"
-      ],
+      "controlIds": ["CR-AWS-ECR-001"],
       "reason": "Prowler metadata marks this check as deprecated."
     },
     {
@@ -2948,9 +2747,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECS-005"
-      ]
+      "controlIds": ["CR-AWS-ECS-005"]
     },
     {
       "provider": "aws",
@@ -2960,9 +2757,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECS-002"
-      ]
+      "controlIds": ["CR-AWS-ECS-002"]
     },
     {
       "provider": "aws",
@@ -2982,9 +2777,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECS-007"
-      ]
+      "controlIds": ["CR-AWS-ECS-007"]
     },
     {
       "provider": "aws",
@@ -2994,9 +2787,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ECS-001"
-      ]
+      "controlIds": ["CR-AWS-ECS-001"]
     },
     {
       "provider": "aws",
@@ -3016,9 +2807,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EFS-056"
-      ]
+      "controlIds": ["CR-AWS-EFS-056"]
     },
     {
       "provider": "aws",
@@ -3028,9 +2817,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EFS-055"
-      ]
+      "controlIds": ["CR-AWS-EFS-055"]
     },
     {
       "provider": "aws",
@@ -3040,11 +2827,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EFS-001",
-        "CR-AWS-EFS-050",
-        "CR-AWS-EFS-051"
-      ]
+      "controlIds": ["CR-AWS-EFS-001", "CR-AWS-EFS-050", "CR-AWS-EFS-051"]
     },
     {
       "provider": "aws",
@@ -3054,9 +2837,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EFS-052"
-      ]
+      "controlIds": ["CR-AWS-EFS-052"]
     },
     {
       "provider": "aws",
@@ -3086,10 +2867,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EFS-053",
-        "CR-AWS-EFS-054"
-      ]
+      "controlIds": ["CR-AWS-EFS-053", "CR-AWS-EFS-054"]
     },
     {
       "provider": "aws",
@@ -3109,9 +2887,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EKS-006"
-      ]
+      "controlIds": ["CR-AWS-EKS-006"]
     },
     {
       "provider": "aws",
@@ -3141,9 +2917,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EKS-002"
-      ]
+      "controlIds": ["CR-AWS-EKS-002"]
     },
     {
       "provider": "aws",
@@ -3153,9 +2927,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EKS-007"
-      ]
+      "controlIds": ["CR-AWS-EKS-007"]
     },
     {
       "provider": "aws",
@@ -3165,10 +2937,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EKS-004",
-        "CR-AWS-EKS-005"
-      ]
+      "controlIds": ["CR-AWS-EKS-004", "CR-AWS-EKS-005"]
     },
     {
       "provider": "aws",
@@ -3188,9 +2957,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELASTICACHE-003"
-      ]
+      "controlIds": ["CR-AWS-ELASTICACHE-003"]
     },
     {
       "provider": "aws",
@@ -3210,9 +2977,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELASTICACHE-006"
-      ]
+      "controlIds": ["CR-AWS-ELASTICACHE-006"]
     },
     {
       "provider": "aws",
@@ -3222,9 +2987,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELASTICACHE-002"
-      ]
+      "controlIds": ["CR-AWS-ELASTICACHE-002"]
     },
     {
       "provider": "aws",
@@ -3234,9 +2997,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELASTICACHE-004"
-      ]
+      "controlIds": ["CR-AWS-ELASTICACHE-004"]
     },
     {
       "provider": "aws",
@@ -3246,9 +3007,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELASTICACHE-001"
-      ]
+      "controlIds": ["CR-AWS-ELASTICACHE-001"]
     },
     {
       "provider": "aws",
@@ -3408,9 +3167,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELB-004"
-      ]
+      "controlIds": ["CR-AWS-ELB-004"]
     },
     {
       "provider": "aws",
@@ -3420,9 +3177,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELB-005"
-      ]
+      "controlIds": ["CR-AWS-ELB-005"]
     },
     {
       "provider": "aws",
@@ -3442,9 +3197,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELB-008"
-      ]
+      "controlIds": ["CR-AWS-ELB-008"]
     },
     {
       "provider": "aws",
@@ -3474,9 +3227,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELB-003"
-      ]
+      "controlIds": ["CR-AWS-ELB-003"]
     },
     {
       "provider": "aws",
@@ -3506,10 +3257,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ELB-006",
-        "CR-AWS-ELB-007"
-      ]
+      "controlIds": ["CR-AWS-ELB-006", "CR-AWS-ELB-007"]
     },
     {
       "provider": "aws",
@@ -3519,10 +3267,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EMR-001",
-        "CR-AWS-EMR-002"
-      ]
+      "controlIds": ["CR-AWS-EMR-001", "CR-AWS-EMR-002"]
     },
     {
       "provider": "aws",
@@ -3542,9 +3287,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EMR-003"
-      ]
+      "controlIds": ["CR-AWS-EMR-003"]
     },
     {
       "provider": "aws",
@@ -3654,10 +3397,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-GLUE-002",
-        "CR-AWS-GLUE-007"
-      ]
+      "controlIds": ["CR-AWS-GLUE-002", "CR-AWS-GLUE-007"]
     },
     {
       "provider": "aws",
@@ -3667,10 +3407,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-GLUE-001",
-        "CR-AWS-GLUE-006"
-      ]
+      "controlIds": ["CR-AWS-GLUE-001", "CR-AWS-GLUE-006"]
     },
     {
       "provider": "aws",
@@ -3730,11 +3467,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-GLUE-004",
-        "CR-AWS-GLUE-008",
-        "CR-AWS-GLUE-010"
-      ]
+      "controlIds": ["CR-AWS-GLUE-004", "CR-AWS-GLUE-008", "CR-AWS-GLUE-010"]
     },
     {
       "provider": "aws",
@@ -3754,10 +3487,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-GLUE-005",
-        "CR-AWS-GLUE-011"
-      ]
+      "controlIds": ["CR-AWS-GLUE-005", "CR-AWS-GLUE-011"]
     },
     {
       "provider": "aws",
@@ -3847,9 +3577,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-GUARDDUTY-001"
-      ]
+      "controlIds": ["CR-AWS-GUARDDUTY-001"]
     },
     {
       "provider": "aws",
@@ -3899,9 +3627,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-011"
-      ]
+      "controlIds": ["CR-AWS-IAM-011"]
     },
     {
       "provider": "aws",
@@ -3910,8 +3636,8 @@
       "title": "AWS account root user has not been used in the last day",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-IAM-025"]
     },
     {
       "provider": "aws",
@@ -3981,10 +3707,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-012",
-        "CR-AWS-IAM-023"
-      ]
+      "controlIds": ["CR-AWS-IAM-012", "CR-AWS-IAM-023"]
     },
     {
       "provider": "aws",
@@ -4044,10 +3767,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-002",
-        "CR-AWS-IAM-019"
-      ]
+      "controlIds": ["CR-AWS-IAM-002", "CR-AWS-IAM-019"]
     },
     {
       "provider": "aws",
@@ -4057,9 +3777,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-015"
-      ]
+      "controlIds": ["CR-AWS-IAM-015"]
     },
     {
       "provider": "aws",
@@ -4079,10 +3797,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-003",
-        "CR-AWS-IAM-016"
-      ]
+      "controlIds": ["CR-AWS-IAM-003", "CR-AWS-IAM-016"]
     },
     {
       "provider": "aws",
@@ -4102,9 +3817,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-014"
-      ]
+      "controlIds": ["CR-AWS-IAM-014"]
     },
     {
       "provider": "aws",
@@ -4144,9 +3857,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-013"
-      ]
+      "controlIds": ["CR-AWS-IAM-013"]
     },
     {
       "provider": "aws",
@@ -4216,9 +3927,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-024"
-      ]
+      "controlIds": ["CR-AWS-IAM-024"]
     },
     {
       "provider": "aws",
@@ -4258,10 +3967,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-001",
-        "CR-AWS-IAM-018"
-      ]
+      "controlIds": ["CR-AWS-IAM-001", "CR-AWS-IAM-018"]
     },
     {
       "provider": "aws",
@@ -4271,9 +3977,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-005"
-      ]
+      "controlIds": ["CR-AWS-IAM-005"]
     },
     {
       "provider": "aws",
@@ -4293,9 +3997,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-021"
-      ]
+      "controlIds": ["CR-AWS-IAM-021"]
     },
     {
       "provider": "aws",
@@ -4324,8 +4026,8 @@
       "title": "IAM user does not have unused access keys older than 45 days",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-IAM-026"]
     },
     {
       "provider": "aws",
@@ -4344,8 +4046,8 @@
       "title": "IAM user console access is disabled, used within the configured inactivity period, or never used",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-IAM-027"]
     },
     {
       "provider": "aws",
@@ -4365,9 +4067,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-IAM-004"
-      ]
+      "controlIds": ["CR-AWS-IAM-004"]
     },
     {
       "provider": "aws",
@@ -4376,8 +4076,8 @@
       "title": "IAM user does not have active access keys that have never been used",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-IAM-028"]
     },
     {
       "provider": "aws",
@@ -4386,8 +4086,8 @@
       "title": "IAM user has at most one active access key",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-IAM-029"]
     },
     {
       "provider": "aws",
@@ -4417,10 +4117,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-INSPECTOR-001",
-        "CR-AWS-INSPECTOR-002"
-      ]
+      "controlIds": ["CR-AWS-INSPECTOR-001", "CR-AWS-INSPECTOR-002"]
     },
     {
       "provider": "aws",
@@ -4510,9 +4207,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KINESIS-003"
-      ]
+      "controlIds": ["CR-AWS-KINESIS-003"]
     },
     {
       "provider": "aws",
@@ -4522,10 +4217,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KINESIS-001",
-        "CR-AWS-KINESIS-002"
-      ]
+      "controlIds": ["CR-AWS-KINESIS-001", "CR-AWS-KINESIS-002"]
     },
     {
       "provider": "aws",
@@ -4535,9 +4227,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KMS-012"
-      ]
+      "controlIds": ["CR-AWS-KMS-012"]
     },
     {
       "provider": "aws",
@@ -4547,10 +4237,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KMS-011",
-        "CR-AWS-KMS-015"
-      ]
+      "controlIds": ["CR-AWS-KMS-011", "CR-AWS-KMS-015"]
     },
     {
       "provider": "aws",
@@ -4570,10 +4257,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KMS-001",
-        "CR-AWS-KMS-013"
-      ]
+      "controlIds": ["CR-AWS-KMS-001", "CR-AWS-KMS-013"]
     },
     {
       "provider": "aws",
@@ -4583,10 +4267,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-KMS-010",
-        "CR-AWS-KMS-014"
-      ]
+      "controlIds": ["CR-AWS-KMS-010", "CR-AWS-KMS-014"]
     },
     {
       "provider": "aws",
@@ -4646,10 +4327,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-MACIE-001",
-        "CR-AWS-MACIE-002"
-      ]
+      "controlIds": ["CR-AWS-MACIE-001", "CR-AWS-MACIE-002"]
     },
     {
       "provider": "aws",
@@ -4689,9 +4367,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-MQ-001"
-      ]
+      "controlIds": ["CR-AWS-MQ-001"]
     },
     {
       "provider": "aws",
@@ -4721,9 +4397,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-NEPTUNE-004"
-      ]
+      "controlIds": ["CR-AWS-NEPTUNE-004"]
     },
     {
       "provider": "aws",
@@ -4733,9 +4407,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-NEPTUNE-007"
-      ]
+      "controlIds": ["CR-AWS-NEPTUNE-007"]
     },
     {
       "provider": "aws",
@@ -4745,9 +4417,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-NEPTUNE-005"
-      ]
+      "controlIds": ["CR-AWS-NEPTUNE-005"]
     },
     {
       "provider": "aws",
@@ -4757,9 +4427,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-NEPTUNE-002"
-      ]
+      "controlIds": ["CR-AWS-NEPTUNE-002"]
     },
     {
       "provider": "aws",
@@ -4809,9 +4477,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-NEPTUNE-001"
-      ]
+      "controlIds": ["CR-AWS-NEPTUNE-001"]
     },
     {
       "provider": "aws",
@@ -4911,9 +4577,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-005"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-005"]
     },
     {
       "provider": "aws",
@@ -4923,9 +4587,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-006"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-006"]
     },
     {
       "provider": "aws",
@@ -4935,9 +4597,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-001"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-001"]
     },
     {
       "provider": "aws",
@@ -4967,9 +4627,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-003"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-003"]
     },
     {
       "provider": "aws",
@@ -4989,9 +4647,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-002"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-002"]
     },
     {
       "provider": "aws",
@@ -5001,9 +4657,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-007"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-007"]
     },
     {
       "provider": "aws",
@@ -5023,9 +4677,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-OPENSEARCH-004"
-      ]
+      "controlIds": ["CR-AWS-OPENSEARCH-004"]
     },
     {
       "provider": "aws",
@@ -5035,9 +4687,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-ORGANIZATIONS-001"
-      ]
+      "controlIds": ["CR-AWS-ORGANIZATIONS-001"]
     },
     {
       "provider": "aws",
@@ -5097,9 +4747,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-029"
-      ]
+      "controlIds": ["CR-AWS-RDS-029"]
     },
     {
       "provider": "aws",
@@ -5129,9 +4777,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-016"
-      ]
+      "controlIds": ["CR-AWS-RDS-016"]
     },
     {
       "provider": "aws",
@@ -5141,9 +4787,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-026"
-      ]
+      "controlIds": ["CR-AWS-RDS-026"]
     },
     {
       "provider": "aws",
@@ -5153,9 +4797,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-028"
-      ]
+      "controlIds": ["CR-AWS-RDS-028"]
     },
     {
       "provider": "aws",
@@ -5205,9 +4847,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-025"
-      ]
+      "controlIds": ["CR-AWS-RDS-025"]
     },
     {
       "provider": "aws",
@@ -5217,10 +4857,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-003",
-        "CR-AWS-RDS-022"
-      ]
+      "controlIds": ["CR-AWS-RDS-003", "CR-AWS-RDS-022"]
     },
     {
       "provider": "aws",
@@ -5230,9 +4867,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-018"
-      ]
+      "controlIds": ["CR-AWS-RDS-018"]
     },
     {
       "provider": "aws",
@@ -5242,9 +4877,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-014"
-      ]
+      "controlIds": ["CR-AWS-RDS-014"]
     },
     {
       "provider": "aws",
@@ -5274,10 +4907,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-004",
-        "CR-AWS-RDS-023"
-      ]
+      "controlIds": ["CR-AWS-RDS-004", "CR-AWS-RDS-023"]
     },
     {
       "provider": "aws",
@@ -5287,9 +4917,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-019"
-      ]
+      "controlIds": ["CR-AWS-RDS-019"]
     },
     {
       "provider": "aws",
@@ -5299,10 +4927,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-015",
-        "CR-AWS-RDS-030"
-      ]
+      "controlIds": ["CR-AWS-RDS-015", "CR-AWS-RDS-030"]
     },
     {
       "provider": "aws",
@@ -5342,9 +4967,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-011"
-      ]
+      "controlIds": ["CR-AWS-RDS-011"]
     },
     {
       "provider": "aws",
@@ -5364,9 +4987,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-012"
-      ]
+      "controlIds": ["CR-AWS-RDS-012"]
     },
     {
       "provider": "aws",
@@ -5376,10 +4997,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-005",
-        "CR-AWS-RDS-013"
-      ]
+      "controlIds": ["CR-AWS-RDS-005", "CR-AWS-RDS-013"]
     },
     {
       "provider": "aws",
@@ -5389,10 +5007,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-006",
-        "CR-AWS-RDS-024"
-      ]
+      "controlIds": ["CR-AWS-RDS-006", "CR-AWS-RDS-024"]
     },
     {
       "provider": "aws",
@@ -5402,12 +5017,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-001",
-        "CR-AWS-RDS-017",
-        "CR-AWS-RDS-021",
-        "CR-AWS-RDS-031"
-      ]
+      "controlIds": ["CR-AWS-RDS-001", "CR-AWS-RDS-017", "CR-AWS-RDS-021", "CR-AWS-RDS-031"]
     },
     {
       "provider": "aws",
@@ -5437,10 +5047,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-002",
-        "CR-AWS-RDS-020"
-      ]
+      "controlIds": ["CR-AWS-RDS-002", "CR-AWS-RDS-020"]
     },
     {
       "provider": "aws",
@@ -5470,9 +5077,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-RDS-010"
-      ]
+      "controlIds": ["CR-AWS-RDS-010"]
     },
     {
       "provider": "aws",
@@ -5482,11 +5087,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-002",
-        "CR-AWS-REDSHIFT-003",
-        "CR-AWS-REDSHIFT-008"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-002", "CR-AWS-REDSHIFT-003", "CR-AWS-REDSHIFT-008"]
     },
     {
       "provider": "aws",
@@ -5496,9 +5097,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-005"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-005"]
     },
     {
       "provider": "aws",
@@ -5508,9 +5107,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-007"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-007"]
     },
     {
       "provider": "aws",
@@ -5530,9 +5127,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-004"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-004"]
     },
     {
       "provider": "aws",
@@ -5542,9 +5137,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-009"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-009"]
     },
     {
       "provider": "aws",
@@ -5574,9 +5167,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-006"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-006"]
     },
     {
       "provider": "aws",
@@ -5586,9 +5177,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-REDSHIFT-001"
-      ]
+      "controlIds": ["CR-AWS-REDSHIFT-001"]
     },
     {
       "provider": "aws",
@@ -5668,9 +5257,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-004"
-      ]
+      "controlIds": ["CR-AWS-S3-004"]
     },
     {
       "provider": "aws",
@@ -5680,10 +5267,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-011",
-        "CR-AWS-S3-012"
-      ]
+      "controlIds": ["CR-AWS-S3-011", "CR-AWS-S3-012"]
     },
     {
       "provider": "aws",
@@ -5713,9 +5297,7 @@
       "severity": "medium",
       "deprecated": true,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-002"
-      ],
+      "controlIds": ["CR-AWS-S3-002"],
       "reason": "Prowler metadata marks this check as deprecated."
     },
     {
@@ -5726,9 +5308,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-015"
-      ]
+      "controlIds": ["CR-AWS-S3-015"]
     },
     {
       "provider": "aws",
@@ -5758,9 +5338,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-017"
-      ]
+      "controlIds": ["CR-AWS-S3-017"]
     },
     {
       "provider": "aws",
@@ -5780,9 +5358,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-016"
-      ]
+      "controlIds": ["CR-AWS-S3-016"]
     },
     {
       "provider": "aws",
@@ -5802,9 +5378,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-003"
-      ]
+      "controlIds": ["CR-AWS-S3-003"]
     },
     {
       "provider": "aws",
@@ -5864,9 +5438,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-S3-014"
-      ]
+      "controlIds": ["CR-AWS-S3-014"]
     },
     {
       "provider": "aws",
@@ -5936,9 +5508,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-010"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-010"]
     },
     {
       "provider": "aws",
@@ -5958,9 +5528,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-011"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-011"]
     },
     {
       "provider": "aws",
@@ -5970,9 +5538,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-002"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-002"]
     },
     {
       "provider": "aws",
@@ -5982,9 +5548,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-004"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-004"]
     },
     {
       "provider": "aws",
@@ -5994,9 +5558,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-003"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-003"]
     },
     {
       "provider": "aws",
@@ -6006,9 +5568,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-001"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-001"]
     },
     {
       "provider": "aws",
@@ -6018,9 +5578,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-007"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-007"]
     },
     {
       "provider": "aws",
@@ -6030,9 +5588,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-006"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-006"]
     },
     {
       "provider": "aws",
@@ -6042,9 +5598,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-008"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-008"]
     },
     {
       "provider": "aws",
@@ -6054,9 +5608,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SAGEMAKER-009"
-      ]
+      "controlIds": ["CR-AWS-SAGEMAKER-009"]
     },
     {
       "provider": "aws",
@@ -6066,9 +5618,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SECRETS-001"
-      ]
+      "controlIds": ["CR-AWS-SECRETS-001"]
     },
     {
       "provider": "aws",
@@ -6098,9 +5648,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SECRETS-100"
-      ]
+      "controlIds": ["CR-AWS-SECRETS-100"]
     },
     {
       "provider": "aws",
@@ -6110,9 +5658,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SECRETS-101"
-      ]
+      "controlIds": ["CR-AWS-SECRETS-101"]
     },
     {
       "provider": "aws",
@@ -6132,11 +5678,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SECURITYHUB-001",
-        "CR-AWS-SECURITYHUB-002",
-        "CR-AWS-SECURITYHUB-003"
-      ]
+      "controlIds": ["CR-AWS-SECURITYHUB-001", "CR-AWS-SECURITYHUB-002", "CR-AWS-SECURITYHUB-003"]
     },
     {
       "provider": "aws",
@@ -6246,9 +5788,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SNS-001"
-      ]
+      "controlIds": ["CR-AWS-SNS-001"]
     },
     {
       "provider": "aws",
@@ -6278,9 +5818,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SQS-001"
-      ]
+      "controlIds": ["CR-AWS-SQS-001"]
     },
     {
       "provider": "aws",
@@ -6310,11 +5848,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-SSM-010",
-        "CR-AWS-SSM-011",
-        "CR-AWS-SSM-012"
-      ]
+      "controlIds": ["CR-AWS-SSM-010", "CR-AWS-SSM-011", "CR-AWS-SSM-012"]
     },
     {
       "provider": "aws",
@@ -6424,9 +5958,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-021"
-      ]
+      "controlIds": ["CR-AWS-EC2-021"]
     },
     {
       "provider": "aws",
@@ -6466,9 +5998,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-029"
-      ]
+      "controlIds": ["CR-AWS-EC2-029"]
     },
     {
       "provider": "aws",
@@ -6478,11 +6008,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-VPC-050",
-        "CR-AWS-VPC-051",
-        "CR-AWS-VPC-052"
-      ]
+      "controlIds": ["CR-AWS-VPC-050", "CR-AWS-VPC-051", "CR-AWS-VPC-052"]
     },
     {
       "provider": "aws",
@@ -6512,9 +6038,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-EC2-027"
-      ]
+      "controlIds": ["CR-AWS-EC2-027"]
     },
     {
       "provider": "aws",
@@ -6644,10 +6168,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AWS-WAFV2-001",
-        "CR-AWS-WAFV2-002"
-      ]
+      "controlIds": ["CR-AWS-WAFV2-001", "CR-AWS-WAFV2-002"]
     },
     {
       "provider": "aws",
@@ -6687,9 +6208,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SEARCH-100"
-      ]
+      "controlIds": ["CR-AZURE-SEARCH-100"]
     },
     {
       "provider": "azure",
@@ -6699,9 +6218,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-150"
-      ]
+      "controlIds": ["CR-AZURE-AKS-150"]
     },
     {
       "provider": "azure",
@@ -6721,9 +6238,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-152"
-      ]
+      "controlIds": ["CR-AZURE-AKS-152"]
     },
     {
       "provider": "azure",
@@ -6733,9 +6248,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-104"
-      ]
+      "controlIds": ["CR-AZURE-AKS-104"]
     },
     {
       "provider": "azure",
@@ -6745,9 +6258,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-105"
-      ]
+      "controlIds": ["CR-AZURE-AKS-105"]
     },
     {
       "provider": "azure",
@@ -6767,9 +6278,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-151"
-      ]
+      "controlIds": ["CR-AZURE-AKS-151"]
     },
     {
       "provider": "azure",
@@ -6779,9 +6288,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-AKS-100"
-      ]
+      "controlIds": ["CR-AZURE-AKS-100"]
     },
     {
       "provider": "azure",
@@ -6801,10 +6308,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APPSERVICE-101",
-        "CR-AZURE-APPSERVICE-109"
-      ]
+      "controlIds": ["CR-AZURE-APPSERVICE-101", "CR-AZURE-APPSERVICE-109"]
     },
     {
       "provider": "azure",
@@ -6824,10 +6328,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APP-001",
-        "CR-AZURE-APPSERVICE-102"
-      ]
+      "controlIds": ["CR-AZURE-APP-001", "CR-AZURE-APPSERVICE-102"]
     },
     {
       "provider": "azure",
@@ -6877,9 +6378,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APP-003"
-      ]
+      "controlIds": ["CR-AZURE-APP-003"]
     },
     {
       "provider": "azure",
@@ -6909,9 +6408,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APP-050"
-      ]
+      "controlIds": ["CR-AZURE-APP-050"]
     },
     {
       "provider": "azure",
@@ -6991,10 +6488,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APP-002",
-        "CR-AZURE-APPSERVICE-108"
-      ]
+      "controlIds": ["CR-AZURE-APP-002", "CR-AZURE-APPSERVICE-108"]
     },
     {
       "provider": "azure",
@@ -7004,9 +6498,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APPSERVICE-100"
-      ]
+      "controlIds": ["CR-AZURE-APPSERVICE-100"]
     },
     {
       "provider": "azure",
@@ -7016,9 +6508,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APPINSIGHTS-100"
-      ]
+      "controlIds": ["CR-AZURE-APPINSIGHTS-100"]
     },
     {
       "provider": "azure",
@@ -7028,9 +6518,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-ACR-106"
-      ]
+      "controlIds": ["CR-AZURE-ACR-106"]
     },
     {
       "provider": "azure",
@@ -7040,9 +6528,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-ACR-101"
-      ]
+      "controlIds": ["CR-AZURE-ACR-101"]
     },
     {
       "provider": "azure",
@@ -7062,9 +6548,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COSMOSDB-150"
-      ]
+      "controlIds": ["CR-AZURE-COSMOSDB-150"]
     },
     {
       "provider": "azure",
@@ -7074,9 +6558,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COSMOSDB-105"
-      ]
+      "controlIds": ["CR-AZURE-COSMOSDB-105"]
     },
     {
       "provider": "azure",
@@ -7086,9 +6568,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COSMOSDB-102"
-      ]
+      "controlIds": ["CR-AZURE-COSMOSDB-102"]
     },
     {
       "provider": "azure",
@@ -7128,9 +6608,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COSMOSDB-100"
-      ]
+      "controlIds": ["CR-AZURE-COSMOSDB-100"]
     },
     {
       "provider": "azure",
@@ -7140,9 +6618,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DATABRICKS-101"
-      ]
+      "controlIds": ["CR-AZURE-DATABRICKS-101"]
     },
     {
       "provider": "azure",
@@ -7182,9 +6658,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SECURITYCONTACTS-100"
-      ]
+      "controlIds": ["CR-AZURE-SECURITYCONTACTS-100"]
     },
     {
       "provider": "azure",
@@ -7214,9 +6688,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-106"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-106"]
     },
     {
       "provider": "azure",
@@ -7256,9 +6728,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-156"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-156"]
     },
     {
       "provider": "azure",
@@ -7268,9 +6738,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-105"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-105"]
     },
     {
       "provider": "azure",
@@ -7280,9 +6748,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-150"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-150"]
     },
     {
       "provider": "azure",
@@ -7302,9 +6768,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-104"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-104"]
     },
     {
       "provider": "azure",
@@ -7314,9 +6778,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-153"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-153"]
     },
     {
       "provider": "azure",
@@ -7326,9 +6788,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-152"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-152"]
     },
     {
       "provider": "azure",
@@ -7338,9 +6798,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-151"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-151"]
     },
     {
       "provider": "azure",
@@ -7350,9 +6808,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-103"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-103"]
     },
     {
       "provider": "azure",
@@ -7372,9 +6828,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-100"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-100"]
     },
     {
       "provider": "azure",
@@ -7384,9 +6838,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-102"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-102"]
     },
     {
       "provider": "azure",
@@ -7396,9 +6848,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-101"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-101"]
     },
     {
       "provider": "azure",
@@ -7418,9 +6868,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-154"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-154"]
     },
     {
       "provider": "azure",
@@ -7430,9 +6878,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SECURITYCONTACTS-102"
-      ]
+      "controlIds": ["CR-AZURE-SECURITYCONTACTS-102"]
     },
     {
       "provider": "azure",
@@ -7442,9 +6888,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SECURITYCONTACTS-101"
-      ]
+      "controlIds": ["CR-AZURE-SECURITYCONTACTS-101"]
     },
     {
       "provider": "azure",
@@ -7464,9 +6908,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-DEFENDER-155"
-      ]
+      "controlIds": ["CR-AZURE-DEFENDER-155"]
     },
     {
       "provider": "azure",
@@ -7666,10 +7108,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-RBAC-100",
-        "CR-AZURE-RBAC-101"
-      ]
+      "controlIds": ["CR-AZURE-RBAC-100", "CR-AZURE-RBAC-101"]
     },
     {
       "provider": "azure",
@@ -7709,10 +7148,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-KEYVAULT-150",
-        "CR-AZURE-KEYVAULT-156"
-      ]
+      "controlIds": ["CR-AZURE-KEYVAULT-150", "CR-AZURE-KEYVAULT-156"]
     },
     {
       "provider": "azure",
@@ -7732,10 +7168,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-KEYVAULT-152",
-        "CR-AZURE-KEYVAULT-155"
-      ]
+      "controlIds": ["CR-AZURE-KEYVAULT-152", "CR-AZURE-KEYVAULT-155"]
     },
     {
       "provider": "azure",
@@ -7745,9 +7178,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-KEYVAULT-151"
-      ]
+      "controlIds": ["CR-AZURE-KEYVAULT-151"]
     },
     {
       "provider": "azure",
@@ -7757,9 +7188,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-KEYVAULT-154"
-      ]
+      "controlIds": ["CR-AZURE-KEYVAULT-154"]
     },
     {
       "provider": "azure",
@@ -7769,9 +7198,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-KEYVAULT-100"
-      ]
+      "controlIds": ["CR-AZURE-KEYVAULT-100"]
     },
     {
       "provider": "azure",
@@ -7921,9 +7348,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MONITOR-100"
-      ]
+      "controlIds": ["CR-AZURE-MONITOR-100"]
     },
     {
       "provider": "azure",
@@ -7943,9 +7368,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MONITOR-101"
-      ]
+      "controlIds": ["CR-AZURE-MONITOR-101"]
     },
     {
       "provider": "azure",
@@ -7975,9 +7398,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MYSQL-152"
-      ]
+      "controlIds": ["CR-AZURE-MYSQL-152"]
     },
     {
       "provider": "azure",
@@ -7987,9 +7408,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MYSQL-153"
-      ]
+      "controlIds": ["CR-AZURE-MYSQL-153"]
     },
     {
       "provider": "azure",
@@ -7999,9 +7418,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MYSQL-154"
-      ]
+      "controlIds": ["CR-AZURE-MYSQL-154"]
     },
     {
       "provider": "azure",
@@ -8011,9 +7428,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MYSQL-151"
-      ]
+      "controlIds": ["CR-AZURE-MYSQL-151"]
     },
     {
       "provider": "azure",
@@ -8023,9 +7438,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-MYSQL-150"
-      ]
+      "controlIds": ["CR-AZURE-MYSQL-150"]
     },
     {
       "provider": "azure",
@@ -8055,9 +7468,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-154"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-154"]
     },
     {
       "provider": "azure",
@@ -8067,9 +7478,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-152"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-152"]
     },
     {
       "provider": "azure",
@@ -8089,9 +7498,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-002"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-002"]
     },
     {
       "provider": "azure",
@@ -8101,9 +7508,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-001"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-001"]
     },
     {
       "provider": "azure",
@@ -8113,9 +7518,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-151"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-151"]
     },
     {
       "provider": "azure",
@@ -8125,9 +7528,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-153"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-153"]
     },
     {
       "provider": "azure",
@@ -8137,9 +7538,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-NETWORK-150"
-      ]
+      "controlIds": ["CR-AZURE-NETWORK-150"]
     },
     {
       "provider": "azure",
@@ -8149,11 +7548,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-APPGWWAF-100",
-        "CR-AZURE-APPGWWAF-101",
-        "CR-AZURE-APPGWWAF-102"
-      ]
+      "controlIds": ["CR-AZURE-APPGWWAF-100", "CR-AZURE-APPGWWAF-101", "CR-AZURE-APPGWWAF-102"]
     },
     {
       "provider": "azure",
@@ -8163,10 +7558,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POLICY-100",
-        "CR-AZURE-POLICY-101"
-      ]
+      "controlIds": ["CR-AZURE-POLICY-100", "CR-AZURE-POLICY-101"]
     },
     {
       "provider": "azure",
@@ -8176,9 +7568,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-158"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-158"]
     },
     {
       "provider": "azure",
@@ -8188,9 +7578,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-151"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-151"]
     },
     {
       "provider": "azure",
@@ -8200,9 +7588,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-150"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-150"]
     },
     {
       "provider": "azure",
@@ -8222,9 +7608,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-156"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-156"]
     },
     {
       "provider": "azure",
@@ -8234,9 +7618,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-157"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-157"]
     },
     {
       "provider": "azure",
@@ -8246,9 +7628,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-152"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-152"]
     },
     {
       "provider": "azure",
@@ -8258,9 +7638,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-153"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-153"]
     },
     {
       "provider": "azure",
@@ -8270,9 +7648,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-154"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-154"]
     },
     {
       "provider": "azure",
@@ -8282,9 +7658,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-POSTGRESQL-155"
-      ]
+      "controlIds": ["CR-AZURE-POSTGRESQL-155"]
     },
     {
       "provider": "azure",
@@ -8314,10 +7688,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-105",
-        "CR-AZURE-SQL-109"
-      ]
+      "controlIds": ["CR-AZURE-SQL-105", "CR-AZURE-SQL-109"]
     },
     {
       "provider": "azure",
@@ -8327,9 +7698,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-106"
-      ]
+      "controlIds": ["CR-AZURE-SQL-106"]
     },
     {
       "provider": "azure",
@@ -8339,9 +7708,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-103"
-      ]
+      "controlIds": ["CR-AZURE-SQL-103"]
     },
     {
       "provider": "azure",
@@ -8351,10 +7718,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-150",
-        "CR-AZURE-SQL-157"
-      ]
+      "controlIds": ["CR-AZURE-SQL-150", "CR-AZURE-SQL-157"]
     },
     {
       "provider": "azure",
@@ -8364,10 +7728,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-101",
-        "CR-AZURE-SQL-153"
-      ]
+      "controlIds": ["CR-AZURE-SQL-101", "CR-AZURE-SQL-153"]
     },
     {
       "provider": "azure",
@@ -8377,10 +7738,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-151",
-        "CR-AZURE-SQL-152"
-      ]
+      "controlIds": ["CR-AZURE-SQL-151", "CR-AZURE-SQL-152"]
     },
     {
       "provider": "azure",
@@ -8400,11 +7758,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-SQL-108",
-        "CR-AZURE-SQL-154",
-        "CR-AZURE-SQL-155"
-      ]
+      "controlIds": ["CR-AZURE-SQL-108", "CR-AZURE-SQL-154", "CR-AZURE-SQL-155"]
     },
     {
       "provider": "azure",
@@ -8454,9 +7808,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-005"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-005"]
     },
     {
       "provider": "azure",
@@ -8466,9 +7818,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-100"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-100"]
     },
     {
       "provider": "azure",
@@ -8478,9 +7828,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-002"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-002"]
     },
     {
       "provider": "azure",
@@ -8490,9 +7838,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-111"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-111"]
     },
     {
       "provider": "azure",
@@ -8502,10 +7848,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-007",
-        "CR-AZURE-STORAGE-104"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-007", "CR-AZURE-STORAGE-104"]
     },
     {
       "provider": "azure",
@@ -8530,9 +7873,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-105"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-105"]
     },
     {
       "provider": "azure",
@@ -8552,9 +7893,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-102"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-102"]
     },
     {
       "provider": "azure",
@@ -8564,11 +7903,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-109",
-        "CR-AZURE-STORAGE-110",
-        "CR-AZURE-STORAGE-150"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-109", "CR-AZURE-STORAGE-110", "CR-AZURE-STORAGE-150"]
     },
     {
       "provider": "azure",
@@ -8578,9 +7913,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-003"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-003"]
     },
     {
       "provider": "azure",
@@ -8590,9 +7923,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-154"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-154"]
     },
     {
       "provider": "azure",
@@ -8612,9 +7943,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-153"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-153"]
     },
     {
       "provider": "azure",
@@ -8624,11 +7953,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-006",
-        "CR-AZURE-STORAGE-107",
-        "CR-AZURE-STORAGE-108"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-006", "CR-AZURE-STORAGE-107", "CR-AZURE-STORAGE-108"]
     },
     {
       "provider": "azure",
@@ -8638,9 +7963,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-103"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-103"]
     },
     {
       "provider": "azure",
@@ -8650,9 +7973,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-001"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-001"]
     },
     {
       "provider": "azure",
@@ -8662,9 +7983,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-151"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-151"]
     },
     {
       "provider": "azure",
@@ -8674,9 +7993,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-STORAGE-152"
-      ]
+      "controlIds": ["CR-AZURE-STORAGE-152"]
     },
     {
       "provider": "azure",
@@ -8706,9 +8023,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COMPUTE-150"
-      ]
+      "controlIds": ["CR-AZURE-COMPUTE-150"]
     },
     {
       "provider": "azure",
@@ -8718,9 +8033,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COMPUTE-155"
-      ]
+      "controlIds": ["CR-AZURE-COMPUTE-155"]
     },
     {
       "provider": "azure",
@@ -8730,9 +8043,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COMPUTE-154"
-      ]
+      "controlIds": ["CR-AZURE-COMPUTE-154"]
     },
     {
       "provider": "azure",
@@ -8742,10 +8053,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COMPUTE-100",
-        "CR-AZURE-VM-001"
-      ]
+      "controlIds": ["CR-AZURE-COMPUTE-100", "CR-AZURE-VM-001"]
     },
     {
       "provider": "azure",
@@ -8805,9 +8113,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-AZURE-COMPUTE-151"
-      ]
+      "controlIds": ["CR-AZURE-COMPUTE-151"]
     },
     {
       "provider": "gcp",
@@ -8827,9 +8133,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-APIKEYS-101"
-      ]
+      "controlIds": ["CR-GCP-APIKEYS-101"]
     },
     {
       "provider": "gcp",
@@ -8839,9 +8143,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-APIKEYS-100"
-      ]
+      "controlIds": ["CR-GCP-APIKEYS-100"]
     },
     {
       "provider": "gcp",
@@ -8861,9 +8163,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-ARTIFACTS-102"
-      ]
+      "controlIds": ["CR-GCP-ARTIFACTS-102"]
     },
     {
       "provider": "gcp",
@@ -8873,9 +8173,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-BIGQUERY-100"
-      ]
+      "controlIds": ["CR-GCP-BIGQUERY-100"]
     },
     {
       "provider": "gcp",
@@ -8885,9 +8183,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-BIGQUERY-101"
-      ]
+      "controlIds": ["CR-GCP-BIGQUERY-101"]
     },
     {
       "provider": "gcp",
@@ -8907,10 +8203,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-FUNCTIONS-101",
-        "CR-GCP-FUNCTIONS-151"
-      ]
+      "controlIds": ["CR-GCP-FUNCTIONS-101", "CR-GCP-FUNCTIONS-151"]
     },
     {
       "provider": "gcp",
@@ -8920,9 +8213,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-FUNCTIONS-150"
-      ]
+      "controlIds": ["CR-GCP-FUNCTIONS-150"]
     },
     {
       "provider": "gcp",
@@ -8932,9 +8223,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-101"
-      ]
+      "controlIds": ["CR-GCP-SQL-101"]
     },
     {
       "provider": "gcp",
@@ -8964,9 +8253,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-104"
-      ]
+      "controlIds": ["CR-GCP-SQL-104"]
     },
     {
       "provider": "gcp",
@@ -8976,9 +8263,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-154"
-      ]
+      "controlIds": ["CR-GCP-SQL-154"]
     },
     {
       "provider": "gcp",
@@ -8998,9 +8283,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-106"
-      ]
+      "controlIds": ["CR-GCP-SQL-106"]
     },
     {
       "provider": "gcp",
@@ -9010,9 +8293,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-152"
-      ]
+      "controlIds": ["CR-GCP-SQL-152"]
     },
     {
       "provider": "gcp",
@@ -9022,9 +8303,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-153"
-      ]
+      "controlIds": ["CR-GCP-SQL-153"]
     },
     {
       "provider": "gcp",
@@ -9034,9 +8313,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-151"
-      ]
+      "controlIds": ["CR-GCP-SQL-151"]
     },
     {
       "provider": "gcp",
@@ -9046,9 +8323,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-150"
-      ]
+      "controlIds": ["CR-GCP-SQL-150"]
     },
     {
       "provider": "gcp",
@@ -9058,9 +8333,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-107"
-      ]
+      "controlIds": ["CR-GCP-SQL-107"]
     },
     {
       "provider": "gcp",
@@ -9080,9 +8353,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-158"
-      ]
+      "controlIds": ["CR-GCP-SQL-158"]
     },
     {
       "provider": "gcp",
@@ -9092,10 +8363,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-ORGPOLICY-102",
-        "CR-GCP-SQL-100"
-      ]
+      "controlIds": ["CR-GCP-ORGPOLICY-102", "CR-GCP-SQL-100"]
     },
     {
       "provider": "gcp",
@@ -9105,9 +8373,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-001"
-      ]
+      "controlIds": ["CR-GCP-SQL-001"]
     },
     {
       "provider": "gcp",
@@ -9117,9 +8383,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-109"
-      ]
+      "controlIds": ["CR-GCP-SQL-109"]
     },
     {
       "provider": "gcp",
@@ -9129,9 +8393,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-108"
-      ]
+      "controlIds": ["CR-GCP-SQL-108"]
     },
     {
       "provider": "gcp",
@@ -9141,9 +8403,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-155"
-      ]
+      "controlIds": ["CR-GCP-SQL-155"]
     },
     {
       "provider": "gcp",
@@ -9153,9 +8413,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-156"
-      ]
+      "controlIds": ["CR-GCP-SQL-156"]
     },
     {
       "provider": "gcp",
@@ -9195,9 +8453,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SQL-002"
-      ]
+      "controlIds": ["CR-GCP-SQL-002"]
     },
     {
       "provider": "gcp",
@@ -9217,9 +8473,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-150"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-150"]
     },
     {
       "provider": "gcp",
@@ -9239,9 +8493,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-104"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-104"]
     },
     {
       "provider": "gcp",
@@ -9251,10 +8503,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-001",
-        "CR-GCP-STORAGE-105"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-001", "CR-GCP-STORAGE-105"]
     },
     {
       "provider": "gcp",
@@ -9264,10 +8513,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-151",
-        "CR-GCP-STORAGE-152"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-151", "CR-GCP-STORAGE-152"]
     },
     {
       "provider": "gcp",
@@ -9277,10 +8523,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-103",
-        "CR-GCP-STORAGE-153"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-103", "CR-GCP-STORAGE-153"]
     },
     {
       "provider": "gcp",
@@ -9290,9 +8533,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-002"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-002"]
     },
     {
       "provider": "gcp",
@@ -9302,9 +8543,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-STORAGE-100"
-      ]
+      "controlIds": ["CR-GCP-STORAGE-100"]
     },
     {
       "provider": "gcp",
@@ -9324,10 +8563,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-FIREWALL-002",
-        "CR-GCP-FIREWALL-101"
-      ]
+      "controlIds": ["CR-GCP-FIREWALL-002", "CR-GCP-FIREWALL-101"]
     },
     {
       "provider": "gcp",
@@ -9337,10 +8573,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-FIREWALL-001",
-        "CR-GCP-FIREWALL-100"
-      ]
+      "controlIds": ["CR-GCP-FIREWALL-001", "CR-GCP-FIREWALL-100"]
     },
     {
       "provider": "gcp",
@@ -9350,9 +8583,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-157"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-157"]
     },
     {
       "provider": "gcp",
@@ -9362,9 +8593,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-151"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-151"]
     },
     {
       "provider": "gcp",
@@ -9374,9 +8603,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-006"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-006"]
     },
     {
       "provider": "gcp",
@@ -9386,9 +8613,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-104"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-104"]
     },
     {
       "provider": "gcp",
@@ -9484,9 +8709,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-003"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-003"]
     },
     {
       "provider": "gcp",
@@ -9516,9 +8739,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-150"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-150"]
     },
     {
       "provider": "gcp",
@@ -9528,10 +8749,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-002",
-        "CR-GCP-COMPUTE-108"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-002", "CR-GCP-COMPUTE-108"]
     },
     {
       "provider": "gcp",
@@ -9557,9 +8775,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-152"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-152"]
     },
     {
       "provider": "gcp",
@@ -9589,9 +8805,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-NETWORK-001"
-      ]
+      "controlIds": ["CR-GCP-NETWORK-001"]
     },
     {
       "provider": "gcp",
@@ -9611,10 +8825,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-NETWORK-100",
-        "CR-GCP-NETWORK-102"
-      ]
+      "controlIds": ["CR-GCP-NETWORK-100", "CR-GCP-NETWORK-102"]
     },
     {
       "provider": "gcp",
@@ -9624,9 +8835,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-154"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-154"]
     },
     {
       "provider": "gcp",
@@ -9636,9 +8845,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-005"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-005"]
     },
     {
       "provider": "gcp",
@@ -9658,9 +8865,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-COMPUTE-158"
-      ]
+      "controlIds": ["CR-GCP-COMPUTE-158"]
     },
     {
       "provider": "gcp",
@@ -9670,11 +8875,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-NETWORK-002",
-        "CR-GCP-NETWORK-103",
-        "CR-GCP-NETWORK-104"
-      ]
+      "controlIds": ["CR-GCP-NETWORK-002", "CR-GCP-NETWORK-103", "CR-GCP-NETWORK-104"]
     },
     {
       "provider": "gcp",
@@ -9684,9 +8885,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-DATAPROC-100"
-      ]
+      "controlIds": ["CR-GCP-DATAPROC-100"]
     },
     {
       "provider": "gcp",
@@ -9696,10 +8895,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-DNS-150",
-        "CR-GCP-DNS-151"
-      ]
+      "controlIds": ["CR-GCP-DNS-150", "CR-GCP-DNS-151"]
     },
     {
       "provider": "gcp",
@@ -9709,10 +8905,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-DNS-100",
-        "CR-GCP-DNS-152"
-      ]
+      "controlIds": ["CR-GCP-DNS-100", "CR-GCP-DNS-152"]
     },
     {
       "provider": "gcp",
@@ -9732,9 +8925,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-GCR-100"
-      ]
+      "controlIds": ["CR-GCP-GCR-100"]
     },
     {
       "provider": "gcp",
@@ -9744,9 +8935,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-GEMINI-100"
-      ]
+      "controlIds": ["CR-GCP-GEMINI-100"]
     },
     {
       "provider": "gcp",
@@ -9796,10 +8985,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-IAM-104",
-        "CR-GCP-IAM-152"
-      ]
+      "controlIds": ["CR-GCP-IAM-104", "CR-GCP-IAM-152"]
     },
     {
       "provider": "gcp",
@@ -9819,9 +9005,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-IAM-151"
-      ]
+      "controlIds": ["CR-GCP-IAM-151"]
     },
     {
       "provider": "gcp",
@@ -9841,10 +9025,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-IAM-003",
-        "CR-GCP-IAM-153"
-      ]
+      "controlIds": ["CR-GCP-IAM-003", "CR-GCP-IAM-153"]
     },
     {
       "provider": "gcp",
@@ -9854,11 +9035,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-IAM-107",
-        "CR-GCP-IAM-108",
-        "CR-GCP-IAM-155"
-      ]
+      "controlIds": ["CR-GCP-IAM-107", "CR-GCP-IAM-108", "CR-GCP-IAM-155"]
     },
     {
       "provider": "gcp",
@@ -9868,9 +9045,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-IAM-001"
-      ]
+      "controlIds": ["CR-GCP-IAM-001"]
     },
     {
       "provider": "gcp",
@@ -9900,11 +9075,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-KMS-120",
-        "CR-GCP-KMS-121",
-        "CR-GCP-KMS-122"
-      ]
+      "controlIds": ["CR-GCP-KMS-120", "CR-GCP-KMS-121", "CR-GCP-KMS-122"]
     },
     {
       "provider": "gcp",
@@ -9914,10 +9085,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-KMS-150",
-        "CR-GCP-KMS-151"
-      ]
+      "controlIds": ["CR-GCP-KMS-150", "CR-GCP-KMS-151"]
     },
     {
       "provider": "gcp",
@@ -9937,9 +9105,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-113"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-113"]
     },
     {
       "provider": "gcp",
@@ -9949,9 +9115,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-114"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-114"]
     },
     {
       "provider": "gcp",
@@ -9961,9 +9125,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-115"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-115"]
     },
     {
       "provider": "gcp",
@@ -9973,9 +9135,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-116"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-116"]
     },
     {
       "provider": "gcp",
@@ -9985,9 +9145,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-117"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-117"]
     },
     {
       "provider": "gcp",
@@ -9997,9 +9155,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-118"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-118"]
     },
     {
       "provider": "gcp",
@@ -10009,9 +9165,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-119"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-119"]
     },
     {
       "provider": "gcp",
@@ -10021,9 +9175,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-120"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-120"]
     },
     {
       "provider": "gcp",
@@ -10033,9 +9185,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-LOGGING-121"
-      ]
+      "controlIds": ["CR-GCP-LOGGING-121"]
     },
     {
       "provider": "gcp",
@@ -10055,9 +9205,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SECRETMANAGER-150"
-      ]
+      "controlIds": ["CR-GCP-SECRETMANAGER-150"]
     },
     {
       "provider": "gcp",
@@ -10067,10 +9215,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": [
-        "CR-GCP-SECRETMANAGER-101",
-        "CR-GCP-SECRETMANAGER-151"
-      ]
+      "controlIds": ["CR-GCP-SECRETMANAGER-101", "CR-GCP-SECRETMANAGER-151"]
     }
   ]
 }
