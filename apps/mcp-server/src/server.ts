@@ -396,6 +396,7 @@ export function createServer(deps: ServerDeps): McpServer {
           alreadyEvaluated: true,
           summary: scan.summary,
           coverage: scan.coverage,
+          health: store.scanHealth(scan.id),
         };
       }
       if (scan.status === "cancelled") throw new Error("scan is cancelled");
@@ -420,6 +421,7 @@ export function createServer(deps: ServerDeps): McpServer {
       const notifications = previous
         ? await createNotificationSender()(store.compareScans(previous.id, scan.id))
         : { enabled: [], sent: [], errors: [] };
+      const health = store.scanHealth(scan.id);
       return {
         scanId: scan.id,
         summary,
@@ -433,6 +435,7 @@ export function createServer(deps: ServerDeps): McpServer {
             ? "Some controls had no evidence and were NOT assessed. Disclose this in any report."
             : "All requested controls were evaluated.",
         notifications,
+        health,
       };
     }),
   );
@@ -448,8 +451,29 @@ export function createServer(deps: ServerDeps): McpServer {
     audited("scan_status", (args: { scanId: string }) => {
       const scan = store.getScan(args.scanId);
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
-      return { scan, evidenceStats: store.evidenceStats(args.scanId) };
+      return {
+        scan,
+        health: store.scanHealth(args.scanId),
+        evidenceStats: store.evidenceStats(args.scanId),
+      };
     }),
+  );
+
+  server.registerTool(
+    "scan_health",
+    {
+      title: "Check scan health and completeness",
+      description:
+        "Reports whether a scan is complete and trustworthy, including missing evidence, failed collectors, coverage, and staleness.",
+      inputSchema: {
+        scanId: z.string(),
+        staleAfterMinutes: z.number().int().min(1).max(10080).optional(),
+      },
+      annotations: readOnly,
+    },
+    audited("scan_health", (args: { scanId: string; staleAfterMinutes?: number }) =>
+      store.scanHealth(args.scanId, args.staleAfterMinutes),
+    ),
   );
 
   server.registerTool(

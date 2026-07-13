@@ -39,6 +39,24 @@ export interface ScanSummary {
   findingsRecurred: number;
   findingsResolved: number;
   findingsReopened: number;
+  evidenceRecords?: number;
+  evidenceErrors?: number;
+}
+
+export interface ScanHealth {
+  scanId: string;
+  status: ScanRow["status"] | "stale";
+  healthy: boolean;
+  stale: boolean;
+  ageMinutes: number;
+  requestedControls: number;
+  evaluatedControls: number;
+  missingEvidenceControls: number;
+  coverageRatio: number;
+  evidenceRecords: number;
+  evidenceErrors: number;
+  missingCollectors: string[];
+  reasons: string[];
 }
 
 export interface FindingRow {
@@ -357,6 +375,54 @@ export class CloudRangerStore {
     }));
   }
 
+  scanHealth(scanId: string, staleAfterMinutes = 60): ScanHealth {
+    const scan = this.getScan(scanId);
+    if (!scan) throw new Error(`unknown scan: ${scanId}`);
+    const evidence = this.db
+      .prepare(
+        `SELECT COUNT(*) AS records,
+                SUM(CASE WHEN exit_code != 0 THEN 1 ELSE 0 END) AS errors
+         FROM evidence WHERE scan_id = ?`,
+      )
+      .get(scanId) as { records: number; errors: number | null };
+    const requestedControls = scan.coverage?.length ?? scan.controlIds.length;
+    const evaluatedControls =
+      scan.coverage?.filter((item) => item.status === "evaluated").length ?? 0;
+    const missingEvidence = scan.coverage?.filter((item) => item.status !== "evaluated") ?? [];
+    const evidenceRecords = evidence.records ?? 0;
+    const evidenceErrors = evidence.errors ?? 0;
+    const ageMinutes = Math.max(0, (Date.now() - Date.parse(scan.createdAt)) / 60_000);
+    const stale = scan.status === "collecting" && ageMinutes > staleAfterMinutes;
+    const reasons: string[] = [];
+    if (scan.status === "collecting") reasons.push("scan has not been evaluated");
+    if (scan.status === "cancelled") reasons.push("scan was cancelled");
+    if (stale) reasons.push(`scan is older than ${staleAfterMinutes} minutes`);
+    if (missingEvidence.length > 0)
+      reasons.push(`${missingEvidence.length} controls have missing or errored evidence`);
+    if (evidenceErrors > 0) reasons.push(`${evidenceErrors} evidence records failed`);
+    return {
+      scanId,
+      status: stale ? "stale" : scan.status,
+      healthy:
+        scan.status === "evaluated" &&
+        !stale &&
+        missingEvidence.length === 0 &&
+        evidenceErrors === 0,
+      stale,
+      ageMinutes: Math.round(ageMinutes * 10) / 10,
+      requestedControls,
+      evaluatedControls,
+      missingEvidenceControls: missingEvidence.length,
+      coverageRatio:
+        scan.summary?.coverageRatio ??
+        (requestedControls ? evaluatedControls / requestedControls : 0),
+      evidenceRecords,
+      evidenceErrors,
+      missingCollectors: [...new Set(missingEvidence.flatMap((item) => item.missingCollectors))],
+      reasons,
+    };
+  }
+
   // ---- evaluation + reconciliation ----
 
   /**
@@ -387,6 +453,8 @@ export class CloudRangerStore {
       findingsRecurred: 0,
       findingsResolved: 0,
       findingsReopened: 0,
+      evidenceRecords: this.getEvidence(scanId).length,
+      evidenceErrors: this.getEvidence(scanId).filter((record) => record.exitCode !== 0).length,
     };
 
     const insertEvaluation = this.db.prepare(

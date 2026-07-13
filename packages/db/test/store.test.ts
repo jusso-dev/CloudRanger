@@ -121,6 +121,40 @@ describe("workflow state", () => {
 });
 
 describe("evidence handling", () => {
+  it("reports scan health gaps and failed evidence explicitly", () => {
+    const scan = store.createScan({
+      provider: "aws",
+      scopeId: "1",
+      regions: [],
+      controlIds: ["CR-AWS-S3-001"],
+    });
+    store.addEvidence(scan.id, [
+      {
+        collectorId: "aws.s3.list_buckets",
+        output: null,
+        errorText: "AccessDenied",
+        exitCode: 255,
+      },
+    ]);
+    store.finalizeScan(
+      scan.id,
+      [failResult({ status: "error", message: "AccessDenied" })],
+      [
+        {
+          controlId: "CR-AWS-S3-001",
+          status: "missing_evidence",
+          missingCollectors: ["aws.s3.list_buckets"],
+        },
+      ],
+    );
+    const health = store.scanHealth(scan.id);
+    expect(health.healthy).toBe(false);
+    expect(health.coverageRatio).toBe(0);
+    expect(health.evidenceErrors).toBe(1);
+    expect(health.missingCollectors).toEqual(["aws.s3.list_buckets"]);
+    expect(health.reasons).toEqual(expect.arrayContaining(["1 evidence records failed"]));
+  });
+
   it("rejects evidence for evaluated scans", () => {
     const { scan } = runScan([failResult()]);
     expect(() =>
