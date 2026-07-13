@@ -104,7 +104,11 @@ catalog directory with override semantics, and a Prowler metadata importer
     `notify_scan_digest`: operator allow-list by name (URLs never exposed to
     or accepted from the agent), HMAC-signed webhook payloads, digests carry
     summaries and finding references only.
-19. Community control contribution guide + CI porting checks.
+19. ~~Community control contribution guide + CI porting checks.~~ **Done**
+    — docs/CONTRIBUTING-controls.md (grounded porting workflow, PR
+    checklist, worked example) and the Catalog checks workflow enforcing
+    pass+fail fixtures per control, read-only commands, and
+    ledger/mapping integrity on every catalog-touching PR.
 
 Issues should follow: problem, scope, non-goals, security considerations,
 acceptance criteria, tests, docs.

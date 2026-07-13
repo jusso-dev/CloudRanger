@@ -93,13 +93,15 @@ Resources: `cloudranger://guides/safety`, `cloudranger://guides/workflow`, `clou
 
 ## Control catalog
 
-553 deterministic controls (239 AWS, 181 Azure, 133 GCP) across identity, storage, network exposure, databases, encryption, logging/detection, containers/Kubernetes and resilience — each with severity, rationale, remediation steps, compliance mappings (CIS section references, NIST CSF), upstream attribution and deterministic fixtures. The porting pipeline (`scripts/prowler-import.mjs`) scaffolds stubs from a local Prowler checkout; the full upstream catalog remains an explicitly tracked, ongoing porting effort (not every upstream check can be grounded in a single read-only CLI response). See [docs/roadmap.md](docs/roadmap.md).
+748 deterministic controls (321 AWS, 247 Azure, 180 GCP) across identity, storage, network exposure, databases, encryption, logging/detection, containers/Kubernetes and resilience — each with severity, rationale, remediation steps, compliance mappings (CIS section references, NIST CSF), upstream attribution and deterministic fixtures. The porting pipeline (`scripts/prowler-import.mjs`) scaffolds stubs from a local Prowler checkout; the full upstream catalog remains an explicitly tracked, ongoing porting effort (not every upstream check can be grounded in a single read-only CLI response). See [docs/roadmap.md](docs/roadmap.md).
 
 The exhaustive upstream inventory is pinned to Prowler 5.34.0 (919 AWS/Azure/GCP checks). `pnpm prowler:coverage:report` shows which checks are implemented versus explicitly unmapped, unsupported, superseded, or deprecated; `pnpm test` validates that every inventory entry has a disposition. See [the upstream coverage guide](docs/rules/upstream-coverage.md).
 
 **Control packs** group controls by theme for targeted scans: `essential-baseline`, `public-exposure`, `identity`, `encryption`, `logging-detection`, `resilience`, `kubernetes`. Pass `pack: "public-exposure"` to `scan_start`.
 
 **Custom controls** live in `~/.cloudranger/catalog/` and merge over the bundled catalog (matching IDs override). Author them with the CLI or have an agent generate one — the engine still decides pass/fail deterministically. See [docs/rules/custom-controls.md](docs/rules/custom-controls.md).
+
+**Contributing controls:** the porting workflow, fixture requirements, and the CI quality gate are documented in [docs/CONTRIBUTING-controls.md](docs/CONTRIBUTING-controls.md).
 
 ```bash
 node apps/cli/dist/main.js catalog list

@@ -1,0 +1,36 @@
+name: Catalog checks
+
+on:
+  pull_request:
+    paths:
+      - "packages/catalog/**"
+      - "packages/engine/src/**"
+      - "scripts/prowler-coverage.mjs"
+      - "scripts/compliance-mappings-validate.mjs"
+      - "scripts/catalog-pr-checks.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Catalog validation (schema + read-only safety)
+        run: node apps/cli/dist/main.js catalog validate
+      - name: Fixture tests (every case, deterministically)
+        run: node apps/cli/dist/main.js catalog test
+      - name: Contribution gate (pass+fail fixtures per control, verify-command hygiene)
+        run: node scripts/catalog-pr-checks.mjs
+      - name: Prowler coverage ledger integrity
+        run: pnpm prowler:coverage:validate
+      - name: Compliance mapping registry integrity
+        run: pnpm compliance:mappings:validate
