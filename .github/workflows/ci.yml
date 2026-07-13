@@ -49,6 +49,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build workspace dependencies
+        run: pnpm build
       - name: Apply Drizzle PostgreSQL migrations
         run: pnpm --filter @cloudranger/db db:migrate
         env:
