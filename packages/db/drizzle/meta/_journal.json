@@ -15,6 +15,13 @@
       "when": 1783923922314,
       "tag": "0001_shallow_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783943578288,
+      "tag": "0002_easy_ulik",
+      "breakpoints": true
     }
   ]
 }

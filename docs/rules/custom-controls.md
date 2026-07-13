@@ -69,6 +69,37 @@ cloudranger controls dir                                        # where it went
   (list/describe/get/show; no shell metacharacters) — a mutating command is
   rejected outright.
 - `passWhen` must use only the safe expression operators (no code, no eval).
+- Parameter declarations must be coherent: every `{ $param: name }` reference
+  declared, every declaration referenced, defaults within their own
+  bounds/enum.
+
+## Parameters (org-tunable thresholds)
+
+A control can declare tunable thresholds instead of hard-coding them:
+
+```yaml
+parameters:
+  maxKeyAgeDays:
+    type: number
+    description: Maximum age in days for an active access key.
+    default: 90
+    min: 1
+    max: 365
+passWhen:
+  op: daysSinceGt
+  path: CreateDate
+  value: { $param: maxKeyAgeDays }
+```
+
+Defaults must reproduce the control's documented behaviour. Operators tune
+values per scope with `parameters_set` (MCP) or
+`cloudranger parameters set --provider aws --scope <account> --control <id>
+--param maxKeyAgeDays=60`, and per scan via `scan_start`'s `parameters` input
+(scan wins over persisted scope values, per key). Overrides are validated
+against the declared type, bounds, and enum — they can tune a control within
+its declared range, never disable it — and the effective values used are
+recorded on every finding and evaluation for audit. Fixture cases may set
+`"parameters": { ... }` to pin a case to specific values.
 
 ## Grounding (important)
 

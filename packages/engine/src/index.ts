@@ -14,6 +14,14 @@ export {
   validatePreparationCommand,
 } from "./safety.js";
 export { parseCsv, decodeBase64Csv, decodeEvidenceRecord, type CsvDecodeResult } from "./csv.js";
+export {
+  collectParamRefs,
+  effectiveParameterValues,
+  isParamRef,
+  resolveExpression,
+  validateControlParameters,
+  validateParameterOverrides,
+} from "./params.js";
 export { evaluateControls, type EvaluateOptions } from "./evaluate.js";
 export { findingFingerprint, evidenceHash } from "./fingerprint.js";
 export {

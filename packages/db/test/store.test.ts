@@ -306,3 +306,45 @@ describe("audit log", () => {
     expect(store.verifyAuditChain()).toBe(1);
   });
 });
+
+describe("scope parameter overrides", () => {
+  it("round-trips, upserts, and clears per-control overrides", () => {
+    store.setScopeParameters("aws", "123456789012", "CR-AWS-IAM-005", { maxKeyAgeDays: 30 });
+    store.setScopeParameters("aws", "123456789012", "CR-AWS-IAM-003", {
+      minimumPasswordLength: 16,
+    });
+    let rows = store.listScopeParameters("aws", "123456789012");
+    expect(rows.map((r) => r.controlId)).toEqual(["CR-AWS-IAM-003", "CR-AWS-IAM-005"]);
+    expect(rows[1]!.parameters).toEqual({ maxKeyAgeDays: 30 });
+
+    store.setScopeParameters("aws", "123456789012", "CR-AWS-IAM-005", { maxKeyAgeDays: 60 });
+    rows = store.listScopeParameters("aws", "123456789012");
+    expect(rows[1]!.parameters).toEqual({ maxKeyAgeDays: 60 });
+
+    store.setScopeParameters("aws", "123456789012", "CR-AWS-IAM-005", null);
+    rows = store.listScopeParameters("aws", "123456789012");
+    expect(rows.map((r) => r.controlId)).toEqual(["CR-AWS-IAM-003"]);
+
+    expect(store.listScopeParameters("aws", "999999999999")).toEqual([]);
+  });
+
+  it("persists scan parameters and effective values on findings", () => {
+    const scan = store.createScan({
+      provider: "aws",
+      scopeId: "123456789012",
+      regions: ["ap-southeast-2"],
+      controlIds: ["CR-AWS-S3-001"],
+      parameters: { "CR-AWS-S3-001": { threshold: 5 } },
+    });
+    expect(store.getScan(scan.id)!.parameters).toEqual({ "CR-AWS-S3-001": { threshold: 5 } });
+
+    store.finalizeScan(
+      scan.id,
+      [failResult({ effectiveParameters: { threshold: 5 } })],
+      [{ controlId: "CR-AWS-S3-001", status: "evaluated", missingCollectors: [] }],
+    );
+    const { findings } = store.searchFindings({ state: ["open"] });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.effectiveParameters).toEqual({ threshold: 5 });
+  });
+});

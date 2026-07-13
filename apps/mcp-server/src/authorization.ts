@@ -7,6 +7,7 @@ const ADMIN_ONLY = new Set([
   "workspace_remove_member",
 ]);
 const MUTATING = new Set([
+  "parameters_set",
   "scan_start",
   "evidence_submit",
   "scan_evaluate",

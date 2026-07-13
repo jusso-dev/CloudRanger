@@ -118,6 +118,8 @@ export function evaluateExpression(expr: Expression, resource: unknown, ctx: Exp
     case "gte":
     case "lt":
     case "lte": {
+      // Unresolved parameter references fail closed.
+      if (typeof expr.value !== "number") return false;
       const raw = getPath(resource, expr.path);
       const n = typeof raw === "string" ? Number(raw) : raw;
       if (typeof n !== "number" || Number.isNaN(n)) return false;
@@ -127,10 +129,12 @@ export function evaluateExpression(expr: Expression, resource: unknown, ctx: Exp
       return n <= expr.value;
     }
     case "daysSinceGt": {
+      if (typeof expr.value !== "number") return false;
       const d = daysSince(getPath(resource, expr.path), ctx.now);
       return d !== undefined && d > expr.value;
     }
     case "daysSinceLt": {
+      if (typeof expr.value !== "number") return false;
       const d = daysSince(getPath(resource, expr.path), ctx.now);
       return d !== undefined && d < expr.value;
     }
@@ -141,11 +145,13 @@ export function evaluateExpression(expr: Expression, resource: unknown, ctx: Exp
       return new RegExp(expr.pattern).test(v);
     }
     case "lengthEquals": {
+      if (typeof expr.value !== "number") return false;
       const v = getPath(resource, expr.path);
       if (Array.isArray(v) || typeof v === "string") return v.length === expr.value;
       return false;
     }
     case "lengthGt": {
+      if (typeof expr.value !== "number") return false;
       const v = getPath(resource, expr.path);
       if (Array.isArray(v) || typeof v === "string") return v.length > expr.value;
       return false;

@@ -67,7 +67,7 @@ controls:
       - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
 
   - id: CR-AWS-IAM-003
-    version: 1.0.0
+    version: 1.1.0
     provider: aws
     service: iam
     title: Password policy requires minimum length of 14
@@ -80,7 +80,17 @@ controls:
     source: { engine: prowler, id: iam_password_policy_minimum_length_14, license: Apache-2.0 }
     collector: aws.iam.get_account_password_policy
     resourceIdField: $scope
-    passWhen: { op: gte, path: PasswordPolicy.MinimumPasswordLength, value: 14 }
+    parameters:
+      minimumPasswordLength:
+        type: number
+        description: Minimum console password length the policy must enforce.
+        default: 14
+        min: 8
+        max: 128
+    passWhen:
+      op: gte
+      path: PasswordPolicy.MinimumPasswordLength
+      value: { $param: minimumPasswordLength }
     onError:
       - contains: NoSuchEntity
         status: fail
@@ -128,7 +138,7 @@ controls:
       - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html
 
   - id: CR-AWS-IAM-005
-    version: 1.0.0
+    version: 1.1.0
     provider: aws
     service: iam
     title: No active access keys older than 90 days
@@ -141,6 +151,13 @@ controls:
     source: { engine: prowler, id: iam_rotate_access_key_90_days, license: Apache-2.0 }
     collector: aws.iam.list_access_keys
     resourceIdField: $resourceKey
+    parameters:
+      maxKeyAgeDays:
+        type: number
+        description: Maximum age in days for an active access key before it must be rotated.
+        default: 90
+        min: 1
+        max: 365
     passWhen:
       op: noneItem
       path: AccessKeyMetadata
@@ -148,7 +165,7 @@ controls:
         op: and
         exprs:
           - { op: equals, path: Status, value: Active }
-          - { op: daysSinceGt, path: CreateDate, value: 90 }
+          - { op: daysSinceGt, path: CreateDate, value: { $param: maxKeyAgeDays } }
     failMessage: User has an active access key older than 90 days.
     passMessage: No active access keys older than 90 days.
     remediation:

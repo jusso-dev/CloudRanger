@@ -33,7 +33,18 @@ export interface CloudRangerRepository {
     scopeId: string;
     regions: string[];
     controlIds: string[];
+    parameters?: Record<string, Record<string, unknown>>;
   }): Promise<ScanRow>;
+  setScopeParameters(
+    provider: Provider,
+    scopeId: string,
+    controlId: string,
+    parameters: Record<string, unknown> | null,
+  ): Promise<void>;
+  listScopeParameters(
+    provider: Provider,
+    scopeId: string,
+  ): Promise<Array<{ controlId: string; parameters: Record<string, unknown>; updatedAt: string }>>;
   getScan(id: string): Promise<ScanRow | undefined>;
   listScans(limit?: number): Promise<ScanRow[]>;
   compareScans(baselineScanId: string, currentScanId: string): Promise<ScanComparison>;
