@@ -131,8 +131,8 @@ Rules: the control must be DETERMINISTIC — evaluated by the engine from CLI JS
 2. Pick an existing collector whose output contains the fields you need (catalog_get_control on a similar control shows real evidence shapes). If none fits, define a NEW read-only collector in the same document — command must be list/describe/get/show only, or it will be rejected.
 3. Ground the passWhen expression in ACTUAL output: run the collector's read-only command yourself once, inspect the JSON, and write the expression against the real field paths and value types you observe. Note whether booleans come back as true or "true", etc.
 4. Choose id CUSTOM-${provider.toUpperCase()}-<SERVICE>-001 (reusing an existing CR- id intentionally overrides the bundled control — only do that deliberately). Set a defensible severity and honest remediation steps (operator executes them; you never do).
-5. catalog_add_custom_control { filename, yaml } to validate and install. Fix any schema/safety errors it reports.
-6. Recommend the operator add fixture cases (pass + fail) under packages/catalog/fixtures and run "cloudranger catalog test" so the control is regression-protected.
+5. Build fixture cases from the REAL output you observed in step 3: sanitise identifiers (account IDs, emails, addresses) and write at least one pass case and one fail case in the fixture format ({ controlId, cases: [{ name, expected, records: [{ collectorId, output, exitCode }] }] }).
+6. catalog_add_custom_control { filename, yaml, fixtures } to validate and install. The install is rejected if the engine's verdict for any fixture case disagrees with its declared expectation — fix the rule or the fixture, never delete the case. Fixtures run on every "cloudranger catalog test" from then on.
 Report the control id, what it checks, the evidence it relies on, and your grounding evidence.`),
   );
 }

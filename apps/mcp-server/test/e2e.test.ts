@@ -574,3 +574,89 @@ describe("compliance_status over MCP", () => {
     expect(e8.controlCount).toBeGreaterThanOrEqual(8);
   });
 });
+
+describe("custom-control fixture authoring via MCP", () => {
+  const yaml = `controls:
+  - id: CUSTOM-AWS-S3-901
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: Bucket versioning enabled (custom)
+    description: d
+    rationale: r
+    severity: medium
+    categories: [resilience]
+    source: { engine: custom, id: custom_bucket_versioning, license: Apache-2.0 }
+    collector: aws.s3.get_bucket_versioning
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: Status, value: Enabled }
+    failMessage: Versioning off.
+    passMessage: Versioning on.
+    remediation: { summary: s, steps: [s] }
+    compliance: []
+    references: []
+`;
+  const fixtures = (expected: string) => [
+    {
+      controlId: "CUSTOM-AWS-S3-901",
+      cases: [
+        {
+          name: "enabled passes",
+          expected: "pass",
+          records: [
+            {
+              collectorId: "aws.s3.get_bucket_versioning",
+              resourceKey: "bucket-a",
+              output: { Status: "Enabled" },
+              exitCode: 0,
+            },
+          ],
+        },
+        {
+          name: "suspended verdict",
+          expected,
+          records: [
+            {
+              collectorId: "aws.s3.get_bucket_versioning",
+              resourceKey: "bucket-b",
+              output: { Status: "Suspended" },
+              exitCode: 0,
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it("rejects the install when a fixture disagrees with the engine", async () => {
+    await expect(
+      call("catalog_add_custom_control", {
+        yaml,
+        filename: "custom-versioning-bad",
+        fixtures: fixtures("pass"), // Suspended cannot pass
+      }),
+    ).rejects.toThrow(/expected pass, engine says fail — install rejected/);
+  });
+
+  it("rejects fixtures referencing controls outside the document", async () => {
+    await expect(
+      call("catalog_add_custom_control", {
+        yaml,
+        filename: "custom-versioning-foreign",
+        fixtures: [{ controlId: "CR-AWS-IAM-001", cases: fixtures("fail")[0].cases }],
+      }),
+    ).rejects.toThrow(/not in this document/);
+  });
+
+  it("installs control + fixtures together when verdicts agree", async () => {
+    const result = await call("catalog_add_custom_control", {
+      yaml,
+      filename: "custom-versioning",
+      fixtures: fixtures("fail"),
+    });
+    expect(result.controls).toEqual(["CUSTOM-AWS-S3-901"]);
+    expect(result.fixtureCases).toBe(2);
+    expect(result.savedFixtures).toMatch(/fixtures\/custom-versioning\.json$/);
+    expect(result.note).toMatch(/fixtures run/);
+  });
+});
