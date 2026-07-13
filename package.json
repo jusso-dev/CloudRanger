@@ -21,7 +21,8 @@
     "prowler:coverage:validate": "node scripts/prowler-coverage.mjs validate",
     "prowler:coverage:report": "node scripts/prowler-coverage.mjs report",
     "compliance:mappings:validate": "node scripts/compliance-mappings-validate.mjs",
-    "ism:oscal:sync": "node scripts/ism-oscal-sync.mjs"
+    "ism:oscal:sync": "node scripts/ism-oscal-sync.mjs",
+    "examples:reports": "node scripts/generate-example-reports.mjs output/pdf"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
