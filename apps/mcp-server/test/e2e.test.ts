@@ -758,3 +758,47 @@ describe("retention over MCP", () => {
     ).rejects.toThrow(/confirm/);
   });
 });
+
+describe("multi-scope report_data", () => {
+  it("aggregates across scopes with per-scope breakdown and explicit exclusions", async () => {
+    // Two scopes already have evaluated scans from earlier tests
+    // (222233334444 and 555566667777); ask for one explicitly.
+    const result = await call("report_data", {
+      provider: "aws",
+      scopeIds: ["555566667777"],
+    });
+    expect(result.multiScope).toBe(true);
+    expect(result.scopes).toHaveLength(1);
+    expect(result.scopes[0].scopeId).toBe("555566667777");
+    expect(result.scopes[0].latestEvaluatedScan).toBeDefined();
+    expect(result.scopesPresentButNotIncluded.length).toBeGreaterThan(0);
+    expect(result.note).toMatch(/never deduplicated/);
+
+    const everything = await call("report_data", { provider: "aws", allScopes: true });
+    expect(everything.scopes.length).toBeGreaterThanOrEqual(2);
+    const sum = everything.scopes.reduce(
+      (n: number, scope: any) =>
+        n +
+        Object.values(scope.openFindingsBySeverity as Record<string, number>).reduce(
+          (a: number, b: number) => a + b,
+          0,
+        ),
+      0,
+    );
+    const aggregate = Object.values(
+      everything.aggregate.openFindingsBySeverity as Record<string, number>,
+    ).reduce((a: number, b: number) => a + b, 0);
+    expect(aggregate).toBe(sum);
+
+    await expect(call("report_data", { scopeId: "x", scopeIds: ["y"] })).rejects.toThrow(
+      /cannot be combined/,
+    );
+
+    const missing = await call("report_data", {
+      provider: "aws",
+      scopeIds: ["000000000000"],
+    });
+    expect(missing.requestedButNoScans).toEqual(["000000000000"]);
+    expect(missing.scopes).toHaveLength(0);
+  });
+});

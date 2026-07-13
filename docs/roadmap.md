@@ -76,8 +76,10 @@ catalog directory with override semantics, and a Prowler metadata importer
     and 0600 modes (pg_dump guidance for PostgreSQL), and
     `cloudranger findings export --format csv|jsonl|sarif`
     (docs/operations.md).
-14. Multi-scope digests (`report_data` across scopes with per-scope
-    breakdown).
+14. ~~Multi-scope digests (`report_data` across scopes with per-scope
+    breakdown).~~ **Done** — `scopeIds`/`allScopes` inputs return an
+    aggregate plus per-scope digests, listing scopes present-but-excluded
+    and requested-but-scanless explicitly; single-scope shape unchanged.
 15. Optional streamable-HTTP MCP transport with token auth for remote
     agents.
 16. Signed catalog releases; third-party control pack loading with the same

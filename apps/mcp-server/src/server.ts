@@ -1271,13 +1271,132 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: {
         provider: providerParam.optional(),
         scopeId: z.string().optional(),
+        scopeIds: z
+          .array(z.string())
+          .min(1)
+          .max(20)
+          .optional()
+          .describe("Multi-scope digest: aggregate + per-scope breakdown for these scopes"),
+        allScopes: z
+          .boolean()
+          .optional()
+          .describe("Multi-scope digest across every scope that has scans in this database"),
         sinceDays: z.number().int().min(1).max(365).optional(),
       },
       annotations: readOnly,
     },
     audited(
       "report_data",
-      async (args: { provider?: Provider; scopeId?: string; sinceDays?: number }) => {
+      async (args: {
+        provider?: Provider;
+        scopeId?: string;
+        scopeIds?: string[];
+        allScopes?: boolean;
+        sinceDays?: number;
+      }) => {
+        if ((args.scopeIds || args.allScopes) && args.scopeId) {
+          throw new Error("scopeId cannot be combined with scopeIds/allScopes");
+        }
+        if (args.scopeIds || args.allScopes) {
+          // Multi-scope digest: per-scope breakdown plus an aggregate. Every
+          // scope with scans in this (workspace-isolated) database is
+          // visible; scopes present but not requested are listed, never
+          // silently dropped.
+          const known = new Map<string, { provider: Provider; scopeId: string }>();
+          for (const scan of await store.listScans(200)) {
+            if (args.provider && scan.provider !== args.provider) continue;
+            known.set(`${scan.provider}/${scan.scopeId}`, {
+              provider: scan.provider,
+              scopeId: scan.scopeId,
+            });
+          }
+          const wanted = args.allScopes
+            ? [...known.values()]
+            : [...known.values()].filter((s) => args.scopeIds!.includes(s.scopeId));
+          const missing = args.scopeIds?.filter(
+            (id) => ![...known.values()].some((s) => s.scopeId === id),
+          );
+          const notIncluded = [...known.values()]
+            .filter((s) => !wanted.includes(s))
+            .map((s) => `${s.provider}/${s.scopeId}`);
+          const severityTotals: Record<string, number> = {};
+          const controlTotals = new Map<string, { severity: string; count: number }>();
+          const totals = {
+            newFindingsInWindow: 0,
+            resolvedFindingsInWindow: 0,
+            currentlyReopened: 0,
+            riskAccepted: 0,
+            overdueFindings: 0,
+            unassignedOpenFindings: 0,
+          };
+          const scopes = [];
+          for (const scope of wanted) {
+            const digest = (await store.reportData({
+              provider: scope.provider,
+              scopeId: scope.scopeId,
+              sinceDays: args.sinceDays,
+            })) as Record<string, any>;
+            for (const [severity, count] of Object.entries(
+              digest.openFindingsBySeverity as Record<string, number>,
+            )) {
+              severityTotals[severity] = (severityTotals[severity] ?? 0) + count;
+            }
+            for (const control of digest.topFailingControls as Array<{
+              controlId: string;
+              severity: string;
+              count: number;
+            }>) {
+              const entry = controlTotals.get(control.controlId) ?? {
+                severity: control.severity,
+                count: 0,
+              };
+              entry.count += control.count;
+              controlTotals.set(control.controlId, entry);
+            }
+            for (const key of Object.keys(totals) as Array<keyof typeof totals>) {
+              totals[key] += (digest[key] as number) ?? 0;
+            }
+            const latestScan = (digest.recentScans as any[]).find(
+              (scan) => scan.status === "evaluated",
+            );
+            scopes.push({
+              provider: scope.provider,
+              scopeId: scope.scopeId,
+              openFindingsBySeverity: digest.openFindingsBySeverity,
+              newFindingsInWindow: digest.newFindingsInWindow,
+              resolvedFindingsInWindow: digest.resolvedFindingsInWindow,
+              currentlyReopened: digest.currentlyReopened,
+              riskAccepted: digest.riskAccepted,
+              overdueFindings: digest.overdueFindings,
+              unassignedOpenFindings: digest.unassignedOpenFindings,
+              topFailingControls: (digest.topFailingControls as any[]).slice(0, 5),
+              latestEvaluatedScan: latestScan
+                ? {
+                    id: latestScan.id,
+                    evaluatedAt: latestScan.evaluatedAt,
+                    coverageRatio: latestScan.summary?.coverageRatio,
+                  }
+                : undefined,
+            });
+          }
+          return {
+            generatedAt: new Date().toISOString(),
+            windowDays: args.sinceDays ?? 30,
+            multiScope: true,
+            aggregate: {
+              openFindingsBySeverity: severityTotals,
+              topFailingControls: [...controlTotals.entries()]
+                .map(([controlId, entry]) => ({ controlId, ...entry }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 15),
+              ...totals,
+            },
+            scopes,
+            ...(missing && missing.length > 0 ? { requestedButNoScans: missing } : {}),
+            ...(notIncluded.length > 0 ? { scopesPresentButNotIncluded: notIncluded } : {}),
+            note: "Aggregate is the sum of per-scope digests; findings are never deduplicated across scopes.",
+          };
+        }
         const report = (await store.reportData(args)) as Record<string, unknown>;
         const findings = await store.searchFindings({
           provider: args.provider,
