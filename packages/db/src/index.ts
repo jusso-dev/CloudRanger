@@ -16,6 +16,9 @@ import {
 } from "@cloudranger/engine";
 import { MIGRATIONS } from "./schema.sql.js";
 
+export { createPostgresDatabase } from "./postgres.js";
+export type { PostgresDatabase } from "./postgres.js";
+
 export interface ScanRow {
   id: string;
   provider: Provider;
