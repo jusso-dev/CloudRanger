@@ -174,6 +174,20 @@ describe("evidence handling", () => {
     expect(health.reasons).toEqual(expect.arrayContaining(["1 evidence records failed"]));
   });
 
+  it("detects required collectors that have not submitted evidence yet", () => {
+    const scan = store.createScan({
+      provider: "aws",
+      scopeId: "1",
+      regions: [],
+      controlIds: ["CR-AWS-S3-001"],
+    });
+    const health = store.scanHealth(scan.id, 60, ["aws.s3.list_buckets"]);
+    expect(health.status).toBe("collecting");
+    expect(health.healthy).toBe(false);
+    expect(health.expectedCollectors).toBe(1);
+    expect(health.missingCollectors).toEqual(["aws.s3.list_buckets"]);
+  });
+
   it("rejects evidence for evaluated scans", () => {
     const { scan } = runScan([failResult()]);
     expect(() =>

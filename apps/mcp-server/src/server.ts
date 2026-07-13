@@ -41,6 +41,20 @@ export function createServer(deps: ServerDeps): McpServer {
     return deps.actor ?? (client ? `mcp:${client.name}` : "mcp:unknown");
   };
 
+  const expectedCollectorsForScan = (scan: ReturnType<CloudRangerStore["getScan"]>) => {
+    if (!scan) return [];
+    const controls = catalog.controls.filter((control) => scan.controlIds.includes(control.id));
+    return [
+      ...new Set(
+        buildPlan(controls, catalog.collectors, {
+          provider: scan.provider,
+          regions: scan.regions,
+          scopeId: scan.scopeId,
+        }).steps.map((step) => step.collectorId),
+      ),
+    ];
+  };
+
   const json = (value: unknown) => ({
     content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
   });
@@ -396,7 +410,7 @@ export function createServer(deps: ServerDeps): McpServer {
           alreadyEvaluated: true,
           summary: scan.summary,
           coverage: scan.coverage,
-          health: store.scanHealth(scan.id),
+          health: store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
         };
       }
       if (scan.status === "cancelled") throw new Error("scan is cancelled");
@@ -421,7 +435,7 @@ export function createServer(deps: ServerDeps): McpServer {
       const notifications = previous
         ? await createNotificationSender()(store.compareScans(previous.id, scan.id))
         : { enabled: [], sent: [], errors: [] };
-      const health = store.scanHealth(scan.id);
+      const health = store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan));
       return {
         scanId: scan.id,
         summary,
@@ -453,7 +467,7 @@ export function createServer(deps: ServerDeps): McpServer {
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
       return {
         scan,
-        health: store.scanHealth(args.scanId),
+        health: store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
         evidenceStats: store.evidenceStats(args.scanId),
       };
     }),
@@ -472,7 +486,11 @@ export function createServer(deps: ServerDeps): McpServer {
       annotations: readOnly,
     },
     audited("scan_health", (args: { scanId: string; staleAfterMinutes?: number }) =>
-      store.scanHealth(args.scanId, args.staleAfterMinutes),
+      store.scanHealth(
+        args.scanId,
+        args.staleAfterMinutes,
+        expectedCollectorsForScan(store.getScan(args.scanId)),
+      ),
     ),
   );
 

@@ -55,6 +55,8 @@ export interface ScanHealth {
   coverageRatio: number;
   evidenceRecords: number;
   evidenceErrors: number;
+  expectedCollectors: number;
+  observedCollectors: number;
   missingCollectors: string[];
   reasons: string[];
 }
@@ -379,7 +381,11 @@ export class CloudRangerStore {
     }));
   }
 
-  scanHealth(scanId: string, staleAfterMinutes = 60): ScanHealth {
+  scanHealth(
+    scanId: string,
+    staleAfterMinutes = 60,
+    expectedCollectorIds: string[] = [],
+  ): ScanHealth {
     const scan = this.getScan(scanId);
     if (!scan) throw new Error(`unknown scan: ${scanId}`);
     const evidence = this.db
@@ -395,6 +401,12 @@ export class CloudRangerStore {
     const missingEvidence = scan.coverage?.filter((item) => item.status !== "evaluated") ?? [];
     const evidenceRecords = evidence.records ?? 0;
     const evidenceErrors = evidence.errors ?? 0;
+    const observedCollectorIds = new Set(
+      this.evidenceStats(scanId).map((item) => item.collectorId),
+    );
+    const missingCollectorIds = expectedCollectorIds.filter(
+      (collectorId) => !observedCollectorIds.has(collectorId),
+    );
     const ageMinutes = Math.max(0, (Date.now() - Date.parse(scan.createdAt)) / 60_000);
     const stale = scan.status === "collecting" && ageMinutes > staleAfterMinutes;
     const reasons: string[] = [];
@@ -404,6 +416,8 @@ export class CloudRangerStore {
     if (missingEvidence.length > 0)
       reasons.push(`${missingEvidence.length} controls have missing or errored evidence`);
     if (evidenceErrors > 0) reasons.push(`${evidenceErrors} evidence records failed`);
+    if (missingCollectorIds.length > 0)
+      reasons.push(`${missingCollectorIds.length} required collectors have no submitted evidence`);
     return {
       scanId,
       status: stale ? "stale" : scan.status,
@@ -411,6 +425,7 @@ export class CloudRangerStore {
         scan.status === "evaluated" &&
         !stale &&
         missingEvidence.length === 0 &&
+        missingCollectorIds.length === 0 &&
         evidenceErrors === 0,
       stale,
       ageMinutes: Math.round(ageMinutes * 10) / 10,
@@ -422,7 +437,14 @@ export class CloudRangerStore {
         (requestedControls ? evaluatedControls / requestedControls : 0),
       evidenceRecords,
       evidenceErrors,
-      missingCollectors: [...new Set(missingEvidence.flatMap((item) => item.missingCollectors))],
+      expectedCollectors: expectedCollectorIds.length,
+      observedCollectors: observedCollectorIds.size,
+      missingCollectors: [
+        ...new Set([
+          ...missingEvidence.flatMap((item) => item.missingCollectors),
+          ...missingCollectorIds,
+        ]),
+      ],
       reasons,
     };
   }
