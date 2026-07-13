@@ -1,0 +1,258 @@
+# Version-pinned compliance mapping registry. A mapping never implies certification.
+frameworks:
+  - id: ism
+    title: Australian Government Information Security Manual
+    version: "2026.06.18"
+    source: https://www.cyber.gov.au/business-government/asds-cyber-security-frameworks/ism/ism-oscal-releases
+  - id: soc2-tsc
+    title: SOC 2 Trust Services Criteria
+    version: "2017"
+    source: https://www.aicpa-cima.com/resources/landing/trust-services-criteria
+  - id: nist-800-53
+    title: NIST SP 800-53
+    version: "5"
+    source: https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+  - id: pci-dss
+    title: PCI DSS
+    version: "4.0.1"
+    source: https://www.pcisecuritystandards.org/document_library
+  - id: iso-27001
+    title: ISO/IEC 27001 Annex A
+    version: "2022"
+    source: https://www.iso.org/standard/27001
+  - id: azure-security-benchmark
+    title: Microsoft Azure Security Benchmark
+    version: "3"
+    source: https://learn.microsoft.com/azure/security/benchmarks/overview
+  - id: aws-fsbp
+    title: AWS Foundational Security Best Practices
+    version: "current"
+    source: https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html
+  - id: gcp-security-foundations
+    title: Google Cloud Security Foundations Guide
+    version: "current"
+    source: https://cloud.google.com/architecture/security-foundations
+
+# Each entry is an auditable assertion linking one CloudRanger control to one
+# framework requirement. status is automated, partial, manual, or unsupported.
+mappings:
+  - framework: nist-800-53
+    requirement: IA-2(1)
+    controlId: CR-AWS-IAM-001
+    status: automated
+    rationale: IAM account summary directly evidences whether the AWS root user has MFA enabled.
+  - framework: pci-dss
+    requirement: "8.4.2"
+    controlId: CR-AWS-IAM-001
+    status: partial
+    rationale: Root MFA is automated evidence for one authentication safeguard; PCI scope, MFA method, and all in-scope users require assessment.
+  - framework: soc2-tsc
+    requirement: CC6.1
+    controlId: CR-AWS-IAM-001
+    status: partial
+    rationale: Root MFA supports logical-access protection but does not evidence the full SOC 2 criterion.
+  - framework: iso-27001
+    requirement: A.5.17
+    controlId: CR-AWS-IAM-001
+    status: partial
+    rationale: Root MFA supports authentication-information management but does not evidence policy or process operation.
+  - framework: aws-fsbp
+    requirement: IAM.6
+    controlId: CR-AWS-IAM-001
+    status: automated
+    rationale: The AWS IAM account summary directly reports the root MFA setting.
+  - framework: nist-800-53
+    requirement: IA-5(1)
+    controlId: CR-AWS-IAM-002
+    status: automated
+    rationale: IAM account summary directly evidences whether root access keys exist.
+  - framework: pci-dss
+    requirement: "8.6.1"
+    controlId: CR-AWS-IAM-002
+    status: partial
+    rationale: Absence of root access keys supports credential protection but PCI scope and credential-management processes require assessment.
+  - framework: aws-fsbp
+    requirement: IAM.4
+    controlId: CR-AWS-IAM-002
+    status: automated
+    rationale: The AWS IAM account summary directly reports whether root access keys are present.
+  - framework: nist-800-53
+    requirement: SC-28
+    controlId: CR-AWS-S3-002
+    status: automated
+    rationale: S3 bucket encryption configuration directly evidences default encryption at rest.
+  - framework: iso-27001
+    requirement: A.8.24
+    controlId: CR-AWS-S3-002
+    status: partial
+    rationale: Default bucket encryption supports cryptography at rest but key governance and data classification require assessment.
+  - framework: aws-fsbp
+    requirement: S3.17
+    controlId: CR-AWS-S3-002
+    status: automated
+    rationale: The bucket encryption collector directly evidences the configured default encryption.
+  - framework: nist-800-53
+    requirement: AC-3
+    controlId: CR-AWS-S3-001
+    status: partial
+    rationale: S3 public-access-block settings are direct evidence of a preventive access-control guardrail, but bucket policies and application authorization remain out of scope.
+  - framework: aws-fsbp
+    requirement: S3.1
+    controlId: CR-AWS-S3-001
+    status: automated
+    rationale: Bucket public-access-block configuration is collected and evaluated directly.
+  - framework: nist-800-53
+    requirement: SC-28
+    controlId: CR-AWS-EC2-001
+    status: automated
+    rationale: The EBS encryption-by-default API directly evidences the regional encryption default.
+  - framework: nist-800-53
+    requirement: SC-28
+    controlId: CR-AWS-EC2-006
+    status: automated
+    rationale: EC2 volume metadata directly reports whether each EBS volume is encrypted.
+  - framework: nist-800-53
+    requirement: SC-28
+    controlId: CR-AWS-RDS-002
+    status: automated
+    rationale: RDS instance metadata directly reports storage encryption status.
+  - framework: nist-800-53
+    requirement: AU-2
+    controlId: CR-AWS-CLOUDTRAIL-001
+    status: automated
+    rationale: CloudTrail trail metadata directly evidences multi-region audit trail configuration.
+  - framework: nist-800-53
+    requirement: AU-9
+    controlId: CR-AWS-CLOUDTRAIL-003
+    status: automated
+    rationale: CloudTrail metadata directly evidences log file validation integrity protection.
+  - framework: pci-dss
+    requirement: "10.2.1"
+    controlId: CR-AWS-CLOUDTRAIL-001
+    status: partial
+    rationale: CloudTrail configuration supports audit logging but does not prove all PCI in-scope system events are captured or reviewed.
+  - framework: iso-27001
+    requirement: A.8.15
+    controlId: CR-AWS-CLOUDTRAIL-001
+    status: partial
+    rationale: Multi-region CloudTrail supports logging, while event selection, retention, and review processes require assessment.
+  - framework: ism
+    requirement: ism-1173
+    controlId: CR-AWS-IAM-001
+    status: partial
+    rationale: Root-user MFA is direct technical evidence for MFA on one privileged account, but ISM applicability and all privileged accounts require assessment.
+  - framework: ism
+    requirement: ism-1080
+    controlId: CR-AWS-S3-002
+    status: partial
+    rationale: S3 default encryption evidences encryption at rest, but does not establish that ASD-approved cryptography is selected for the data classification.
+  - framework: ism
+    requirement: ism-1080
+    controlId: CR-AWS-EC2-006
+    status: partial
+    rationale: EBS volume metadata directly reports encryption at rest but cannot establish the ISM cryptographic assurance level.
+  - framework: ism
+    requirement: ism-1080
+    controlId: CR-AWS-RDS-002
+    status: partial
+    rationale: RDS storage encryption is direct technical evidence of encryption at rest, subject to ISM crypto and data-classification assessment.
+  - framework: ism
+    requirement: ism-1405
+    controlId: CR-AWS-CLOUDTRAIL-001
+    status: partial
+    rationale: A multi-region CloudTrail supports central event collection, but this control does not prove the organisation operates a centralised logging facility.
+  - framework: azure-security-benchmark
+    requirement: DP-3
+    controlId: CR-AZURE-STORAGE-001
+    status: partial
+    rationale: HTTPS-only storage is direct evidence for encrypted storage traffic, while TLS configuration and workload scope require assessment.
+  - framework: azure-security-benchmark
+    requirement: NS-2
+    controlId: CR-AZURE-STORAGE-002
+    status: partial
+    rationale: Disabling anonymous blob access reduces public exposure but does not prove private endpoint or all public-network restrictions are in place.
+  - framework: azure-security-benchmark
+    requirement: NS-2
+    controlId: CR-AZURE-STORAGE-004
+    status: partial
+    rationale: A deny-by-default storage firewall is direct evidence of one network restriction, not the complete private-access architecture.
+  - framework: azure-security-benchmark
+    requirement: DP-3
+    controlId: CR-AZURE-APP-001
+    status: partial
+    rationale: HTTPS redirect protects inbound App Service traffic but does not assess all data flows or TLS policy.
+  - framework: azure-security-benchmark
+    requirement: DP-3
+    controlId: CR-AZURE-APP-002
+    status: partial
+    rationale: The minimum inbound TLS version is direct evidence for one public interface; broader data-in-transit coverage requires assessment.
+  - framework: azure-security-benchmark
+    requirement: IM-3
+    controlId: CR-AZURE-APPSERVICE-100
+    status: partial
+    rationale: App Service managed-identity configuration directly evidences secret-less application identity, not its permissions or all application identities.
+  - framework: azure-security-benchmark
+    requirement: IM-3
+    controlId: CR-AZURE-COMPUTE-103
+    status: partial
+    rationale: VM managed-identity configuration directly evidences one secure application-identity mechanism, not workload credential governance.
+  - framework: gcp-security-foundations
+    requirement: centralized-logging
+    controlId: CR-GCP-LOGGING-111
+    status: partial
+    rationale: An external Cloud Logging sink is direct evidence of an export destination, while the foundations blueprint requires organisation-wide aggregation, retention, and access design.
+  - framework: gcp-security-foundations
+    requirement: public-network-restriction
+    controlId: CR-GCP-STORAGE-003
+    status: partial
+    rationale: Bucket public-access prevention blocks public exposure, but it does not prove the blueprint's wider private-network architecture.
+  - framework: gcp-security-foundations
+    requirement: public-network-restriction
+    controlId: CR-GCP-FIREWALL-001
+    status: partial
+    rationale: Restricting internet SSH is direct evidence for one ingress control, not a complete private-network architecture.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-113
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for audit-configuration changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-114
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for Cloud Storage IAM changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-115
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for Compute Engine changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-116
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for IAM custom-role changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-117
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for project-owner changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-118
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for Cloud SQL changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-119
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for VPC firewall changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-120
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for VPC network changes; review, reporting, and response processes remain outside this check.
+  - framework: nist-800-53
+    requirement: AU-6
+    controlId: CR-GCP-LOGGING-121
+    status: partial
+    rationale: The linked metric and alert provide technical evidence of analysis for VPC route changes; review, reporting, and response processes remain outside this check.

@@ -4,6 +4,9 @@ import { homedir } from "node:os";
 import { basename } from "node:path";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { resolve } from "node:path";
+import { writeHtmlReport, writePdfReport } from "./report.js";
+import { complianceCoverage } from "./compliance.js";
 import {
   catalogDir,
   customCatalogDir,
@@ -29,6 +32,9 @@ Usage:
   cloudranger catalog list [--provider aws|azure|gcp]
   cloudranger findings [--state open,reopened] [--severity critical,high] [--json]
   cloudranger report [--since-days 30] [--provider aws|azure|gcp]
+  cloudranger report html [--output output/html/cloudranger-report.html] [--since-days 30] [--provider aws|azure|gcp]
+  cloudranger report pdf [--output output/pdf/cloudranger-report.pdf] [--since-days 30] [--provider aws|azure|gcp]
+  cloudranger compliance coverage [--framework <id>] [--provider aws|azure|gcp] [--json]
   cloudranger scans                     List recent scans
   cloudranger audit [--limit 50]        Show recent audit entries
   cloudranger audit verify              Verify the audit hash chain
@@ -184,21 +190,74 @@ function main(): number {
 
   if (command === "report") {
     const { values } = parseArgs({
-      args: [subcommand, ...rest].filter((a): a is string => a !== undefined),
-      options: { "since-days": { type: "string" }, provider: { type: "string" } },
+      args: (subcommand === "html" || subcommand === "pdf" ? rest : [subcommand, ...rest]).filter(
+        (a): a is string => a !== undefined,
+      ),
+      options: {
+        "since-days": { type: "string" },
+        provider: { type: "string" },
+        output: { type: "string" },
+      },
     });
     const store = new CloudRangerStore(dbPath());
-    console.log(
-      JSON.stringify(
-        store.reportData({
-          sinceDays: values["since-days"] ? Number(values["since-days"]) : undefined,
-          provider: values.provider as any,
-        }),
-        null,
-        2,
-      ),
+    const report = store.reportData({
+      sinceDays: values["since-days"] ? Number(values["since-days"]) : undefined,
+      provider: values.provider as any,
+    }) as any;
+    const controlsById = new Map(
+      loadDefaultCatalog().controls.map((control) => [control.id, control]),
     );
+    report.topFailingControls = report.topFailingControls.map((item: any) => {
+      const control = controlsById.get(item.controlId);
+      return { ...item, title: control?.title, description: control?.description };
+    });
+    if (subcommand === "html" || subcommand === "pdf") {
+      const defaultPath =
+        subcommand === "html"
+          ? "output/html/cloudranger-report.html"
+          : "output/pdf/cloudranger-report.pdf";
+      const output = resolve(values.output ?? defaultPath);
+      const htmlPath = subcommand === "html" ? output : output.replace(/\.pdf$/i, ".html");
+      writeHtmlReport(htmlPath, report);
+      if (subcommand === "pdf") writePdfReport(htmlPath, output);
+      console.log(output);
+    } else console.log(JSON.stringify(report, null, 2));
     store.close();
+    return 0;
+  }
+
+  if (command === "compliance" && subcommand === "coverage") {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        framework: { type: "string" },
+        provider: { type: "string" },
+        json: { type: "boolean" },
+      },
+    });
+    const coverage = complianceCoverage({
+      framework: values.framework,
+      provider: values.provider,
+    });
+    if (values.framework && coverage.length === 0) {
+      console.error(`unknown framework: ${values.framework}`);
+      return 1;
+    }
+    if (values.json) console.log(JSON.stringify(coverage, null, 2));
+    else {
+      for (const item of coverage) {
+        const statuses = Object.entries(item.statuses)
+          .filter(([, count]) => count > 0)
+          .map(([status, count]) => `${status}=${count}`)
+          .join(" ");
+        console.log(
+          `${item.framework.padEnd(28)} ${String(item.mappedControls).padStart(3)}/${String(item.totalControls).padEnd(3)} controls  ${String(Math.round(item.coverageRatio * 100)).padStart(3)}%  ${statuses || "no mappings"}`,
+        );
+      }
+      console.log(
+        "\nMapping coverage describes CloudRanger technical evidence only; it is not a compliance certification.",
+      );
+    }
     return 0;
   }
 

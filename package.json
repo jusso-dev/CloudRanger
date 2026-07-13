@@ -19,7 +19,9 @@
     "catalog:test": "node apps/cli/dist/main.js catalog test",
     "prowler:coverage:sync": "node scripts/prowler-coverage.mjs sync",
     "prowler:coverage:validate": "node scripts/prowler-coverage.mjs validate",
-    "prowler:coverage:report": "node scripts/prowler-coverage.mjs report"
+    "prowler:coverage:report": "node scripts/prowler-coverage.mjs report",
+    "compliance:mappings:validate": "node scripts/compliance-mappings-validate.mjs",
+    "ism:oscal:sync": "node scripts/ism-oscal-sync.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",

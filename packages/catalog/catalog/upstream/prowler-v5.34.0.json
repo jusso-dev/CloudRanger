@@ -9092,10 +9092,8 @@
       "title": "Log metric filter for audit configuration changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-113"]
     },
     {
       "provider": "gcp",
@@ -9104,10 +9102,8 @@
       "title": "Log metric filter for Cloud Storage IAM permission changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-114"]
     },
     {
       "provider": "gcp",
@@ -9116,10 +9112,8 @@
       "title": "Compute Engine configuration changes are monitored with log metric filters and alerts",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-115"]
     },
     {
       "provider": "gcp",
@@ -9128,10 +9122,8 @@
       "title": "Log metric filter for IAM custom role changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-116"]
     },
     {
       "provider": "gcp",
@@ -9140,10 +9132,8 @@
       "title": "Log metric filter for project ownership assignments/changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-117"]
     },
     {
       "provider": "gcp",
@@ -9152,10 +9142,8 @@
       "title": "Log metric filter for Cloud SQL instance configuration changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-118"]
     },
     {
       "provider": "gcp",
@@ -9164,10 +9152,8 @@
       "title": "Log metric filter for VPC network firewall rule changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-119"]
     },
     {
       "provider": "gcp",
@@ -9176,10 +9162,8 @@
       "title": "Log metric filter for VPC network changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-120"]
     },
     {
       "provider": "gcp",
@@ -9188,10 +9172,8 @@
       "title": "Log metric filter for VPC network route changes has an associated alert policy",
       "severity": "medium",
       "deprecated": false,
-      "status": "unsupported",
-      "controlIds": [],
-      "reason": "Requires proving that a specific Cloud Logging metric is referenced by an enabled Cloud Monitoring alert policy.",
-      "requiredCapabilities": ["cross-collector relationship evaluation"]
+      "status": "implemented",
+      "controlIds": ["CR-GCP-LOGGING-121"]
     },
     {
       "provider": "gcp",

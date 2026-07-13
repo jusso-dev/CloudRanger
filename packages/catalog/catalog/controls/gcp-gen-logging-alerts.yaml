@@ -1,0 +1,461 @@
+# Log-based metric controls require evidence from both Cloud Logging and Cloud
+# Monitoring. The related collector is injected under related.alertPolicies.
+controls:
+  - id: CR-GCP-LOGGING-113
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: Audit configuration changes have a log metric and alert
+    description: A log-based metric detects audit configuration changes and an alert policy references that metric.
+    rationale: Changes to audit configuration can create undetected logging blind spots.
+    severity: medium
+    categories: [logging, detection]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_audit_configuration_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'protoPayload.methodName="SetIamPolicy" AND protoPayload.serviceData.policyDelta.auditConfigDeltas:*',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    onError:
+      [
+        {
+          contains: SERVICE_DISABLED,
+          status: fail,
+          message: Logging or Monitoring API is disabled; the required metric and alert cannot be verified.,
+        },
+      ]
+    failMessage: No audit-configuration-change metric is referenced by an alert policy.
+    passMessage: An audit-configuration-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create an audit-configuration log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for audit configuration changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-114
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: Cloud Storage IAM changes have a log metric and alert
+    description: A log-based metric detects Cloud Storage IAM permission changes and an alert policy references that metric.
+    rationale: Storage permission changes can expose sensitive data without detection.
+    severity: medium
+    categories: [logging, detection]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_bucket_permission_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'resource.type="gcs_bucket" AND protoPayload.methodName="storage.setIamPermissions"',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No Cloud Storage IAM-change metric is referenced by an alert policy.
+    passMessage: A Cloud Storage IAM-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a Cloud Storage IAM-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for storage IAM permission changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-115
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: Compute Engine configuration changes have a log metric and alert
+    description: A log-based metric detects Compute Engine configuration changes and an alert policy references that metric.
+    rationale: Undetected Compute Engine changes can weaken workload security.
+    severity: medium
+    categories: [logging, detection]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_compute_configuration_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'protoPayload.serviceName="compute.googleapis.com"',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No Compute Engine configuration-change metric is referenced by an alert policy.
+    passMessage: A Compute Engine configuration-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a Compute Engine change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for Compute Engine configuration changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-116
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: IAM custom role changes have a log metric and alert
+    description: A log-based metric detects IAM custom role changes and an alert policy references that metric.
+    rationale: Custom role changes can silently expand access privileges.
+    severity: medium
+    categories: [logging, detection]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_custom_role_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'resource.type="iam_role" AND (protoPayload.methodName="google.iam.admin.v1.CreateRole" OR protoPayload.methodName="google.iam.admin.v1.DeleteRole" OR protoPayload.methodName="google.iam.admin.v1.UpdateRole")',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No IAM custom-role-change metric is referenced by an alert policy.
+    passMessage: An IAM custom-role-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create an IAM custom-role-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for IAM custom role changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-117
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: Project ownership changes have a log metric and alert
+    description: A log-based metric detects project ownership changes and an alert policy references that metric.
+    rationale: Owner-role changes grant broad control of a project and require rapid review.
+    severity: high
+    categories: [logging, detection, identity]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_project_ownership_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'protoPayload.serviceName="cloudresourcemanager.googleapis.com"',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No project-ownership-change metric is referenced by an alert policy.
+    passMessage: A project-ownership-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a project-ownership-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for project owner changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-118
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: Cloud SQL configuration changes have a log metric and alert
+    description: A log-based metric detects Cloud SQL instance configuration changes and an alert policy references that metric.
+    rationale: Cloud SQL changes can weaken database security and availability.
+    severity: medium
+    categories: [logging, detection]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_sql_instance_configuration_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'protoPayload.methodName="cloudsql.instances.update"',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No Cloud SQL configuration-change metric is referenced by an alert policy.
+    passMessage: A Cloud SQL configuration-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a Cloud SQL change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for Cloud SQL configuration changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-119
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: VPC firewall rule changes have a log metric and alert
+    description: A log-based metric detects VPC firewall rule changes and an alert policy references that metric.
+    rationale: Firewall changes can expose workloads to the internet.
+    severity: high
+    categories: [logging, detection, network]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_vpc_firewall_rule_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'resource.type="gce_firewall_rule" AND (protoPayload.methodName:"compute.firewalls.patch" OR protoPayload.methodName:"compute.firewalls.insert" OR protoPayload.methodName:"compute.firewalls.delete")',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No VPC firewall-change metric is referenced by an alert policy.
+    passMessage: A VPC firewall-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a VPC firewall-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for VPC firewall rule changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-120
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: VPC network changes have a log metric and alert
+    description: A log-based metric detects VPC network changes and an alert policy references that metric.
+    rationale: Network changes can alter isolation boundaries without detection.
+    severity: medium
+    categories: [logging, detection, network]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_vpc_network_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'resource.type="gce_network" AND (protoPayload.methodName:"compute.networks.insert" OR protoPayload.methodName:"compute.networks.patch" OR protoPayload.methodName:"compute.networks.delete" OR protoPayload.methodName:"compute.networks.removePeering" OR protoPayload.methodName:"compute.networks.addPeering")',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No VPC network-change metric is referenced by an alert policy.
+    passMessage: A VPC network-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a VPC network-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for VPC network changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
+  - id: CR-GCP-LOGGING-121
+    version: 1.0.0
+    provider: gcp
+    service: logging
+    title: VPC route changes have a log metric and alert
+    description: A log-based metric detects VPC route changes and an alert policy references that metric.
+    rationale: Route changes can redirect or expose traffic without detection.
+    severity: medium
+    categories: [logging, detection, network]
+    source:
+      {
+        engine: prowler,
+        id: logging_log_metric_filter_and_alert_for_vpc_network_route_changes_enabled,
+        license: Apache-2.0,
+      }
+    collector: gcp.logging.metrics_list
+    relatedCollectors: [{ collector: gcp.monitoring.alert_policies_list, as: alertPolicies }]
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      {
+        op: anyItemReferencedBy,
+        itemsPath: primary,
+        itemCondition:
+          {
+            op: contains,
+            path: filter,
+            value: 'resource.type="gce_route" AND (protoPayload.methodName:"compute.routes.delete" OR protoPayload.methodName:"compute.routes.insert")',
+          },
+        itemValuePath: name,
+        relatedPath: related.alertPolicies,
+      }
+    failMessage: No VPC route-change metric is referenced by an alert policy.
+    passMessage: A VPC route-change metric is referenced by an alert policy.
+    remediation:
+      {
+        summary: Create a VPC route-change log metric and alert policy,
+        steps:
+          [
+            Create a log-based metric for VPC route changes.,
+            Create an alert policy whose condition references that metric.,
+          ],
+        verifyCommand: gcloud logging metrics list --project <project> --format json,
+      }
+    compliance: [{ framework: cis-gcp-foundations, version: "2.0", controls: ["2.4"] }]
+    references:
+      [
+        https://cloud.google.com/logging/docs/logs-based-metrics,
+        https://cloud.google.com/monitoring/alerts,
+      ]
