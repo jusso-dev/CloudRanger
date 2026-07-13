@@ -24,8 +24,10 @@ catalog directory with override semantics, and a Prowler metadata importer
 4. GCP depth: audit config + log sinks/metric filters, KMS rotation,
    BigQuery dataset IAM, Cloud Run ingress/auth, Essential Contacts,
    org policies. Target 100+.
-5. Fixture recorder: `cloudranger fixtures capture` — sanitise real CLI
-   output into fixture cases.
+5. ~~Fixture recorder: `cloudranger fixtures capture` — sanitise real CLI
+   output into fixture cases.~~ **Done** — deterministic sanitiser
+   (engine `createSanitizer`), verdict validation before write, custom
+   fixtures directory picked up by `catalog test`.
 6. ~~Credential-report support (CSV evidence type) for the full CIS 1.x IAM
    family.~~ **Done** — engine-side `decode: base64Csv` on collectors, the
    exact-allowlisted `prepareCommand` mechanism, and controls
