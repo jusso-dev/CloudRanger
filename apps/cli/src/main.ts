@@ -36,6 +36,10 @@ Usage:
   cloudranger catalog test              Run all control fixture tests
   cloudranger catalog list [--provider aws|azure|gcp]
   cloudranger findings [--state open,reopened] [--severity critical,high] [--owner team] [--overdue] [--json]
+  cloudranger retention list            Show evidence retention policies
+  cloudranger retention set --provider aws|azure|gcp --scope <id> [--keep-days N] [--keep-scans N]
+  cloudranger retention prune --provider aws|azure|gcp --scope <id> [--execute --confirm]
+                                        Prune raw evidence (dry run by default)
   cloudranger parameters list --provider aws|azure|gcp --scope <scopeId> [--json]
   cloudranger parameters set --provider aws|azure|gcp --scope <scopeId> --control <id> [--param name=value ...]
                                         Persist parameter overrides (no --param clears)
@@ -250,6 +254,70 @@ async function main(): Promise<number> {
     }
     await store.close();
     return 0;
+  }
+
+  if (command === "retention") {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        provider: { type: "string" },
+        scope: { type: "string" },
+        "keep-days": { type: "string" },
+        "keep-scans": { type: "string" },
+        execute: { type: "boolean" },
+        confirm: { type: "boolean" },
+        json: { type: "boolean" },
+      },
+    });
+    const store = createRepository({ sqlitePath: dbPath() });
+    try {
+      if (subcommand === "list") {
+        const policies = await store.listRetentionPolicies();
+        if (values.json) console.log(JSON.stringify(policies, null, 2));
+        else if (policies.length === 0) console.log("no retention policies set");
+        else
+          for (const p of policies)
+            console.log(
+              `${p.provider} ${p.scopeId}  keepDays=${p.keepDays ?? "-"} keepScans=${p.keepScans ?? "-"}`,
+            );
+        return 0;
+      }
+      if (!values.provider || !["aws", "azure", "gcp"].includes(values.provider) || !values.scope) {
+        console.error("retention set/prune requires --provider aws|azure|gcp and --scope <id>");
+        return 1;
+      }
+      const provider = values.provider as "aws" | "azure" | "gcp";
+      if (subcommand === "set") {
+        const keepDays = values["keep-days"] ? Number(values["keep-days"]) : undefined;
+        const keepScans = values["keep-scans"] ? Number(values["keep-scans"]) : undefined;
+        if (keepDays === undefined && keepScans === undefined) {
+          await store.setRetentionPolicy(provider, values.scope, null);
+          console.log("policy cleared");
+          return 0;
+        }
+        await store.setRetentionPolicy(provider, values.scope, { keepDays, keepScans });
+        console.log(`policy saved: keepDays=${keepDays ?? "-"} keepScans=${keepScans ?? "-"}`);
+        return 0;
+      }
+      if (subcommand === "prune") {
+        if (values.execute && !values.confirm) {
+          console.error("--execute requires --confirm: pruned payloads cannot be recovered");
+          return 1;
+        }
+        const result = await store.pruneEvidence({
+          provider,
+          scopeId: values.scope,
+          execute: Boolean(values.execute && values.confirm),
+        });
+        console.log(JSON.stringify(result, null, 2));
+        if (!result.executed) console.log("dry run — nothing deleted");
+        return 0;
+      }
+      console.error("usage: cloudranger retention list|set|prune ...");
+      return 1;
+    } finally {
+      await store.close();
+    }
   }
 
   if (command === "parameters") {

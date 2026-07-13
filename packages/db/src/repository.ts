@@ -35,6 +35,28 @@ export interface CloudRangerRepository {
     controlIds: string[];
     parameters?: Record<string, Record<string, unknown>>;
   }): Promise<ScanRow>;
+  setRetentionPolicy(
+    provider: Provider,
+    scopeId: string,
+    policy: { keepDays?: number; keepScans?: number } | null,
+  ): Promise<void>;
+  listRetentionPolicies(): Promise<
+    Array<{
+      provider: Provider;
+      scopeId: string;
+      keepDays?: number;
+      keepScans?: number;
+      updatedAt: string;
+    }>
+  >;
+  pruneEvidence(input: { provider: Provider; scopeId: string; execute?: boolean }): Promise<{
+    policy: { keepDays?: number; keepScans?: number };
+    protectedScans: number;
+    prunableScans: string[];
+    prunableRecords: number;
+    prunableBytes: number;
+    executed: boolean;
+  }>;
   recordControlRevisions(
     revisions: Array<{
       controlId: string;

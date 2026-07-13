@@ -486,6 +486,108 @@ export function createServer(deps: ServerDeps): McpServer {
     ),
   );
 
+  // ---------- retention ----------
+
+  server.registerTool(
+    "retention_policy_set",
+    {
+      title: "Set an evidence retention policy for a scope",
+      description:
+        "Persist how long raw evidence payloads are kept for one scope: keepDays (age-based) and/or keepScans (most recent N scans). Pruning never touches findings, evaluations, scan metadata, or evidence digests — only raw payloads. Omit both values to clear the policy.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string(),
+        keepDays: z.number().int().min(1).max(3650).optional(),
+        keepScans: z.number().int().min(1).max(1000).optional(),
+      },
+      annotations: { ...readOnly, readOnlyHint: false, idempotentHint: true },
+    },
+    audited(
+      "retention_policy_set",
+      async (args: {
+        provider: Provider;
+        scopeId: string;
+        keepDays?: number;
+        keepScans?: number;
+      }) => {
+        if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
+        if (args.keepDays === undefined && args.keepScans === undefined) {
+          await store.setRetentionPolicy(args.provider, args.scopeId, null);
+          return { cleared: true };
+        }
+        await store.setRetentionPolicy(args.provider, args.scopeId, {
+          keepDays: args.keepDays,
+          keepScans: args.keepScans,
+        });
+        return {
+          provider: args.provider,
+          scopeId: args.scopeId,
+          keepDays: args.keepDays,
+          keepScans: args.keepScans,
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    "retention_policy_list",
+    {
+      title: "List evidence retention policies",
+      description: "Every persisted per-scope evidence retention policy.",
+      inputSchema: {},
+      annotations: readOnly,
+    },
+    audited("retention_policy_list", async () => ({
+      policies: await store.listRetentionPolicies(),
+    })),
+  );
+
+  server.registerTool(
+    "evidence_prune",
+    {
+      title: "Prune raw evidence per the scope's retention policy",
+      description:
+        "Apply the scope's retention policy to raw evidence payloads. Dry run by default: reports which scans and how many records/bytes would be pruned. Destructive execution requires BOTH execute: true and confirm: true, preserves findings/evaluations/digests (hash, size, captured-at), and reclaims space afterwards.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string(),
+        execute: z.boolean().optional().describe("Actually prune (default: dry run)"),
+        confirm: z
+          .boolean()
+          .optional()
+          .describe("Required alongside execute — pruned payloads cannot be recovered"),
+      },
+      annotations: { ...readOnly, readOnlyHint: false, destructiveHint: true },
+    },
+    audited(
+      "evidence_prune",
+      async (args: {
+        provider: Provider;
+        scopeId: string;
+        execute?: boolean;
+        confirm?: boolean;
+      }) => {
+        if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
+        if (args.execute && !args.confirm) {
+          throw new Error(
+            "execute: true requires confirm: true — pruned payloads cannot be recovered",
+          );
+        }
+        const result = await store.pruneEvidence({
+          provider: args.provider,
+          scopeId: args.scopeId,
+          execute: Boolean(args.execute && args.confirm),
+        });
+        return {
+          ...result,
+          note: result.executed
+            ? "Raw payloads pruned. Findings, evaluations, and evidence digests are preserved."
+            : "Dry run — nothing was deleted. Re-run with execute: true and confirm: true to prune.",
+        };
+      },
+    ),
+  );
+
   // ---------- scope parameters ----------
 
   server.registerTool(

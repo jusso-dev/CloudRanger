@@ -160,4 +160,17 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_control_revisions_control ON control_revisions(control_id, first_seen_at);
   `,
+  `
+  ALTER TABLE evidence ADD COLUMN pruned_at TEXT;
+  ALTER TABLE evidence ADD COLUMN output_bytes INTEGER;
+  CREATE TABLE retention_policies (
+    provider TEXT NOT NULL CHECK (provider IN ('aws','azure','gcp')),
+    scope_id TEXT NOT NULL,
+    keep_days INTEGER,
+    keep_scans INTEGER,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (provider, scope_id),
+    CHECK (keep_days IS NOT NULL OR keep_scans IS NOT NULL)
+  );
+  `,
 ];

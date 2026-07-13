@@ -42,6 +42,8 @@ export const evidence = pgTable(
     exitCode: integer("exit_code").notNull(),
     evidenceHash: text("evidence_hash").notNull(),
     collectedAt: timestamp("collected_at", { withTimezone: true }).notNull(),
+    prunedAt: timestamp("pruned_at", { withTimezone: true }),
+    outputBytes: integer("output_bytes"),
   },
   (table) => [index("idx_evidence_scan").on(table.scanId, table.collectorId)],
 );
@@ -186,4 +188,16 @@ export const controlRevisions = pgTable(
     primaryKey({ columns: [table.controlId, table.version, table.contentHash] }),
     index("idx_control_revisions_control").on(table.controlId, table.firstSeenAt),
   ],
+);
+
+export const retentionPolicies = pgTable(
+  "retention_policies",
+  {
+    provider: varchar("provider", { length: 16 }).notNull(),
+    scopeId: text("scope_id").notNull(),
+    keepDays: integer("keep_days"),
+    keepScans: integer("keep_scans"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.provider, table.scopeId] })],
 );

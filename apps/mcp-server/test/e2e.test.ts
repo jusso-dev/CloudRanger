@@ -738,3 +738,23 @@ describe("deprecation and revision history", () => {
     expect(history.live.matchesRecordedRevision).toBe(true);
   });
 });
+
+describe("retention over MCP", () => {
+  it("sets policy, dry-runs by default, and demands double confirmation", async () => {
+    await call("retention_policy_set", {
+      provider: "aws",
+      scopeId: "121212121212",
+      keepScans: 1,
+    });
+    const listed = await call("retention_policy_list", {});
+    expect(listed.policies.some((p: any) => p.scopeId === "121212121212")).toBe(true);
+
+    const dry = await call("evidence_prune", { provider: "aws", scopeId: "121212121212" });
+    expect(dry.executed).toBe(false);
+    expect(dry.note).toMatch(/Dry run/);
+
+    await expect(
+      call("evidence_prune", { provider: "aws", scopeId: "121212121212", execute: true }),
+    ).rejects.toThrow(/confirm/);
+  });
+});

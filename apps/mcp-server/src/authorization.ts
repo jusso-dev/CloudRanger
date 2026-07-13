@@ -2,12 +2,14 @@ export type CloudRangerRole = "admin" | "operator" | "auditor" | "reader";
 
 const ADMIN_ONLY = new Set([
   "catalog_add_custom_control",
+  "evidence_prune",
   "workspace_list_members",
   "workspace_set_member",
   "workspace_remove_member",
 ]);
 const MUTATING = new Set([
   "parameters_set",
+  "retention_policy_set",
   "scan_start",
   "evidence_submit",
   "scan_evaluate",
