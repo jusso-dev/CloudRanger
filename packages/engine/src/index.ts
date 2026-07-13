@@ -47,3 +47,13 @@ export {
   type CollectorRuntimeOptions,
   type CollectorRuntimeResult,
 } from "./collector-runtime.js";
+export {
+  buildCatalogManifest,
+  generateSigningKeyPair,
+  signCatalogManifest,
+  verifyCatalogDirectory,
+  CATALOG_MANIFEST_NAME,
+  CATALOG_SIGNATURE_NAME,
+  type CatalogManifest,
+  type CatalogVerification,
+} from "./signing.js";

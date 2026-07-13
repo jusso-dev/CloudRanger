@@ -67,3 +67,36 @@ The listener never terminates TLS — put a TLS-terminating reverse proxy
 (Caddy, nginx, a tunnel) in front of any non-loopback deployment, and treat
 the token like a database credential. Threat model: T6 in
 docs/architecture/threat-model.md.
+
+## Catalog signing and third-party packs
+
+Signatures prove **provenance, never safety** — every loaded document passes
+the same schema and read-only safety validation regardless of signature
+status.
+
+Release signing (repository owner):
+
+```
+node scripts/catalog-sign.mjs keygen cloudranger-catalog   # once; commit only the .pub.pem
+# Add the private key as the CLOUDRANGER_CATALOG_SIGNING_KEY repo secret.
+# Tagged releases then ship catalog.manifest.json + catalog.manifest.sig.
+node scripts/catalog-sign.mjs verify packages/catalog/catalog --pub cloudranger-catalog.pub.pem
+```
+
+Key rotation: generate a new pair, publish the new public key alongside the
+old one for one release cycle, then retire the old key. Verifiers accept any
+pinned key, so overlap is safe.
+
+Third-party packs (operators):
+
+```
+mkdir -p ~/.cloudranger/trusted-keys           # pin publisher public keys here
+cloudranger packs add ./vendor-pack            # verify → safety-validate → fixture-check → install
+cloudranger packs add ./local-pack --trust-unsigned   # explicit opt-in for unsigned packs
+```
+
+`packs add` refuses unverified packs by default, runs full catalog safety
+validation (read-only collector allowlist, schema, parameter coherence) and
+rejects packs whose fixtures disagree with the engine — a valid signature on
+a mutating collector still fails. Installed files land in the custom catalog
+prefixed with the pack name.
