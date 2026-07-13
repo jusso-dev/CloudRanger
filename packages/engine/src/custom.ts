@@ -130,7 +130,9 @@ controls:
       op: equals                # in, notIn, contains, startsWith, endsWith, gt/gte/lt/lte,
       path: someField           # daysSinceGt/Lt, matches, lengthEquals/Gt, isEmpty,
       value: true               # isPublicCidr, portIncludes, portStringIncludes,
-                                # and/or/not, anyItem/allItems/noneItem
+                                # and/or/not, anyItem/allItems/noneItem,
+                                # relationshipExists (cross-resource join over
+                                # relatedCollectors evidence)
     # onError:                  # optional: map CLI errors to outcomes
     #   - contains: NotFoundException
     #     status: fail

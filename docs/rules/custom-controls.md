@@ -75,6 +75,10 @@ control ships regression-protected or not at all; accepted fixtures land in
   (list/describe/get/show; no shell metacharacters) — a mutating command is
   rejected outright.
 - `passWhen` must use only the safe expression operators (no code, no eval).
+  Cross-resource checks use `relationshipExists` — a declarative key-equality
+  join from the primary resource to `relatedCollectors` evidence (with an
+  optional condition on the joined item); join keys are plain JSON paths,
+  never expressions.
 - Parameter declarations must be coherent: every `{ $param: name }` reference
   declared, every declaration referenced, defaults within their own
   bounds/enum.

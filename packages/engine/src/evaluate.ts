@@ -9,7 +9,7 @@ import type {
   Expression,
 } from "./types.js";
 import { evaluateExpression, type ExprContext } from "./expr.js";
-import { getPath } from "./path.js";
+import { flattenPath, getPath } from "./path.js";
 import { decodeEvidenceRecord } from "./csv.js";
 import {
   effectiveParameterValues,
@@ -92,33 +92,13 @@ function resolveResources(
         units.push({ resource: record.output, region: record.region, exitCode: 0 });
       }
     } else {
-      for (const item of resolveArrayPath(record.output, path)) {
+      for (const item of flattenPath(record.output, path)) {
         units.push({ resource: item, region: record.region, exitCode: 0 });
       }
     }
     // Missing/empty arrays yield no units: nothing to evaluate in that region.
   }
   return units;
-}
-
-/**
- * Resolve a resources path that may flatten nested arrays with "[]", e.g.
- * "Reservations[].Instances" — for each element of Reservations, collect the
- * Instances array. A trailing plain segment must resolve to an array.
- */
-function resolveArrayPath(output: unknown, path: string): unknown[] {
-  const segments = path.split("[].");
-  let current: unknown[] = [output];
-  for (const [i, segment] of segments.entries()) {
-    const next: unknown[] = [];
-    for (const item of current) {
-      const v = getPath(item, segment);
-      if (Array.isArray(v)) next.push(...v);
-      else if (i < segments.length - 1 && v !== undefined && v !== null) next.push(v);
-    }
-    current = next;
-  }
-  return current;
 }
 
 function resourceIdOf(control: ControlDefinition, unit: ResourceUnit, scopeId: string): string {
@@ -163,6 +143,9 @@ function extractEvidence(expr: Expression, resource: unknown, acc: Record<string
   if (expr.op === "not") extractEvidence(expr.expr, resource, acc);
   if (expr.op === "anyItem" || expr.op === "allItems" || expr.op === "noneItem") {
     acc[expr.path] = getPath(resource, expr.path);
+  }
+  if (expr.op === "relationshipExists") {
+    acc[expr.localPath] = getPath(resource, expr.localPath);
   }
 }
 
