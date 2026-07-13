@@ -248,7 +248,7 @@ controls:
       - least-privilege
     source:
       engine: prowler
-      id: iam_no_service_roles_assigned_at_project_level
+      id: iam_no_service_roles_at_project_level
       license: Apache-2.0
     collector: gcp.project.iam_policy
     resourceIdField: $scope

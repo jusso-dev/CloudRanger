@@ -189,18 +189,45 @@ export function evaluateControls(
       continue;
     }
     const records = byCollector.get(control.collector) ?? [];
-    if (records.length === 0) {
+    const missingCollectors = [
+      control.collector,
+      ...(control.relatedCollectors ?? []).map((r) => r.collector),
+    ].filter((id) => (byCollector.get(id) ?? []).length === 0);
+    if (missingCollectors.length > 0) {
       coverage.push({
         controlId: control.id,
         status: "missing_evidence",
-        missingCollectors: [control.collector],
+        missingCollectors,
       });
       continue;
     }
 
     coverage.push({ controlId: control.id, status: "evaluated", missingCollectors: [] });
 
-    for (const unit of resolveResources(control, collector, records)) {
+    const relatedError = (control.relatedCollectors ?? [])
+      .flatMap((related) => byCollector.get(related.collector) ?? [])
+      .find((record) => record.exitCode !== 0 || record.output === null);
+    const related = Object.fromEntries(
+      (control.relatedCollectors ?? []).map((related) => [
+        related.as,
+        (byCollector.get(related.collector) ?? []).flatMap((record) =>
+          Array.isArray(record.output)
+            ? record.output
+            : record.output === null
+              ? []
+              : [record.output],
+        ),
+      ]),
+    );
+    for (const rawUnit of resolveResources(control, collector, records)) {
+      const unit = control.relatedCollectors
+        ? {
+            ...rawUnit,
+            resource: { primary: rawUnit.resource, related },
+            errorText: relatedError?.errorText ?? rawUnit.errorText,
+            exitCode: relatedError ? relatedError.exitCode : rawUnit.exitCode,
+          }
+        : rawUnit;
       const resourceId = resourceIdOf(control, unit, bundle.scopeId);
       const base = {
         controlId: control.id,

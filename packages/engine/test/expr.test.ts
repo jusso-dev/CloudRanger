@@ -125,6 +125,34 @@ describe("expression evaluator", () => {
     ).toBe(false);
   });
 
+  it("matches a qualifying item to a string reference in related evidence", () => {
+    const resource = {
+      primary: [{ name: "audit-change", filter: "protoPayload.methodName=SetIamPolicy" }],
+      related: {
+        alertPolicies: [
+          {
+            conditions: [
+              {
+                conditionThreshold: {
+                  filter: 'metric.type="logging.googleapis.com/user/audit-change"',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const expr: Expression = {
+      op: "anyItemReferencedBy",
+      itemsPath: "primary",
+      itemCondition: { op: "contains", path: "filter", value: "SetIamPolicy" },
+      itemValuePath: "name",
+      relatedPath: "related.alertPolicies",
+    };
+    expect(evaluate(expr, resource)).toBe(true);
+    expect(evaluate(expr, { ...resource, related: { alertPolicies: [] } })).toBe(false);
+  });
+
   it("boolean composition", () => {
     const expr: Expression = {
       op: "or",

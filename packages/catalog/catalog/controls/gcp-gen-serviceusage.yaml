@@ -1,0 +1,90 @@
+controls:
+  - id: CR-GCP-ARTIFACTS-102
+    version: 1.0.0
+    provider: gcp
+    service: artifacts
+    title: Artifact Registry Container Analysis API is enabled
+    description: Verifies the Container Analysis API is enabled for the project.
+    rationale: Container Analysis supplies vulnerability metadata used to assess
+      Artifact Registry images; without it, image vulnerability findings are unavailable.
+    severity: medium
+    categories: [containers, detection, supply-chain]
+    source: { engine: prowler, id: artifacts_container_analysis_enabled, license: Apache-2.0 }
+    collector: gcp.serviceusage.enabled_services_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition: { op: equals, path: config.name, value: containeranalysis.googleapis.com }
+    failMessage: Artifact Registry Container Analysis API is not enabled.
+    passMessage: Artifact Registry Container Analysis API is enabled.
+    remediation:
+      summary: Enable the Container Analysis API for the project.
+      steps:
+        - Enable containeranalysis.googleapis.com in the project.
+        - Confirm Artifact Registry repositories and CI workflows can publish and retrieve vulnerability metadata.
+      verifyCommand: gcloud services list --enabled --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/artifact-analysis/docs/enable-service
+
+  - id: CR-GCP-GCR-100
+    version: 1.0.0
+    provider: gcp
+    service: gcr
+    title: GCR Container Scanning API is enabled
+    description: Verifies the legacy GCR Container Scanning API is enabled for the project.
+    rationale: Projects that still use Container Registry need scanning enabled to
+      surface image vulnerabilities before vulnerable images reach workloads.
+    severity: medium
+    categories: [containers, detection, supply-chain]
+    source: { engine: prowler, id: gcr_container_scanning_enabled, license: Apache-2.0 }
+    collector: gcp.serviceusage.enabled_services_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition: { op: equals, path: config.name, value: containerscanning.googleapis.com }
+    failMessage: GCR Container Scanning API is not enabled.
+    passMessage: GCR Container Scanning API is enabled.
+    remediation:
+      summary: Enable Container Scanning while GCR workloads remain in use.
+      steps:
+        - Enable containerscanning.googleapis.com in the project.
+        - Plan migration from Container Registry to Artifact Registry, where Container Analysis is the current integration.
+      verifyCommand: gcloud services list --enabled --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/artifact-analysis/docs/enable-service
+
+  - id: CR-GCP-GEMINI-100
+    version: 1.0.0
+    provider: gcp
+    service: gemini
+    title: Gemini Generative Language API is disabled
+    description: Verifies the Generative Language API is not enabled in the project.
+    rationale: Enabling generative-AI APIs without an approved use case increases data
+      exfiltration and spend risk and can bypass the organisation's approved AI controls.
+    severity: medium
+    categories: [governance, public-exposure]
+    source: { engine: prowler, id: gemini_api_disabled, license: Apache-2.0 }
+    collector: gcp.serviceusage.enabled_services_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: $
+      condition: { op: equals, path: config.name, value: generativelanguage.googleapis.com }
+    failMessage: Gemini Generative Language API is enabled in the project.
+    passMessage: Gemini Generative Language API is disabled.
+    remediation:
+      summary: Disable the Generative Language API unless it is explicitly approved.
+      steps:
+        - Identify workloads using generativelanguage.googleapis.com and obtain the appropriate approval.
+        - Disable the API for projects without an approved workload.
+      verifyCommand: gcloud services list --enabled --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/ai/generative-ai/docs/enable

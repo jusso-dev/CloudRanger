@@ -58,7 +58,10 @@ export function buildPlan(
 
   // Resolve collectors: control collectors plus parents of per_resource ones.
   const needed = new Map<string, CollectorDefinition>();
-  const queue = selected.map((c) => c.collector);
+  const queue = selected.flatMap((c) => [
+    c.collector,
+    ...(c.relatedCollectors ?? []).map((r) => r.collector),
+  ]);
   while (queue.length > 0) {
     const id = queue.pop()!;
     if (needed.has(id)) continue;

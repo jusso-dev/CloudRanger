@@ -1,0 +1,92 @@
+[
+  {
+    "controlId": "CR-GCP-ARTIFACTS-102",
+    "cases": [
+      {
+        "name": "pass - Container Analysis API enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": [
+              { "config": { "name": "containeranalysis.googleapis.com" }, "state": "ENABLED" },
+              { "config": { "name": "artifactregistry.googleapis.com" }, "state": "ENABLED" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - Container Analysis API absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": [
+              { "config": { "name": "artifactregistry.googleapis.com" }, "state": "ENABLED" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GCR-100",
+    "cases": [
+      {
+        "name": "pass - GCR scanning API enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": [
+              { "config": { "name": "containerscanning.googleapis.com" }, "state": "ENABLED" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - GCR scanning API absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-GEMINI-100",
+    "cases": [
+      {
+        "name": "pass - Gemini API disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": [{ "config": { "name": "compute.googleapis.com" }, "state": "ENABLED" }]
+          }
+        ]
+      },
+      {
+        "name": "fail - Gemini API enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.serviceusage.enabled_services_list",
+            "exitCode": 0,
+            "output": [
+              { "config": { "name": "generativelanguage.googleapis.com" }, "state": "ENABLED" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

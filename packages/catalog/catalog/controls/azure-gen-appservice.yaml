@@ -16,7 +16,7 @@ controls:
       - identity
     source:
       engine: prowler
-      id: app_ensure_using_managed_identity
+      id: app_register_with_identity
       license: Apache-2.0
     collector: azure.webapp.list
     resourcesPath: $

@@ -41,6 +41,16 @@ function daysSince(value: unknown, now: Date): number | undefined {
   return (now.getTime() - t) / 86_400_000;
 }
 
+function containsString(value: unknown, needle: string): boolean {
+  if (typeof value === "string") return value.includes(needle);
+  if (Array.isArray(value)) return value.some((item) => containsString(item, needle));
+  if (value && typeof value === "object")
+    return Object.values(value as Record<string, unknown>).some((item) =>
+      containsString(item, needle),
+    );
+  return false;
+}
+
 function looselyEquals(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   // CLI JSON frequently stringifies booleans/numbers; compare canonically.
@@ -199,6 +209,16 @@ export function evaluateExpression(expr: Expression, resource: unknown, ctx: Exp
       const v = getPath(resource, expr.path);
       if (!Array.isArray(v)) return true;
       return !v.some((item) => evaluateExpression(expr.condition, item, ctx));
+    }
+    case "anyItemReferencedBy": {
+      const items = getPath(resource, expr.itemsPath);
+      const related = getPath(resource, expr.relatedPath);
+      if (!Array.isArray(items) || related === undefined || related === null) return false;
+      return items.some((item) => {
+        if (!evaluateExpression(expr.itemCondition, item, ctx)) return false;
+        const value = getPath(item, expr.itemValuePath);
+        return typeof value === "string" && value.length > 0 && containsString(related, value);
+      });
     }
   }
 }

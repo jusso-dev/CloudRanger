@@ -1,0 +1,12 @@
+collectors:
+  - id: azure.appinsights.components_list
+    provider: azure
+    service: appinsights
+    description: Application Insights components in the subscription.
+    kind: single
+    command: az resource list --resource-type Microsoft.Insights/components --output json
+    regional: false
+    outputFormat: json
+    notes: Returns a root JSON array of Application Insights component resources.
+      This inventory command is sufficient for the subscription-level presence check
+      and requires Microsoft.Insights/components/read.

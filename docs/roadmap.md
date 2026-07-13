@@ -3,16 +3,18 @@
 Phase 0/1 (done): engine, safety layer, seed catalog, SQLite lifecycle store,
 MCP server (stdio), CLI, docs, threat model.
 
-Phase 2 partial (done): 79 controls (34 AWS / 22 Azure / 23 GCP, 200+
-fixtures), control packs, custom-control authoring (CLI + MCP tools + prompt),
-operator custom catalog directory with override semantics, Prowler metadata
-importer (`scripts/prowler-import.mjs`).
+Phase 2 partial (done): 553 controls (239 AWS / 181 Azure / 133 GCP), control
+packs, custom-control authoring (CLI + MCP tools + prompt), operator custom
+catalog directory with override semantics, and a Prowler metadata importer
+(`scripts/prowler-import.mjs`).
 
 ## Phase 2 — Catalog scale-out (porting pipeline), remaining
 
 1. ~~Prowler metadata importer.~~ **Done** — `scripts/prowler-import.mjs`.
-   Next: wire it to a real Prowler checkout and complete the highest-value
-   stubs (collector + passWhen + fixtures) in bulk.
+   Next: continue the grounded port from a version-pinned Prowler checkout.
+   Only ship a check after its exact read-only CLI evidence shape and pass/fail
+   fixtures have been verified; checks that need graph joins, policy parsing,
+   or unsupported API parameters require an engine/collector extension first.
 2. AWS depth: ELB/CloudFront TLS + logging, Lambda posture, EKS, ECR image
    scanning, IAM policy analysis (wildcards, admin, privilege escalation),
    organisations/SCP posture, Config rules coverage. Target 100+ AWS.

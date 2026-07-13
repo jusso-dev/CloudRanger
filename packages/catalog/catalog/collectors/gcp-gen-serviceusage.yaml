@@ -1,0 +1,12 @@
+collectors:
+  - id: gcp.serviceusage.enabled_services_list
+    provider: gcp
+    service: serviceusage
+    description: Enabled Google APIs and services in a project.
+    kind: single
+    command: gcloud services list --enabled --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: Returns a root JSON array. Each Service Usage resource includes config.name
+      (for example containeranalysis.googleapis.com) and state ENABLED. Requires
+      serviceusage.services.list permission.

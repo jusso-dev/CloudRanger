@@ -122,6 +122,14 @@ export function loadCatalog(rootDirs: string | string[]): LoadedCatalog {
         message: `${control.id}: unknown collector ${control.collector}`,
       });
     }
+    for (const related of control.relatedCollectors ?? []) {
+      if (!collectors.has(related.collector)) {
+        issues.push({
+          file: "controls",
+          message: `${control.id}: unknown related collector ${related.collector}`,
+        });
+      }
+    }
   }
   for (const collector of collectors.values()) {
     if (collector.parent && !collectors.has(collector.parent.collector)) {

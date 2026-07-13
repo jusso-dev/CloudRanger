@@ -16,7 +16,7 @@ controls:
       - resilience
     source:
       engine: prowler
-      id: cloudstorage_bucket_object_versioning_enabled
+      id: cloudstorage_bucket_versioning_enabled
       license: Apache-2.0
     collector: gcp.storage.buckets_list
     resourcesPath: $

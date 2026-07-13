@@ -1,0 +1,77 @@
+[
+  {
+    "controlId": "CR-AZURE-APPINSIGHTS-100",
+    "cases": [
+      {
+        "name": "pass - Application Insights component exists",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.appinsights.components_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-observability/providers/microsoft.insights/components/app-prod",
+                "name": "app-prod",
+                "type": "microsoft.insights/components",
+                "location": "australiaeast"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - no Application Insights components",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.appinsights.components_list",
+            "exitCode": 0,
+            "output": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-ACR-106",
+    "cases": [
+      {
+        "name": "pass - registry admin user disabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/secure-registry",
+                "name": "secure-registry",
+                "location": "australiaeast",
+                "adminUserEnabled": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail - registry admin user enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.acr.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/legacy-registry",
+                "name": "legacy-registry",
+                "location": "australiaeast",
+                "adminUserEnabled": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

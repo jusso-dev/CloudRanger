@@ -207,7 +207,7 @@ controls:
       - resilience
     source:
       engine: prowler
-      id: cosmosdb_account_continuous_backup_enabled
+      id: cosmosdb_account_backup_policy_continuous
       license: Apache-2.0
     collector: azure.cosmosdb.list
     resourcesPath: $

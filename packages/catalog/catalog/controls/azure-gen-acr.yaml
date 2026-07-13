@@ -60,7 +60,7 @@ controls:
       - public-exposure
     source:
       engine: prowler
-      id: acr_public_network_access_disabled
+      id: containerregistry_not_publicly_accessible
       license: Apache-2.0
     collector: azure.acr.list
     resourcesPath: $
@@ -253,3 +253,31 @@ controls:
     compliance: []
     references:
       - https://learn.microsoft.com/azure/container-registry/zone-redundancy
+  - id: CR-AZURE-ACR-106
+    version: 1.0.0
+    provider: azure
+    service: acr
+    title: Container Registry admin user is disabled
+    description: Verifies the registry's local admin user is disabled.
+    rationale: The admin user is a shared, long-lived credential with broad registry
+      access and no individual attribution, making it a frequent source of leaked or
+      untraceable image-push and image-pull access.
+    severity: high
+    categories: [containers, identity, credentials]
+    source: { engine: prowler, id: containerregistry_admin_user_disabled, license: Apache-2.0 }
+    collector: azure.acr.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen: { op: equals, path: adminUserEnabled, value: false }
+    failMessage: Container Registry local admin user is enabled.
+    passMessage: Container Registry local admin user is disabled.
+    remediation:
+      summary: Disable the local admin user and use Entra ID or scoped tokens instead.
+      steps:
+        - Update workloads to authenticate with managed identities, service principals, or scope maps.
+        - Disable the registry admin user after verifying all consumers still authenticate successfully.
+      verifyCommand: az acr list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/container-registry/container-registry-authentication

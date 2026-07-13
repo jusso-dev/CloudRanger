@@ -18,7 +18,7 @@ controls:
       - public-exposure
     source:
       engine: prowler
-      id: search_service_public_network_access_disabled
+      id: aisearch_service_not_publicly_accessible
       license: Apache-2.0
     collector: azure.search.service_show
     resourceIdField: $resourceKey

@@ -1,0 +1,27 @@
+controls:
+  - id: CR-AZURE-APPINSIGHTS-100
+    version: 1.0.0
+    provider: azure
+    service: appinsights
+    title: Application Insights is configured in the subscription
+    description: Verifies the subscription contains at least one Application Insights component.
+    rationale: Without application telemetry, service failures and suspicious runtime
+      behaviour are harder to detect, investigate, and correlate with platform events.
+    severity: medium
+    categories: [logging, detection]
+    source: { engine: prowler, id: appinsights_ensure_is_configured, license: Apache-2.0 }
+    collector: azure.appinsights.components_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen: { op: lengthGt, path: $, value: 0 }
+    failMessage: No Application Insights component is configured in the subscription.
+    passMessage: At least one Application Insights component is configured.
+    remediation:
+      summary: Configure Application Insights for production workloads.
+      steps:
+        - Create a workspace-based Application Insights component in the appropriate region.
+        - Connect application workloads and configure retention, alert rules, and access controls.
+      verifyCommand: az resource list --resource-type Microsoft.Insights/components --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/azure-monitor/app/create-workspace-resource

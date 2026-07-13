@@ -53,6 +53,15 @@ export const expressionSchema: z.ZodType<unknown> = z.lazy(() =>
     z.object({ op: z.literal("anyItem"), path: pathString, condition: expressionSchema }).strict(),
     z.object({ op: z.literal("allItems"), path: pathString, condition: expressionSchema }).strict(),
     z.object({ op: z.literal("noneItem"), path: pathString, condition: expressionSchema }).strict(),
+    z
+      .object({
+        op: z.literal("anyItemReferencedBy"),
+        itemsPath: pathString,
+        itemCondition: expressionSchema,
+        itemValuePath: pathString,
+        relatedPath: pathString,
+      })
+      .strict(),
   ]),
 );
 
@@ -117,6 +126,14 @@ export const controlSchema = z
       })
       .strict(),
     collector: z.string().min(1),
+    relatedCollectors: z
+      .array(
+        z
+          .object({ collector: z.string().min(1), as: z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/) })
+          .strict(),
+      )
+      .min(1)
+      .optional(),
     resourcesPath: z.string().optional(),
     aggregate: z.boolean().optional(),
     resourceIdField: z.string().min(1),

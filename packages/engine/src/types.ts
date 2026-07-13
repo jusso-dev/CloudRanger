@@ -115,6 +115,8 @@ export interface ControlDefinition {
   source: ControlSource;
   /** Collector this control evaluates. */
   collector: string;
+  /** Additional evidence collectors injected beneath `related` for aggregate controls. */
+  relatedCollectors?: Array<{ collector: string; as: string }>;
   /**
    * Path within the collector output to the array of resources to evaluate.
    * Omitted for per_resource collectors (each evidence record is a resource)
@@ -181,7 +183,14 @@ export type Expression =
   | { op: "not"; expr: Expression }
   | { op: "anyItem"; path: string; condition: Expression }
   | { op: "allItems"; path: string; condition: Expression }
-  | { op: "noneItem"; path: string; condition: Expression };
+  | { op: "noneItem"; path: string; condition: Expression }
+  | {
+      op: "anyItemReferencedBy";
+      itemsPath: string;
+      itemCondition: Expression;
+      itemValuePath: string;
+      relatedPath: string;
+    };
 
 /** Result of evaluating one control against one resource. */
 export interface EvaluationResult {

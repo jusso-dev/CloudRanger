@@ -19,7 +19,7 @@ controls:
       - network
     source:
       engine: prowler
-      id: storage_public_network_access_disabled
+      id: storage_account_public_network_access_disabled
       license: Apache-2.0
     collector: azure.storage.list_accounts
     resourcesPath: $
@@ -113,7 +113,7 @@ controls:
       - encryption
     source:
       engine: prowler
-      id: storage_encryption_with_key_vault
+      id: storage_ensure_encryption_with_customer_managed_keys
       license: Apache-2.0
     collector: azure.storage.list_accounts
     resourcesPath: $

@@ -10,13 +10,16 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "test": "turbo run test",
+    "test": "pnpm prowler:coverage:validate && turbo run test",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,md,json,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,md,json,yaml,yml}\"",
-    "catalog:validate": "pnpm --filter @cloudranger/cli exec cloudranger catalog validate",
-    "catalog:test": "pnpm --filter @cloudranger/catalog test"
+    "catalog:validate": "node apps/cli/dist/main.js catalog validate",
+    "catalog:test": "node apps/cli/dist/main.js catalog test",
+    "prowler:coverage:sync": "node scripts/prowler-coverage.mjs sync",
+    "prowler:coverage:validate": "node scripts/prowler-coverage.mjs validate",
+    "prowler:coverage:report": "node scripts/prowler-coverage.mjs report"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
