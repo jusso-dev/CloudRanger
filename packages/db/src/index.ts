@@ -346,6 +346,68 @@ export class CloudRangerStore {
     return this.getScan(id)!;
   }
 
+  // ---- control revisions ----
+
+  /**
+   * Record the current revision of each control (id + version + content
+   * hash). Idempotent: an existing (id, version, hash) row is untouched, so
+   * first_seen_at marks when that exact revision first reached this store.
+   */
+  recordControlRevisions(
+    revisions: Array<{
+      controlId: string;
+      version: string;
+      contentHash: string;
+      definition: unknown;
+      deprecated: boolean;
+    }>,
+  ): number {
+    const insert = this.db.prepare(
+      `INSERT OR IGNORE INTO control_revisions (control_id, version, content_hash, definition, deprecated, first_seen_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+    const now = new Date().toISOString();
+    let added = 0;
+    const tx = this.db.transaction(() => {
+      for (const r of revisions) {
+        const result = insert.run(
+          r.controlId,
+          r.version,
+          r.contentHash,
+          j(r.definition),
+          r.deprecated ? 1 : 0,
+          now,
+        );
+        added += result.changes;
+      }
+    });
+    tx();
+    return added;
+  }
+
+  listControlRevisions(controlId: string): Array<{
+    controlId: string;
+    version: string;
+    contentHash: string;
+    definition: unknown;
+    deprecated: boolean;
+    firstSeenAt: string;
+  }> {
+    const rows = this.db
+      .prepare(
+        "SELECT * FROM control_revisions WHERE control_id = ? ORDER BY first_seen_at, version",
+      )
+      .all(controlId) as any[];
+    return rows.map((row) => ({
+      controlId: row.control_id,
+      version: row.version,
+      contentHash: row.content_hash,
+      definition: pj(row.definition, undefined),
+      deprecated: row.deprecated === 1,
+      firstSeenAt: row.first_seen_at,
+    }));
+  }
+
   // ---- scope parameter overrides ----
 
   /** Set (or clear, with null) persisted parameter overrides for one control in a scope. */

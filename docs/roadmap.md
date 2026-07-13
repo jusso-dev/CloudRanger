@@ -52,7 +52,12 @@ catalog directory with override semantics, and a Prowler metadata importer
     `compliance_status` MCP tool + `cloudranger compliance status`, honest
     coverage (ratios only for vendored requirement lists), documented in
     docs/rules/compliance-rollup.md.
-11. Rule deprecation + version history retention on control updates.
+11. ~~Rule deprecation + version history retention on control updates.~~
+    **Done** — `deprecated` metadata (reason + supersededBy) excludes
+    controls from default scans with an explicit notice, and every control
+    revision (version + content hash + definition) is recorded at server
+    startup and custom installs, queryable via `catalog_control_history`
+    with a live tamper check.
 12. ~~Custom-control fixture authoring via MCP (agent submits fixtures
     alongside a custom control so it is regression-protected at install
     time).~~ **Done** — `catalog_add_custom_control` accepts `fixtures`,

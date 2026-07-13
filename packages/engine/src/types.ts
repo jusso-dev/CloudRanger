@@ -211,6 +211,15 @@ export interface ControlDefinition {
   };
   compliance: ComplianceMapping[];
   references: string[];
+  /**
+   * Deprecation notice. Deprecated controls are excluded from scans unless
+   * explicitly requested; history stays queryable via control revisions.
+   */
+  deprecated?: {
+    reason: string;
+    /** Control that replaces this one, when there is one. */
+    supersededBy?: string;
+  };
 }
 
 /** Safe declarative expression AST. No eval, no arbitrary code. */

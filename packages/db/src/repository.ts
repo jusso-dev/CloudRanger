@@ -35,6 +35,25 @@ export interface CloudRangerRepository {
     controlIds: string[];
     parameters?: Record<string, Record<string, unknown>>;
   }): Promise<ScanRow>;
+  recordControlRevisions(
+    revisions: Array<{
+      controlId: string;
+      version: string;
+      contentHash: string;
+      definition: unknown;
+      deprecated: boolean;
+    }>,
+  ): Promise<number>;
+  listControlRevisions(controlId: string): Promise<
+    Array<{
+      controlId: string;
+      version: string;
+      contentHash: string;
+      definition: unknown;
+      deprecated: boolean;
+      firstSeenAt: string;
+    }>
+  >;
   setScopeParameters(
     provider: Provider,
     scopeId: string,

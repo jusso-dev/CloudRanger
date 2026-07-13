@@ -148,4 +148,16 @@ export const MIGRATIONS: string[] = [
     PRIMARY KEY (provider, scope_id, control_id)
   );
   `,
+  `
+  CREATE TABLE control_revisions (
+    control_id TEXT NOT NULL,
+    version TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    deprecated INTEGER NOT NULL DEFAULT 0,
+    first_seen_at TEXT NOT NULL,
+    PRIMARY KEY (control_id, version, content_hash)
+  );
+  CREATE INDEX idx_control_revisions_control ON control_revisions(control_id, first_seen_at);
+  `,
 ];

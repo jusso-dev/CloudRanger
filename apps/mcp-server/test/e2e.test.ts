@@ -660,3 +660,81 @@ describe("custom-control fixture authoring via MCP", () => {
     expect(result.note).toMatch(/fixtures run/);
   });
 });
+
+describe("deprecation and revision history", () => {
+  const deprecatedYaml = `controls:
+  - id: CUSTOM-AWS-S3-902
+    version: 1.0.0
+    provider: aws
+    service: s3
+    title: Old bucket check (deprecated)
+    description: d
+    rationale: r
+    severity: low
+    categories: [resilience]
+    source: { engine: custom, id: old_check, license: Apache-2.0 }
+    collector: aws.s3.get_bucket_versioning
+    resourceIdField: $resourceKey
+    passWhen: { op: equals, path: Status, value: Enabled }
+    failMessage: f
+    passMessage: p
+    remediation: { summary: s, steps: [s] }
+    compliance: []
+    references: []
+    deprecated:
+      reason: Superseded by CUSTOM-AWS-S3-901.
+      supersededBy: CUSTOM-AWS-S3-901
+`;
+
+  it("records revisions at install and startup, queryable with a tamper check", async () => {
+    await call("catalog_add_custom_control", {
+      yaml: deprecatedYaml,
+      filename: "custom-deprecated",
+    });
+    const history = await call("catalog_control_history", { controlId: "CUSTOM-AWS-S3-902" });
+    expect(history.revisions).toHaveLength(1);
+    expect(history.revisions[0].deprecated).toBe(true);
+    expect(history.live.matchesRecordedRevision).toBe(true);
+    expect(history.live.deprecated.supersededBy).toBe("CUSTOM-AWS-S3-901");
+  });
+
+  it("excludes deprecated controls from scans unless explicitly requested", async () => {
+    const scoped = await call("scan_start", {
+      provider: "aws",
+      scopeId: "888899990000",
+      regions: ["ap-southeast-2"],
+      services: ["s3"],
+    });
+    expect(scoped.plan.controlIds ?? []).not.toContain("CUSTOM-AWS-S3-902");
+    expect(scoped.deprecatedExcluded).toContain("CUSTOM-AWS-S3-902");
+    expect(scoped.deprecationNote).toMatch(/excluded/);
+
+    const explicit = await call("scan_start", {
+      provider: "aws",
+      scopeId: "888899990000",
+      regions: ["ap-southeast-2"],
+      controlIds: ["CUSTOM-AWS-S3-902"],
+    });
+    expect(explicit.controlCount).toBe(1);
+    expect(explicit.deprecatedExcluded).toBeUndefined();
+
+    const included = await call("scan_start", {
+      provider: "aws",
+      scopeId: "888899990000",
+      regions: ["ap-southeast-2"],
+      services: ["s3"],
+      includeDeprecated: true,
+    });
+    expect(included.deprecatedExcluded).toBeUndefined();
+  });
+
+  it("keeps prior revisions when a control is updated", async () => {
+    const bumped = deprecatedYaml.replace("version: 1.0.0", "version: 1.1.0");
+    await call("catalog_add_custom_control", { yaml: bumped, filename: "custom-deprecated" });
+    const history = await call("catalog_control_history", { controlId: "CUSTOM-AWS-S3-902" });
+    expect(history.revisions).toHaveLength(2);
+    expect(history.revisions.map((r: any) => r.version).sort()).toEqual(["1.0.0", "1.1.0"]);
+    expect(history.live.version).toBe("1.1.0");
+    expect(history.live.matchesRecordedRevision).toBe(true);
+  });
+});

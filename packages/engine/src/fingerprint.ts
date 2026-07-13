@@ -22,6 +22,15 @@ export function findingFingerprint(input: {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+/**
+ * Content hash of a control definition (rule + metadata, key-order stable).
+ * Recorded with every control revision so silent tampering with historical
+ * rule content is detectable.
+ */
+export function controlContentHash(control: unknown): string {
+  return createHash("sha256").update(stableStringify(control)).digest("hex");
+}
+
 /** Hash of raw evidence for tamper-evident storage. */
 export function evidenceHash(evidence: unknown): string {
   return createHash("sha256").update(stableStringify(evidence)).digest("hex");

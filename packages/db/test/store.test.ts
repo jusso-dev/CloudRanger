@@ -348,3 +348,22 @@ describe("scope parameter overrides", () => {
     expect(findings[0]!.effectiveParameters).toEqual({ threshold: 5 });
   });
 });
+
+describe("control revisions", () => {
+  it("records revisions idempotently and preserves history across updates", () => {
+    const rev = (version: string, hash: string) => ({
+      controlId: "CR-AWS-S3-001",
+      version,
+      contentHash: hash,
+      definition: { id: "CR-AWS-S3-001", version },
+      deprecated: false,
+    });
+    expect(store.recordControlRevisions([rev("1.0.0", "aaa")])).toBe(1);
+    expect(store.recordControlRevisions([rev("1.0.0", "aaa")])).toBe(0);
+    expect(store.recordControlRevisions([rev("1.1.0", "bbb")])).toBe(1);
+    const history = store.listControlRevisions("CR-AWS-S3-001");
+    expect(history).toHaveLength(2);
+    expect(history[0]!.firstSeenAt).toBeTruthy();
+    expect(store.listControlRevisions("CR-NOPE-X-001")).toEqual([]);
+  });
+});
