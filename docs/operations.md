@@ -46,3 +46,24 @@ See `cloudranger retention` (and the `retention_policy_set` /
 dry-run by default, and pruning that clears raw payloads only — findings,
 evaluations, and evidence digests (hash, size, captured-at) always survive,
 so audit trails remain verifiable after space is reclaimed.
+
+## Remote agents: streamable-HTTP transport
+
+```
+CLOUDRANGER_HTTP_TOKEN=$(openssl rand -hex 32) node apps/mcp-server/dist/main.js --http
+```
+
+Stdio remains the default; `--http` (or `CLOUDRANGER_HTTP=true`) starts the
+MCP streamable-HTTP listener instead. Configuration:
+
+| Env                                | Default       | Notes                                                                                           |
+| ---------------------------------- | ------------- | ----------------------------------------------------------------------------------------------- |
+| `CLOUDRANGER_HTTP_TOKEN` / `_FILE` | — (required)  | Bearer token, ≥16 chars; checked in constant time before anything else.                         |
+| `CLOUDRANGER_HTTP_PORT`            | `8484`        |                                                                                                 |
+| `CLOUDRANGER_HTTP_BIND`            | `127.0.0.1`   | Non-loopback binds require `CLOUDRANGER_HTTP_ALLOW_NONLOOPBACK=true`; a loud warning is logged. |
+| `CLOUDRANGER_HTTP_ALLOWED_ORIGINS` | loopback only | Comma-separated extra `Origin` values for browser-based clients.                                |
+
+The listener never terminates TLS — put a TLS-terminating reverse proxy
+(Caddy, nginx, a tunnel) in front of any non-loopback deployment, and treat
+the token like a database credential. Threat model: T6 in
+docs/architecture/threat-model.md.

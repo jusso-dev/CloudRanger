@@ -80,8 +80,11 @@ catalog directory with override semantics, and a Prowler metadata importer
     breakdown).~~ **Done** — `scopeIds`/`allScopes` inputs return an
     aggregate plus per-scope digests, listing scopes present-but-excluded
     and requested-but-scanless explicitly; single-scope shape unchanged.
-15. Optional streamable-HTTP MCP transport with token auth for remote
-    agents.
+15. ~~Optional streamable-HTTP MCP transport with token auth for remote
+    agents.~~ **Done** — `--http` flag, mandatory constant-time bearer
+    token, loopback-default bind with explicit non-loopback opt-in,
+    DNS-rebinding protection, 4 MB body cap; threat model T6 +
+    docs/operations.md.
 16. Signed catalog releases; third-party control pack loading with the same
     safety validation.
 

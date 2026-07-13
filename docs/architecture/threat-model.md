@@ -14,11 +14,11 @@
 
 ## Trust boundaries
 
-| Boundary           | Trust decision                                                                                                                                                       |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Operator ↔ agent   | Operator grants the agent read-only cloud CLI auth. Out of CloudRanger's control; onboarding docs prescribe read-only roles (SecurityAudit / Reader / roles/viewer). |
-| Agent ↔ MCP server | Local stdio. The agent is semi-trusted: it can submit false evidence (see T3) but cannot make the server execute anything.                                           |
-| MCP server ↔ cloud | **None.** The server makes no network calls.                                                                                                                         |
+| Boundary           | Trust decision                                                                                                                                                                                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Operator ↔ agent   | Operator grants the agent read-only cloud CLI auth. Out of CloudRanger's control; onboarding docs prescribe read-only roles (SecurityAudit / Reader / roles/viewer).                                                       |
+| Agent ↔ MCP server | Local stdio by default. The agent is semi-trusted: it can submit false evidence (see T3) but cannot make the server execute anything. The optional streamable-HTTP transport (see T6) widens this boundary to the network. |
+| MCP server ↔ cloud | **None.** The server makes no network calls.                                                                                                                                                                               |
 
 ## Threats & mitigations
 
@@ -81,3 +81,18 @@ catastrophic backtracking).
 - Multi-tenant isolation (single-operator local tool).
 - Defending against a hostile operator or hostile local filesystem access.
 - Runtime threat detection (this is posture management, not a SIEM).
+
+**T6 — Network exposure via the optional streamable-HTTP transport.**
+Stdio remains the default; the HTTP listener only starts with an explicit
+`--http` flag (or `CLOUDRANGER_HTTP=true`). Its controls
+(`apps/mcp-server/src/http.ts`, integration-tested): a bearer token of at
+least 16 characters is mandatory even on loopback and is compared in
+constant time before any MCP code runs; the listener binds `127.0.0.1`
+unless `CLOUDRANGER_HTTP_ALLOW_NONLOOPBACK=true` is set, which logs a
+prominent warning; the SDK's DNS-rebinding protection validates Host and
+Origin against an allowlist derived from the actual bound address (plus
+operator-configured origins); request bodies are capped at 4 MB; unknown
+session IDs are rejected. TLS is deliberately not terminated here — a
+reverse proxy owns that, and the deployment doc says so. Residual risk: the
+token is a single shared secret; rotate it via the environment/file and
+front the listener with network controls when leaving loopback.
