@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { loadDefaultCatalog } from "@cloudranger/catalog";
 import { createRepository } from "@cloudranger/db";
 import { createServer, recordCatalogRevisions } from "./server.js";
+import { resolveHttpConfig, startHttpTransport } from "./http.js";
 import { parseRole } from "./authorization.js";
 
 async function main(): Promise<void> {
@@ -45,13 +46,22 @@ async function main(): Promise<void> {
     role = parseRole(process.env.CLOUDRANGER_ROLE, false);
   }
   await recordCatalogRevisions(store, catalog);
-  const server = createServer({
+  const deps = {
     store,
     catalog,
     actor: process.env.CLOUDRANGER_ACTOR,
     role,
     workspaceId,
-  });
+  };
+  const useHttp = process.argv.includes("--http") || process.env.CLOUDRANGER_HTTP === "true";
+  if (useHttp) {
+    startHttpTransport(deps, resolveHttpConfig(process.env));
+    console.error(
+      `[cloudranger] MCP server ready over streamable HTTP (db: ${process.env.CLOUDRANGER_DATABASE_URL ? "postgresql" : dbPath}, controls: ${catalog.controls.length})`,
+    );
+    return;
+  }
+  const server = createServer(deps);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(
