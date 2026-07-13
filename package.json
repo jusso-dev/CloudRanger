@@ -37,6 +37,9 @@
     "yaml": "^2.9.0"
   },
   "pnpm": {
+    "overrides": {
+      "esbuild": "0.28.1"
+    },
     "onlyBuiltDependencies": [
       "better-sqlite3"
     ]
