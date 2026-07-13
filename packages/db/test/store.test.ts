@@ -36,6 +36,24 @@ function runScan(results: EvaluationResult[]) {
 }
 
 describe("finding lifecycle across scans", () => {
+  it("includes the latest posture comparison in report data", () => {
+    runScan([failResult()]);
+    runScan([failResult({ status: "pass", message: "Bucket blocks all public access." })]);
+    const report = store.reportData({}) as any;
+    expect(report.comparison).toEqual(
+      expect.objectContaining({
+        coverage: expect.objectContaining({ baseline: 1, current: 1, delta: 0 }),
+        controlChanges: [
+          expect.objectContaining({
+            controlId: "CR-AWS-S3-001",
+            baseline: "fail",
+            current: "pass",
+          }),
+        ],
+      }),
+    );
+  });
+
   it("compares control status, finding events, and coverage across scans", () => {
     const baseline = runScan([failResult()]).scan;
     const current = runScan([

@@ -916,11 +916,37 @@ export class CloudRangerStore {
         )
         .get(...params) as any
     ).n;
+    const scanFilters: string[] = [];
+    const scanParams: unknown[] = [];
+    if (filters.provider) {
+      scanFilters.push("provider = ?");
+      scanParams.push(filters.provider);
+    }
+    if (filters.scopeId) {
+      scanFilters.push("scope_id = ?");
+      scanParams.push(filters.scopeId);
+    }
     const scans = this.db
       .prepare(
-        `SELECT id, provider, scope_id, status, created_at, evaluated_at, summary FROM scans ORDER BY created_at DESC LIMIT 10`,
+        `SELECT id, provider, scope_id, status, created_at, evaluated_at, summary FROM scans
+         ${scanFilters.length ? `WHERE ${scanFilters.join(" AND ")}` : ""}
+         ORDER BY created_at DESC LIMIT 10`,
       )
-      .all() as any[];
+      .all(...scanParams) as any[];
+    const recentScans = scans.map((s) => ({
+      id: s.id,
+      provider: s.provider,
+      scopeId: s.scope_id,
+      status: s.status,
+      createdAt: s.created_at,
+      evaluatedAt: s.evaluated_at ?? undefined,
+      summary: pj(s.summary, undefined),
+    }));
+    const evaluatedScans = recentScans.filter((scan) => scan.status === "evaluated");
+    const comparison =
+      evaluatedScans.length >= 2
+        ? this.compareScans(evaluatedScans[1]!.id, evaluatedScans[0]!.id)
+        : undefined;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -943,15 +969,8 @@ export class CloudRangerStore {
       riskAccepted,
       overdueFindings: overdue,
       unassignedOpenFindings: unassignedOpen,
-      recentScans: scans.map((s) => ({
-        id: s.id,
-        provider: s.provider,
-        scopeId: s.scope_id,
-        status: s.status,
-        createdAt: s.created_at,
-        evaluatedAt: s.evaluated_at ?? undefined,
-        summary: pj(s.summary, undefined),
-      })),
+      recentScans: recentScans,
+      comparison,
       metricDefinitions: {
         openFindingsBySeverity:
           "Findings with lifecycle state open or reopened, grouped by severity. Excludes resolved; includes risk-accepted (workflow state is reported separately).",
