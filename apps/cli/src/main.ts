@@ -36,6 +36,7 @@ Usage:
   cloudranger report pdf [--output output/pdf/cloudranger-report.pdf] [--since-days 30] [--provider aws|azure|gcp]
   cloudranger compliance coverage [--framework <id>] [--provider aws|azure|gcp] [--json]
   cloudranger scans                     List recent scans
+  cloudranger scans compare <baselineScanId> <currentScanId>
   cloudranger audit [--limit 50]        Show recent audit entries
   cloudranger audit verify              Verify the audit hash chain
   cloudranger controls template [--provider aws|azure|gcp] [--collector <id>]
@@ -263,6 +264,17 @@ function main(): number {
 
   if (command === "scans") {
     const store = new CloudRangerStore(dbPath());
+    if (subcommand === "compare") {
+      const [baselineScanId, currentScanId] = rest;
+      if (!baselineScanId || !currentScanId) {
+        console.error("usage: cloudranger scans compare <baselineScanId> <currentScanId>");
+        store.close();
+        return 1;
+      }
+      console.log(JSON.stringify(store.compareScans(baselineScanId, currentScanId), null, 2));
+      store.close();
+      return 0;
+    }
     for (const scan of store.listScans(20)) {
       console.log(
         `${scan.createdAt}  ${scan.provider.padEnd(6)} ${scan.scopeId.padEnd(20)} ${scan.status.padEnd(10)} ${scan.summary ? `fail=${scan.summary.fail} pass=${scan.summary.pass} coverage=${Math.round(scan.summary.coverageRatio * 100)}%` : ""}`,

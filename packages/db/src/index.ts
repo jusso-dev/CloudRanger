@@ -93,6 +93,41 @@ export interface FindingSearchFilters {
   offset?: number;
 }
 
+export interface ScanComparison {
+  baseline: {
+    scanId: string;
+    provider: Provider;
+    scopeId: string;
+    evaluatedAt?: string;
+    summary?: ScanSummary;
+  };
+  current: {
+    scanId: string;
+    provider: Provider;
+    scopeId: string;
+    evaluatedAt?: string;
+    summary?: ScanSummary;
+  };
+  coverage: {
+    baseline: number;
+    current: number;
+    delta: number;
+    baselineEvaluated: number;
+    currentEvaluated: number;
+    baselineRequested: number;
+    currentRequested: number;
+  };
+  controlChanges: Array<{
+    controlId: string;
+    resourceId: string;
+    region?: string;
+    baseline: string;
+    current: string;
+    message?: string;
+  }>;
+  findingEvents: Record<string, number>;
+}
+
 const j = (v: unknown) => JSON.stringify(v);
 const pj = <T>(v: unknown, fallback: T): T => {
   if (typeof v !== "string" || v.length === 0) return fallback;
@@ -157,6 +192,101 @@ export class CloudRangerStore {
       .prepare("SELECT * FROM scans ORDER BY created_at DESC LIMIT ?")
       .all(limit) as any[];
     return rows.map(mapScan);
+  }
+
+  compareScans(baselineScanId: string, currentScanId: string): ScanComparison {
+    const baseline = this.getScan(baselineScanId);
+    const current = this.getScan(currentScanId);
+    if (!baseline || !current) throw new Error("both scans must exist");
+    if (baseline.status !== "evaluated" || current.status !== "evaluated") {
+      throw new Error("both scans must be evaluated before comparison");
+    }
+    if (baseline.provider !== current.provider || baseline.scopeId !== current.scopeId) {
+      throw new Error("scans must use the same provider and scope");
+    }
+    const rows = (scanId: string) =>
+      this.db
+        .prepare(
+          `SELECT control_id, resource_id, region, status, message
+           FROM evaluations WHERE scan_id = ?
+           ORDER BY control_id, resource_id, region`,
+        )
+        .all(scanId) as Array<{
+        control_id: string;
+        resource_id: string;
+        region: string | null;
+        status: string;
+        message: string;
+      }>;
+    const key = (row: { control_id: string; resource_id: string; region: string | null }) =>
+      `${row.control_id}\u0000${row.resource_id}\u0000${row.region ?? ""}`;
+    const before = new Map(rows(baselineScanId).map((row) => [key(row), row]));
+    const after = new Map(rows(currentScanId).map((row) => [key(row), row]));
+    const controlChanges: ScanComparison["controlChanges"] = [];
+    for (const [entryKey, currentRow] of after) {
+      const baselineRow = before.get(entryKey);
+      if (baselineRow && baselineRow.status === currentRow.status) continue;
+      controlChanges.push({
+        controlId: currentRow.control_id,
+        resourceId: currentRow.resource_id,
+        region: currentRow.region ?? undefined,
+        baseline: baselineRow?.status ?? "not_assessed",
+        current: currentRow.status,
+        message: currentRow.message,
+      });
+    }
+    for (const [entryKey, baselineRow] of before) {
+      if (after.has(entryKey)) continue;
+      controlChanges.push({
+        controlId: baselineRow.control_id,
+        resourceId: baselineRow.resource_id,
+        region: baselineRow.region ?? undefined,
+        baseline: baselineRow.status,
+        current: "not_assessed",
+        message: "Resource or evaluation was not present in the current scan.",
+      });
+    }
+    const eventRows = this.db
+      .prepare(
+        `SELECT event_type, COUNT(*) AS n FROM finding_events
+         WHERE scan_id IN (?, ?) GROUP BY event_type`,
+      )
+      .all(baselineScanId, currentScanId) as Array<{ event_type: string; n: number }>;
+    const eventCounts = Object.fromEntries(eventRows.map((row) => [row.event_type, row.n]));
+    const coverage = (scan: ScanRow) => ({
+      ratio: scan.summary?.coverageRatio ?? 0,
+      evaluated: scan.coverage?.filter((item) => item.status === "evaluated").length ?? 0,
+      requested: scan.coverage?.length ?? scan.controlIds.length,
+    });
+    const beforeCoverage = coverage(baseline);
+    const afterCoverage = coverage(current);
+    return {
+      baseline: {
+        scanId: baseline.id,
+        provider: baseline.provider,
+        scopeId: baseline.scopeId,
+        evaluatedAt: baseline.evaluatedAt,
+        summary: baseline.summary,
+      },
+      current: {
+        scanId: current.id,
+        provider: current.provider,
+        scopeId: current.scopeId,
+        evaluatedAt: current.evaluatedAt,
+        summary: current.summary,
+      },
+      coverage: {
+        baseline: beforeCoverage.ratio,
+        current: afterCoverage.ratio,
+        delta: afterCoverage.ratio - beforeCoverage.ratio,
+        baselineEvaluated: beforeCoverage.evaluated,
+        currentEvaluated: afterCoverage.evaluated,
+        baselineRequested: beforeCoverage.requested,
+        currentRequested: afterCoverage.requested,
+      },
+      controlChanges,
+      findingEvents: eventCounts,
+    };
   }
 
   cancelScan(id: string): void {

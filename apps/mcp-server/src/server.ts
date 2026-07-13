@@ -452,6 +452,23 @@ export function createServer(deps: ServerDeps): McpServer {
   );
 
   server.registerTool(
+    "scan_compare",
+    {
+      title: "Compare two evaluated scans",
+      description:
+        "Compare a baseline scan with a later scan for the same provider scope. Returns control status changes, finding lifecycle events, and coverage movement.",
+      inputSchema: {
+        baselineScanId: z.string(),
+        currentScanId: z.string(),
+      },
+      annotations: readOnly,
+    },
+    audited("scan_compare", (args: { baselineScanId: string; currentScanId: string }) =>
+      store.compareScans(args.baselineScanId, args.currentScanId),
+    ),
+  );
+
+  server.registerTool(
     "scan_cancel",
     {
       title: "Cancel a collecting scan",
