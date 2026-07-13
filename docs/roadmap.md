@@ -40,11 +40,14 @@ catalog directory with override semantics, and a Prowler metadata importer
    overrides on `scan_start`, and effective values recorded on findings.
 8. `relationshipExists`/graph evidence for cross-resource controls
    (public LB → unencrypted backend).
-9. ~~Control packs as named selections for `scan_start`.~~ **Done** — 7 packs.
-   Next: framework-aligned packs (cis-aws-3.0, essential-eight-technical) once
-   compliance rollup lands.
-10. Coverage-aware compliance rollup tool (`compliance_status` per
-    framework with direct/partial/manual flags).
+9. ~~Control packs as named selections for `scan_start`.~~ **Done** — 7
+   category packs plus framework-aligned packs (cis-aws-3.0,
+   essential-eight-technical) resolved from compliance mappings.
+10. ~~Coverage-aware compliance rollup tool (`compliance_status` per
+    framework with direct/partial/manual flags).~~ **Done** —
+    `compliance_status` MCP tool + `cloudranger compliance status`, honest
+    coverage (ratios only for vendored requirement lists), documented in
+    docs/rules/compliance-rollup.md.
 11. Rule deprecation + version history retention on control updates.
 12. Custom-control fixture authoring via MCP (agent submits fixtures alongside
     a custom control so it is regression-protected at install time).

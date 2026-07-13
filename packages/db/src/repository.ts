@@ -49,6 +49,15 @@ export interface CloudRangerRepository {
   listScans(limit?: number): Promise<ScanRow[]>;
   compareScans(baselineScanId: string, currentScanId: string): Promise<ScanComparison>;
   cancelScan(id: string): Promise<void>;
+  getEvaluations(scanId: string): Promise<
+    Array<{
+      controlId: string;
+      status: string;
+      resourceId: string;
+      region?: string;
+      severity: string;
+    }>
+  >;
   addEvidence(scanId: string, records: Omit<EvidenceRecord, "collectedAt">[]): Promise<number>;
   getEvidence(scanId: string): Promise<EvidenceRecord[]>;
   evidenceStats(

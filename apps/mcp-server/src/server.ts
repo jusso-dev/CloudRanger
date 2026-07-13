@@ -12,7 +12,14 @@ import {
 } from "@cloudranger/engine";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { PACKS, customCatalogDir, resolvePack } from "@cloudranger/catalog";
+import {
+  PACKS,
+  complianceStatus,
+  customCatalogDir,
+  loadFrameworkRegistry,
+  resolvePack,
+  type ControlEvaluationCounts,
+} from "@cloudranger/catalog";
 import type { CloudRangerRepository, ScanRow } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
@@ -282,6 +289,71 @@ export function createServer(deps: ServerDeps): McpServer {
         note: "Custom control is active now and will load automatically on future server starts. Add fixture cases and test with: cloudranger catalog test",
       };
     }),
+  );
+
+  // ---------- compliance ----------
+
+  server.registerTool(
+    "compliance_status",
+    {
+      title: "Coverage-aware compliance rollup for a scope",
+      description:
+        "Roll the latest evaluated scan of a scope up to framework requirements. Each requirement carries an automation flag (direct = fully automated evidence, partial = needs manual assessment on top, manual = no automated evidence) and a status derived from mapped control results. Coverage ratios are only reported for frameworks whose full requirement list is vendored — this never overstates coverage and is never a certification.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string(),
+        framework: z
+          .string()
+          .optional()
+          .describe("Restrict to one framework id (see compliance registry)"),
+      },
+      annotations: readOnly,
+    },
+    audited(
+      "compliance_status",
+      async (args: { provider: Provider; scopeId: string; framework?: string }) => {
+        if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
+        const latest = (await store.listScans(200)).find(
+          (scan) =>
+            scan.status === "evaluated" &&
+            scan.provider === args.provider &&
+            scan.scopeId === args.scopeId,
+        );
+        const evaluations = new Map<string, ControlEvaluationCounts>();
+        if (latest) {
+          for (const row of await store.getEvaluations(latest.id)) {
+            const counts = evaluations.get(row.controlId) ?? {
+              pass: 0,
+              fail: 0,
+              error: 0,
+              notApplicable: 0,
+            };
+            if (row.status === "pass") counts.pass += 1;
+            else if (row.status === "fail") counts.fail += 1;
+            else if (row.status === "error") counts.error += 1;
+            else if (row.status === "not_applicable") counts.notApplicable += 1;
+            evaluations.set(row.controlId, counts);
+          }
+        }
+        const frameworks = complianceStatus({
+          controls: catalog.controls,
+          registry: loadFrameworkRegistry(),
+          evaluations,
+          framework: args.framework,
+          provider: args.provider,
+        });
+        return {
+          provider: args.provider,
+          scopeId: args.scopeId,
+          scanId: latest?.id,
+          evaluatedAt: latest?.evaluatedAt,
+          note: latest
+            ? "Rollup reflects the latest evaluated scan only. Requirements marked partial or manual need assessment beyond CloudRanger evidence."
+            : "No evaluated scan exists for this scope — every requirement is reported as not assessed. Run a scan first.",
+          frameworks,
+        };
+      },
+    ),
   );
 
   // ---------- scope parameters ----------
