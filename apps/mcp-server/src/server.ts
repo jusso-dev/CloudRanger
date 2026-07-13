@@ -548,6 +548,8 @@ export function createServer(deps: ServerDeps): McpServer {
             ]),
           )
           .optional(),
+        owner: z.string().optional(),
+        overdue: z.boolean().optional(),
         limit: z.number().int().min(1).max(200).optional(),
         offset: z.number().int().min(0).optional(),
       },
@@ -617,6 +619,40 @@ export function createServer(deps: ServerDeps): McpServer {
           actor: actor(),
         }),
     ),
+  );
+
+  server.registerTool(
+    "findings_assign",
+    {
+      title: "Assign finding ownership and due date",
+      description:
+        "Assign an owner/team and optional remediation due date. Assignment is recorded in finding history.",
+      inputSchema: {
+        fingerprint: z.string(),
+        owner: z.string().min(1).max(300),
+        dueAt: z.string().optional().describe("ISO timestamp for the remediation due date"),
+      },
+      annotations: { ...readOnly, readOnlyHint: false },
+    },
+    audited("findings_assign", (args: { fingerprint: string; owner: string; dueAt?: string }) =>
+      store.assignFinding(args.fingerprint, {
+        owner: args.owner,
+        dueAt: args.dueAt,
+        actor: actor(),
+      }),
+    ),
+  );
+
+  server.registerTool(
+    "findings_expire_workflows",
+    {
+      title: "Expire overdue exceptions",
+      description:
+        "Return expired risk acceptances and false-positive decisions to new for review.",
+      inputSchema: {},
+      annotations: { ...readOnly, readOnlyHint: false },
+    },
+    audited("findings_expire_workflows", () => ({ expired: store.expireWorkflowStates() })),
   );
 
   server.registerTool(

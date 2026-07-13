@@ -75,6 +75,8 @@ export interface FindingRow {
   workflowReason?: string;
   workflowActor?: string;
   workflowExpiresAt?: string;
+  owner?: string;
+  dueAt?: string;
   message: string;
   firstSeenAt: string;
   lastSeenAt: string;
@@ -109,6 +111,8 @@ export interface FindingSearchFilters {
   resourceId?: string;
   limit?: number;
   offset?: number;
+  owner?: string;
+  overdue?: boolean;
 }
 
 export interface ScanComparison {
@@ -627,6 +631,7 @@ export class CloudRangerStore {
   // ---- findings ----
 
   searchFindings(filters: FindingSearchFilters = {}): { total: number; findings: FindingRow[] } {
+    this.expireWorkflowStates();
     const where: string[] = [];
     const params: unknown[] = [];
     if (filters.provider) {
@@ -648,6 +653,14 @@ export class CloudRangerStore {
     if (filters.resourceId) {
       where.push("resource_id = ?");
       params.push(filters.resourceId);
+    }
+    if (filters.owner) {
+      where.push("owner = ?");
+      params.push(filters.owner);
+    }
+    if (filters.overdue) {
+      where.push("due_at IS NOT NULL AND due_at < ? AND state IN ('open','reopened')");
+      params.push(new Date().toISOString());
     }
     if (filters.severity?.length) {
       where.push(`severity IN (${filters.severity.map(() => "?").join(",")})`);
@@ -681,6 +694,7 @@ export class CloudRangerStore {
   }
 
   getFinding(fingerprint: string): FindingRow | undefined {
+    this.expireWorkflowStates();
     const row = this.db
       .prepare("SELECT * FROM findings WHERE fingerprint = ?")
       .get(fingerprint) as any;
@@ -740,6 +754,67 @@ export class CloudRangerStore {
     return this.getFinding(fingerprint)!;
   }
 
+  assignFinding(
+    fingerprint: string,
+    opts: { owner: string; dueAt?: string; actor: string },
+  ): FindingRow {
+    const existing = this.getFinding(fingerprint);
+    if (!existing) throw new Error(`unknown finding: ${fingerprint}`);
+    if (!opts.owner.trim()) throw new Error("owner is required");
+    if (opts.dueAt && Number.isNaN(Date.parse(opts.dueAt)))
+      throw new Error("dueAt must be an ISO timestamp");
+    const now = new Date().toISOString();
+    this.db.transaction(() => {
+      this.db
+        .prepare("UPDATE findings SET owner = ?, due_at = ? WHERE fingerprint = ?")
+        .run(opts.owner.trim(), opts.dueAt ?? null, fingerprint);
+      this.db
+        .prepare(
+          `INSERT INTO finding_events (fingerprint, scan_id, event_type, from_state, to_state, message, evidence, actor, created_at)
+           VALUES (?, NULL, 'workflow_change', ?, ?, ?, NULL, ?, ?)`,
+        )
+        .run(
+          fingerprint,
+          existing.workflowState,
+          existing.workflowState,
+          `Assigned to ${opts.owner.trim()}${opts.dueAt ? `; due ${opts.dueAt}` : ""}`,
+          opts.actor,
+          now,
+        );
+    })();
+    return this.getFinding(fingerprint)!;
+  }
+
+  expireWorkflowStates(now = new Date().toISOString()): number {
+    const rows = this.db
+      .prepare(
+        `SELECT fingerprint, workflow_state FROM findings
+         WHERE workflow_state IN ('risk_accepted','false_positive')
+           AND workflow_expires_at IS NOT NULL AND workflow_expires_at <= ?`,
+      )
+      .all(now) as Array<{ fingerprint: string; workflow_state: string }>;
+    if (rows.length === 0) return 0;
+    const update = this.db.prepare(
+      "UPDATE findings SET workflow_state = 'new', workflow_reason = NULL, workflow_actor = 'engine', workflow_expires_at = NULL WHERE fingerprint = ?",
+    );
+    const event = this.db.prepare(
+      `INSERT INTO finding_events (fingerprint, scan_id, event_type, from_state, to_state, message, evidence, actor, created_at)
+       VALUES (?, NULL, 'workflow_change', ?, 'new', ?, NULL, 'engine', ?)`,
+    );
+    this.db.transaction(() => {
+      for (const row of rows) {
+        update.run(row.fingerprint);
+        event.run(
+          row.fingerprint,
+          row.workflow_state,
+          "Workflow exception expired; review required.",
+          now,
+        );
+      }
+    })();
+    return rows.length;
+  }
+
   addFindingComment(fingerprint: string, comment: string, actor: string): void {
     if (!this.getFinding(fingerprint)) throw new Error(`unknown finding: ${fingerprint}`);
     this.db
@@ -753,6 +828,7 @@ export class CloudRangerStore {
   // ---- reporting ----
 
   reportData(filters: { provider?: Provider; scopeId?: string; sinceDays?: number } = {}): unknown {
+    this.expireWorkflowStates();
     const since = new Date(Date.now() - (filters.sinceDays ?? 30) * 86_400_000).toISOString();
     const where: string[] = [];
     const params: unknown[] = [];
@@ -804,6 +880,20 @@ export class CloudRangerStore {
         )
         .get(...params) as any
     ).n;
+    const overdue = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM findings WHERE due_at IS NOT NULL AND due_at < ? AND state IN ('open','reopened') ${clause}`,
+        )
+        .get(new Date().toISOString(), ...params) as any
+    ).n;
+    const unassignedOpen = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM findings WHERE owner IS NULL AND state IN ('open','reopened') ${clause}`,
+        )
+        .get(...params) as any
+    ).n;
     const scans = this.db
       .prepare(
         `SELECT id, provider, scope_id, status, created_at, evaluated_at, summary FROM scans ORDER BY created_at DESC LIMIT 10`,
@@ -829,6 +919,8 @@ export class CloudRangerStore {
       resolvedFindingsInWindow: resolvedSince,
       currentlyReopened: reopened,
       riskAccepted,
+      overdueFindings: overdue,
+      unassignedOpenFindings: unassignedOpen,
       recentScans: scans.map((s) => ({
         id: s.id,
         provider: s.provider,
@@ -845,6 +937,8 @@ export class CloudRangerStore {
         resolvedFindingsInWindow:
           "Findings whose resolved_at falls within the window (verified passing evaluation).",
         currentlyReopened: "Findings that previously resolved and are failing again now.",
+        overdueFindings: "Open or reopened findings whose assigned due_at timestamp has passed.",
+        unassignedOpenFindings: "Open or reopened findings without an owner assignment.",
         coverage:
           "Per-scan coverageRatio = controls evaluated / controls requested. Controls without evidence are never counted as passing.",
       },
@@ -994,6 +1088,8 @@ function mapFinding(row: any): FindingRow {
     workflowReason: row.workflow_reason ?? undefined,
     workflowActor: row.workflow_actor ?? undefined,
     workflowExpiresAt: row.workflow_expires_at ?? undefined,
+    owner: row.owner ?? undefined,
+    dueAt: row.due_at ?? undefined,
     message: row.message,
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,

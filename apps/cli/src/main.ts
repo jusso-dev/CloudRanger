@@ -30,7 +30,7 @@ Usage:
   cloudranger catalog validate          Validate bundled controls + collectors
   cloudranger catalog test              Run all control fixture tests
   cloudranger catalog list [--provider aws|azure|gcp]
-  cloudranger findings [--state open,reopened] [--severity critical,high] [--json]
+  cloudranger findings [--state open,reopened] [--severity critical,high] [--owner team] [--overdue] [--json]
   cloudranger report [--since-days 30] [--provider aws|azure|gcp]
   cloudranger report html [--output output/html/cloudranger-report.html] [--since-days 30] [--provider aws|azure|gcp]
   cloudranger report pdf [--output output/pdf/cloudranger-report.pdf] [--since-days 30] [--provider aws|azure|gcp]
@@ -165,6 +165,8 @@ function main(): number {
         state: { type: "string" },
         severity: { type: "string" },
         provider: { type: "string" },
+        owner: { type: "string" },
+        overdue: { type: "boolean" },
         json: { type: "boolean" },
       },
     });
@@ -173,6 +175,8 @@ function main(): number {
       state: values.state?.split(",") as any,
       severity: values.severity?.split(","),
       provider: values.provider as any,
+      owner: values.owner,
+      overdue: values.overdue,
       limit: 200,
     });
     if (values.json) {

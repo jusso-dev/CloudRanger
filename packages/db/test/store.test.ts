@@ -104,6 +104,25 @@ describe("finding lifecycle across scans", () => {
 });
 
 describe("workflow state", () => {
+  it("assigns ownership, finds overdue work, and expires exceptions", () => {
+    runScan([failResult()]);
+    const fp = store.searchFindings({}).findings[0]!.fingerprint;
+    const assigned = store.assignFinding(fp, {
+      owner: "platform-security",
+      dueAt: "2020-01-01T00:00:00Z",
+      actor: "manager",
+    });
+    expect(assigned.owner).toBe("platform-security");
+    expect(store.searchFindings({ overdue: true }).total).toBe(1);
+    store.setWorkflowState(fp, "risk_accepted", {
+      actor: "manager",
+      reason: "Temporary approved exception",
+      expiresAt: "2020-01-01T00:00:00Z",
+    });
+    expect(store.getFinding(fp)!.workflowState).toBe("new");
+    expect(store.getFindingEvents(fp).at(-1)!.message).toContain("expired");
+  });
+
   it("risk acceptance requires a reason and records an event", () => {
     runScan([failResult()]);
     const fp = store.searchFindings({}).findings[0]!.fingerprint;

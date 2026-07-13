@@ -109,4 +109,9 @@ export const MIGRATIONS: string[] = [
     entry_hash TEXT NOT NULL
   );
   `,
+  `
+  ALTER TABLE findings ADD COLUMN owner TEXT;
+  ALTER TABLE findings ADD COLUMN due_at TEXT;
+  CREATE INDEX idx_findings_owner_due ON findings(owner, due_at);
+  `,
 ];
