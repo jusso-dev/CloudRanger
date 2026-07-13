@@ -15,6 +15,7 @@ import { PACKS, customCatalogDir, resolvePack } from "@cloudranger/catalog";
 import { CloudRangerStore } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
+import { createNotificationSender } from "./notifications.js";
 
 const MAX_RECORDS_PER_SUBMIT = 200;
 const MAX_OUTPUT_BYTES = 2_000_000;
@@ -50,10 +51,10 @@ export function createServer(deps: ServerDeps): McpServer {
   });
 
   /** Wrap a handler with audit logging; errors become structured tool errors. */
-  const audited = <A>(tool: string, handler: (args: A) => unknown) => {
+  const audited = <A>(tool: string, handler: (args: A) => unknown | Promise<unknown>) => {
     return async (args: A) => {
       try {
-        const result = handler(args);
+        const result = await handler(args);
         store.audit({ actor: actor(), tool, args, success: true });
         return json(result);
       } catch (error) {
@@ -386,7 +387,7 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { scanId: z.string() },
       annotations: { ...readOnly, readOnlyHint: false, idempotentHint: true },
     },
-    audited("scan_evaluate", (args: { scanId: string }) => {
+    audited("scan_evaluate", async (args: { scanId: string }) => {
       const scan = store.getScan(args.scanId);
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
       if (scan.status === "evaluated") {
@@ -407,6 +408,18 @@ export function createServer(deps: ServerDeps): McpServer {
       );
       const summary = store.finalizeScan(args.scanId, results, coverage);
       const gaps = coverage.filter((c) => c.status !== "evaluated");
+      const previous = store
+        .listScans(100)
+        .find(
+          (candidate) =>
+            candidate.id !== scan.id &&
+            candidate.status === "evaluated" &&
+            candidate.provider === scan.provider &&
+            candidate.scopeId === scan.scopeId,
+        );
+      const notifications = previous
+        ? await createNotificationSender()(store.compareScans(previous.id, scan.id))
+        : { enabled: [], sent: [], errors: [] };
       return {
         scanId: scan.id,
         summary,
@@ -419,6 +432,7 @@ export function createServer(deps: ServerDeps): McpServer {
           gaps.length > 0
             ? "Some controls had no evidence and were NOT assessed. Disclose this in any report."
             : "All requested controls were evaluated.",
+        notifications,
       };
     }),
   );

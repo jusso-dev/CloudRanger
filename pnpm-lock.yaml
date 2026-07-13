@@ -74,10 +74,16 @@ importers:
       "@modelcontextprotocol/sdk":
         specifier: ^1.17.0
         version: 1.29.0(zod@3.25.76)
+      nodemailer:
+        specifier: ^7.0.5
+        version: 7.0.13
       zod:
         specifier: ^3.25.0
         version: 3.25.76
     devDependencies:
+      "@types/nodemailer":
+        specifier: ^8.0.1
+        version: 8.0.1
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -791,6 +797,12 @@ packages:
     resolution:
       {
         integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==,
+      }
+
+  "@types/nodemailer@8.0.1":
+    resolution:
+      {
+        integrity: sha512-PxpaInm8V1JQDd4j0ds5HfvWQk8JupS1C0Picb96QJsrrRDjBH+DlK7L4ZdNSqNULhiZRQHc40nLVShaGxXAMw==,
       }
 
   "@typescript-eslint/eslint-plugin@8.63.0":
@@ -1932,6 +1944,13 @@ packages:
       }
     engines: { node: ">=10" }
 
+  nodemailer@7.0.13:
+    resolution:
+      {
+        integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==,
+      }
+    engines: { node: ">=6.0.0" }
+
   object-assign@4.1.1:
     resolution:
       {
@@ -2888,6 +2907,10 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  "@types/nodemailer@8.0.1":
+    dependencies:
+      "@types/node": 24.13.3
+
   "@typescript-eslint/eslint-plugin@8.63.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5)(typescript@5.9.3))(eslint@9.39.5)(typescript@5.9.3)":
     dependencies:
       "@eslint-community/regexpp": 4.12.2
@@ -3579,6 +3602,8 @@ snapshots:
   node-abi@3.94.0:
     dependencies:
       semver: 7.8.5
+
+  nodemailer@7.0.13: {}
 
   object-assign@4.1.1: {}
 
