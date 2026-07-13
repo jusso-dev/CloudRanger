@@ -173,4 +173,21 @@ export const MIGRATIONS: string[] = [
     CHECK (keep_days IS NOT NULL OR keep_scans IS NOT NULL)
   );
   `,
+  `
+  CREATE TABLE imported_signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider TEXT NOT NULL CHECK (provider IN ('aws','azure','gcp')),
+    scope_id TEXT NOT NULL,
+    source TEXT NOT NULL CHECK (source IN ('securityhub','defender','scc')),
+    external_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    description TEXT,
+    correlated_fingerprints TEXT NOT NULL DEFAULT '[]',
+    imported_at TEXT NOT NULL,
+    UNIQUE (provider, scope_id, source, external_id)
+  );
+  CREATE INDEX idx_imported_signals_scope ON imported_signals(provider, scope_id, source);
+  `,
 ];

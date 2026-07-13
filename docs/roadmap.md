@@ -94,8 +94,11 @@ catalog directory with override semantics, and a Prowler metadata importer
 
 ## Phase 5 — Ecosystem
 
-17. Import provider-native findings (Security Hub, Defender, SCC) as
-    correlated—not duplicated—signals, clearly labelled as imported.
+17. ~~Import provider-native findings (Security Hub, Defender, SCC) as
+    correlated—not duplicated—signals, clearly labelled as imported.~~
+    **Done** — `signals_import`/`signals_list` MCP tools: sanitised,
+    length-capped ingest, upsert on external id, resource-level correlation
+    to open CloudRanger findings, never counted in pass/fail stats.
 18. Notification hooks (agent-driven: webhook/Slack emitters the agent can
     call after `scan_evaluate`).
 19. Community control contribution guide + CI porting checks.

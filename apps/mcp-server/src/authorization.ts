@@ -9,6 +9,7 @@ const ADMIN_ONLY = new Set([
 ]);
 const MUTATING = new Set([
   "parameters_set",
+  "signals_import",
   "retention_policy_set",
   "scan_start",
   "evidence_submit",

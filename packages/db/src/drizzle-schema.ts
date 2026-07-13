@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  uniqueIndex,
   integer,
   jsonb,
   primaryKey,
@@ -200,4 +201,33 @@ export const retentionPolicies = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.provider, table.scopeId] })],
+);
+
+export const importedSignals = pgTable(
+  "imported_signals",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    provider: varchar("provider", { length: 16 }).notNull(),
+    scopeId: text("scope_id").notNull(),
+    source: varchar("source", { length: 16 }).notNull(),
+    externalId: text("external_id").notNull(),
+    title: text("title").notNull(),
+    severity: text("severity").notNull(),
+    resourceId: text("resource_id").notNull(),
+    description: text("description"),
+    correlatedFingerprints: jsonb("correlated_fingerprints")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    importedAt: timestamp("imported_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_imported_signals").on(
+      table.provider,
+      table.scopeId,
+      table.source,
+      table.externalId,
+    ),
+    index("idx_imported_signals_scope").on(table.provider, table.scopeId, table.source),
+  ],
 );

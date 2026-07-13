@@ -346,6 +346,123 @@ export class CloudRangerStore {
     return this.getScan(id)!;
   }
 
+  // ---- imported provider-native signals ----
+
+  /**
+   * Store provider-native findings (Security Hub / Defender / SCC) as a
+   * distinct, clearly-imported signal class. Free text is sanitised
+   * (control characters stripped) and length-capped; entries upsert on
+   * (provider, scope, source, externalId); each import correlates the
+   * signal to open CloudRanger findings on the same resource as
+   * corroboration — imported signals are never counted in pass/fail stats.
+   */
+  importSignals(input: {
+    provider: Provider;
+    scopeId: string;
+    source: "securityhub" | "defender" | "scc";
+    signals: Array<{
+      externalId: string;
+      title: string;
+      severity: string;
+      resourceId: string;
+      description?: string;
+    }>;
+  }): { imported: number; correlated: number } {
+    const clean = (text: string, max: number) =>
+      // eslint-disable-next-line no-control-regex
+      text.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "").slice(0, max);
+    const upsert = this.db.prepare(
+      `INSERT INTO imported_signals (provider, scope_id, source, external_id, title, severity, resource_id, description, correlated_fingerprints, imported_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (provider, scope_id, source, external_id)
+       DO UPDATE SET title = excluded.title, severity = excluded.severity,
+         resource_id = excluded.resource_id, description = excluded.description,
+         correlated_fingerprints = excluded.correlated_fingerprints,
+         imported_at = excluded.imported_at`,
+    );
+    const findFingerprints = this.db.prepare(
+      `SELECT fingerprint FROM findings
+       WHERE provider = ? AND scope_id = ? AND resource_id = ? AND state IN ('open','reopened')`,
+    );
+    const now = new Date().toISOString();
+    let correlated = 0;
+    const tx = this.db.transaction(() => {
+      for (const signal of input.signals) {
+        const fingerprints = (
+          findFingerprints.all(input.provider, input.scopeId, signal.resourceId) as Array<{
+            fingerprint: string;
+          }>
+        ).map((row) => row.fingerprint);
+        if (fingerprints.length > 0) correlated += 1;
+        upsert.run(
+          input.provider,
+          input.scopeId,
+          input.source,
+          clean(signal.externalId, 512),
+          clean(signal.title, 500),
+          clean(signal.severity, 32).toLowerCase(),
+          clean(signal.resourceId, 512),
+          signal.description ? clean(signal.description, 2000) : null,
+          j(fingerprints),
+          now,
+        );
+      }
+    });
+    tx();
+    return { imported: input.signals.length, correlated };
+  }
+
+  listImportedSignals(filters: {
+    provider?: Provider;
+    scopeId?: string;
+    source?: string;
+    limit?: number;
+  }): Array<{
+    provider: Provider;
+    scopeId: string;
+    source: string;
+    externalId: string;
+    title: string;
+    severity: string;
+    resourceId: string;
+    description?: string;
+    correlatedFingerprints: string[];
+    importedAt: string;
+  }> {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (filters.provider) {
+      where.push("provider = ?");
+      params.push(filters.provider);
+    }
+    if (filters.scopeId) {
+      where.push("scope_id = ?");
+      params.push(filters.scopeId);
+    }
+    if (filters.source) {
+      where.push("source = ?");
+      params.push(filters.source);
+    }
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM imported_signals ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+         ORDER BY imported_at DESC, id DESC LIMIT ?`,
+      )
+      .all(...params, Math.min(filters.limit ?? 100, 500)) as any[];
+    return rows.map((row) => ({
+      provider: row.provider,
+      scopeId: row.scope_id,
+      source: row.source,
+      externalId: row.external_id,
+      title: row.title,
+      severity: row.severity,
+      resourceId: row.resource_id,
+      description: row.description ?? undefined,
+      correlatedFingerprints: pj(row.correlated_fingerprints, []),
+      importedAt: row.imported_at,
+    }));
+  }
+
   // ---- backup ----
 
   /**
