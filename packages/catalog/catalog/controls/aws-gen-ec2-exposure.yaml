@@ -1,0 +1,134 @@
+controls:
+  - id: CR-AWS-EC2-155
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: Internet-facing instance is not reachable on SSH from anywhere
+    description: No running EC2 instance with a public IP address is associated
+      with a security group that allows SSH (port 22) from the internet.
+    rationale: A public IP plus an any-source SSH rule is a direct brute-force
+      and initial-access path. Either the address or the rule may be defensible
+      alone; together they are an open door.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: ec2_instance_port_ssh_exposed_to_internet
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    relatedCollectors:
+      - collector: aws.ec2.describe_security_groups
+        as: securityGroups
+    resourcesPath: Reservations[].Instances
+    resourceIdField: primary.InstanceId
+    applicableWhen:
+      op: and
+      exprs:
+        - { op: notEquals, path: primary.State.Name, value: terminated }
+        - { op: exists, path: primary.PublicIpAddress }
+    passWhen:
+      op: not
+      expr:
+        op: relationshipExists
+        itemsPath: related.securityGroups[].SecurityGroups
+        localPath: primary.SecurityGroups
+        localItemPath: GroupId
+        foreignPath: GroupId
+        condition:
+          op: anyItem
+          path: IpPermissions
+          condition:
+            op: and
+            exprs:
+              - { op: portIncludes, fromPath: FromPort, toPath: ToPort, value: 22 }
+              - op: or
+                exprs:
+                  - op: anyItem
+                    path: IpRanges
+                    condition: { op: isPublicCidr, path: CidrIp }
+                  - op: anyItem
+                    path: Ipv6Ranges
+                    condition: { op: isPublicCidr, path: CidrIpv6 }
+    failMessage: Public instance's security group allows SSH from the internet.
+    passMessage: No internet-open SSH rule is attached to this public instance.
+    remediation:
+      summary: Restrict SSH to trusted sources or remove it; prefer SSM Session Manager.
+      steps:
+        - Replace the 0.0.0.0/0 (or ::/0) port-22 rule with specific source CIDRs, or delete it.
+        - Use AWS Systems Manager Session Manager instead of direct SSH where possible.
+        - Review whether the instance needs a public IP at all.
+      verifyCommand: aws ec2 describe-security-groups --region {region} --output json
+    compliance:
+      - framework: nist-csf
+        controls: [PR.AC]
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html
+
+  - id: CR-AWS-EC2-156
+    version: 1.0.0
+    provider: aws
+    service: ec2
+    title: Internet-facing instance is not reachable on RDP from anywhere
+    description: No running EC2 instance with a public IP address is associated
+      with a security group that allows RDP (port 3389) from the internet.
+    rationale: Internet-exposed RDP is one of the most exploited initial-access
+      vectors (credential stuffing, BlueKeep-class vulnerabilities). A public IP
+      combined with an any-source 3389 rule is unacceptable exposure.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: ec2_instance_port_rdp_exposed_to_internet
+      license: Apache-2.0
+    collector: aws.ec2.describe_instances
+    relatedCollectors:
+      - collector: aws.ec2.describe_security_groups
+        as: securityGroups
+    resourcesPath: Reservations[].Instances
+    resourceIdField: primary.InstanceId
+    applicableWhen:
+      op: and
+      exprs:
+        - { op: notEquals, path: primary.State.Name, value: terminated }
+        - { op: exists, path: primary.PublicIpAddress }
+    passWhen:
+      op: not
+      expr:
+        op: relationshipExists
+        itemsPath: related.securityGroups[].SecurityGroups
+        localPath: primary.SecurityGroups
+        localItemPath: GroupId
+        foreignPath: GroupId
+        condition:
+          op: anyItem
+          path: IpPermissions
+          condition:
+            op: and
+            exprs:
+              - { op: portIncludes, fromPath: FromPort, toPath: ToPort, value: 3389 }
+              - op: or
+                exprs:
+                  - op: anyItem
+                    path: IpRanges
+                    condition: { op: isPublicCidr, path: CidrIp }
+                  - op: anyItem
+                    path: Ipv6Ranges
+                    condition: { op: isPublicCidr, path: CidrIpv6 }
+    failMessage: Public instance's security group allows RDP from the internet.
+    passMessage: No internet-open RDP rule is attached to this public instance.
+    remediation:
+      summary: Restrict RDP to trusted sources or remove it; prefer Fleet Manager / bastions.
+      steps:
+        - Replace the 0.0.0.0/0 (or ::/0) port-3389 rule with specific source CIDRs, or delete it.
+        - Use AWS Systems Manager Fleet Manager or a hardened bastion instead of direct RDP.
+        - Review whether the instance needs a public IP at all.
+      verifyCommand: aws ec2 describe-security-groups --region {region} --output json
+    compliance:
+      - framework: nist-csf
+        controls: [PR.AC]
+    references:
+      - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html

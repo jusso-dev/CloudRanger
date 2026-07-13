@@ -59,6 +59,16 @@ export const expressionSchema: z.ZodType<unknown> = z.lazy(() =>
     z.object({ op: z.literal("noneItem"), path: pathString, condition: expressionSchema }).strict(),
     z
       .object({
+        op: z.literal("relationshipExists"),
+        itemsPath: pathString,
+        localPath: pathString,
+        localItemPath: pathString.optional(),
+        foreignPath: pathString,
+        condition: expressionSchema.optional(),
+      })
+      .strict(),
+    z
+      .object({
         op: z.literal("anyItemReferencedBy"),
         itemsPath: pathString,
         itemCondition: expressionSchema,
@@ -158,7 +168,10 @@ export const controlSchema = z
             default: z.union([z.number(), z.string(), z.boolean()]),
             min: z.number().optional(),
             max: z.number().optional(),
-            enum: z.array(z.union([z.number(), z.string()])).min(1).optional(),
+            enum: z
+              .array(z.union([z.number(), z.string()]))
+              .min(1)
+              .optional(),
           })
           .strict(),
       )

@@ -40,8 +40,10 @@ catalog directory with override semantics, and a Prowler metadata importer
    **Done** — `parameters` declarations with `{ $param: name }` references,
    scope-level persistence (`parameters_set`/`parameters_list` + CLI), per-scan
    overrides on `scan_start`, and effective values recorded on findings.
-8. `relationshipExists`/graph evidence for cross-resource controls
-   (public LB → unencrypted backend).
+8. ~~`relationshipExists`/graph evidence for cross-resource controls
+   (public LB → unencrypted backend).~~ **Done** — declarative key-equality
+   join over relatedCollectors evidence, shipped with internet-exposed
+   SSH/RDP instance controls (CR-AWS-EC2-155/156).
 9. ~~Control packs as named selections for `scan_start`.~~ **Done** — 7
    category packs plus framework-aligned packs (cis-aws-3.0,
    essential-eight-technical) resolved from compliance mappings.

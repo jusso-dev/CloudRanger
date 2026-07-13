@@ -174,3 +174,66 @@ describe("expression evaluator", () => {
     expect(evaluate({ op: "matches", path: "a", pattern: "(x+)+$" }, { a: "xxxx" })).toBe(false);
   });
 });
+
+describe("relationshipExists", () => {
+  const ctx = { now: new Date("2026-01-01T00:00:00Z") };
+  const resource = {
+    primary: {
+      InstanceId: "i-1",
+      SecurityGroups: [{ GroupId: "sg-a" }, { GroupId: "sg-b" }],
+    },
+    related: {
+      securityGroups: [
+        {
+          SecurityGroups: [
+            { GroupId: "sg-a", Open: false },
+            { GroupId: "sg-c", Open: true },
+          ],
+        },
+        { SecurityGroups: [{ GroupId: "sg-b", Open: true }] },
+      ],
+    },
+  };
+  const expr = (condition?: Expression): Expression => ({
+    op: "relationshipExists",
+    itemsPath: "related.securityGroups[].SecurityGroups",
+    localPath: "primary.SecurityGroups",
+    localItemPath: "GroupId",
+    foreignPath: "GroupId",
+    ...(condition ? { condition } : {}),
+  });
+
+  it("joins local keys to flattened related items", () => {
+    expect(evaluateExpression(expr(), resource, ctx)).toBe(true);
+  });
+
+  it("applies the condition only to joined items", () => {
+    // sg-c is Open but not referenced by the instance; sg-b is joined + Open.
+    expect(
+      evaluateExpression(expr({ op: "equals", path: "Open", value: true }), resource, ctx),
+    ).toBe(true);
+    // Restrict to sg-a only → joined item is not Open.
+    const only = {
+      ...resource,
+      primary: { ...resource.primary, SecurityGroups: [{ GroupId: "sg-a" }] },
+    };
+    expect(evaluateExpression(expr({ op: "equals", path: "Open", value: true }), only, ctx)).toBe(
+      false,
+    );
+  });
+
+  it("fails closed on missing locals or empty related sets", () => {
+    expect(evaluateExpression(expr(), { primary: {}, related: resource.related }, ctx)).toBe(false);
+    expect(evaluateExpression(expr(), { primary: resource.primary, related: {} }, ctx)).toBe(false);
+  });
+
+  it("supports scalar local values without localItemPath", () => {
+    const scalar: Expression = {
+      op: "relationshipExists",
+      itemsPath: "related.securityGroups[].SecurityGroups",
+      localPath: "primary.SecurityGroups.0.GroupId",
+      foreignPath: "GroupId",
+    };
+    expect(evaluateExpression(scalar, resource, ctx)).toBe(true);
+  });
+});

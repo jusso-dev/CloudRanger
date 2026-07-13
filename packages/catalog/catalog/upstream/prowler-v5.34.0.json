@@ -2225,8 +2225,8 @@
       "title": "EC2 instance does not allow ingress from the Internet to TCP port 3389 (RDP)",
       "severity": "critical",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EC2-156"]
     },
     {
       "provider": "aws",
@@ -2255,8 +2255,8 @@
       "title": "EC2 instance does not allow ingress from the Internet to TCP port 22 (SSH)",
       "severity": "critical",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EC2-155"]
     },
     {
       "provider": "aws",

@@ -32,6 +32,7 @@ export function collectParamRefs(expr: Expression, acc: Set<string> = new Set())
     collectParamRefs(expr.condition, acc);
   }
   if (expr.op === "anyItemReferencedBy") collectParamRefs(expr.itemCondition, acc);
+  if (expr.op === "relationshipExists" && expr.condition) collectParamRefs(expr.condition, acc);
   return acc;
 }
 

@@ -250,6 +250,22 @@ export type Expression =
       itemCondition: Expression;
       itemValuePath: string;
       relatedPath: string;
+    }
+  | {
+      /**
+       * Declarative cross-resource join. True when any item at itemsPath
+       * (supports "[]." flattening, typically under `related.<as>`) whose
+       * foreignPath value equals a local key also satisfies `condition`.
+       * Local keys come from localPath on the current resource; when that
+       * resolves to an array of objects, localItemPath extracts the key
+       * field from each. Key equality only — no expressions over keys.
+       */
+      op: "relationshipExists";
+      itemsPath: string;
+      localPath: string;
+      localItemPath?: string;
+      foreignPath: string;
+      condition?: Expression;
     };
 
 /** Result of evaluating one control against one resource. */

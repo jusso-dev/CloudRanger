@@ -1,0 +1,516 @@
+[
+  {
+    "controlId": "CR-AWS-EC2-155",
+    "cases": [
+      {
+        "name": "fails public instance with any-source rule",
+        "expected": "fail",
+        "resourceId": "i-0aaa1111",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0aaa1111",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.10",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-open",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-open",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 22,
+                      "ToPort": 22,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                },
+                {
+                  "GroupId": "sg-other",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "passes public instance whose rule is restricted",
+        "expected": "pass",
+        "resourceId": "i-0bbb2222",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0bbb2222",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.11",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-restricted",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-restricted",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 22,
+                      "ToPort": 22,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "10.0.0.0/8"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "passes public instance whose open rule is a different port",
+        "expected": "pass",
+        "resourceId": "i-0ccc3333",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0ccc3333",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.12",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-web",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-web",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "private instance is out of scope",
+        "expected": "not_applicable",
+        "resourceId": "i-0ddd4444",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0ddd4444",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-open",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-open",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 22,
+                      "ToPort": 22,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-EC2-156",
+    "cases": [
+      {
+        "name": "fails public instance with any-source rule",
+        "expected": "fail",
+        "resourceId": "i-0aaa1111",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0aaa1111",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.10",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-open",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-open",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3389,
+                      "ToPort": 3389,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                },
+                {
+                  "GroupId": "sg-other",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "passes public instance whose rule is restricted",
+        "expected": "pass",
+        "resourceId": "i-0bbb2222",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0bbb2222",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.11",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-restricted",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-restricted",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3389,
+                      "ToPort": 3389,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "10.0.0.0/8"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "passes public instance whose open rule is a different port",
+        "expected": "pass",
+        "resourceId": "i-0ccc3333",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0ccc3333",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "PublicIpAddress": "203.0.113.12",
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-web",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-web",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 443,
+                      "ToPort": 443,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      },
+      {
+        "name": "private instance is out of scope",
+        "expected": "not_applicable",
+        "resourceId": "i-0ddd4444",
+        "records": [
+          {
+            "collectorId": "aws.ec2.describe_instances",
+            "region": "ap-southeast-2",
+            "output": {
+              "Reservations": [
+                {
+                  "Instances": [
+                    {
+                      "InstanceId": "i-0ddd4444",
+                      "State": {
+                        "Name": "running"
+                      },
+                      "SecurityGroups": [
+                        {
+                          "GroupId": "sg-open",
+                          "GroupName": "sg"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          },
+          {
+            "collectorId": "aws.ec2.describe_security_groups",
+            "region": "ap-southeast-2",
+            "output": {
+              "SecurityGroups": [
+                {
+                  "GroupId": "sg-open",
+                  "GroupName": "sg",
+                  "IpPermissions": [
+                    {
+                      "IpProtocol": "tcp",
+                      "FromPort": 3389,
+                      "ToPort": 3389,
+                      "IpRanges": [
+                        {
+                          "CidrIp": "0.0.0.0/0"
+                        }
+                      ],
+                      "Ipv6Ranges": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "exitCode": 0
+          }
+        ]
+      }
+    ]
+  }
+]

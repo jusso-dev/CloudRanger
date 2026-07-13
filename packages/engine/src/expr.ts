@@ -1,5 +1,5 @@
 import type { Expression } from "./types.js";
-import { getPath } from "./path.js";
+import { flattenPath, getPath } from "./path.js";
 
 const MAX_REGEX_LENGTH = 200;
 
@@ -215,6 +215,22 @@ export function evaluateExpression(expr: Expression, resource: unknown, ctx: Exp
       const v = getPath(resource, expr.path);
       if (!Array.isArray(v)) return true;
       return !v.some((item) => evaluateExpression(expr.condition, item, ctx));
+    }
+    case "relationshipExists": {
+      const items = flattenPath(resource, expr.itemsPath);
+      const localRaw = getPath(resource, expr.localPath);
+      if (items.length === 0 || localRaw === undefined || localRaw === null) return false;
+      const localValues = (Array.isArray(localRaw) ? localRaw : [localRaw])
+        .map((entry) =>
+          expr.localItemPath !== undefined ? getPath(entry, expr.localItemPath) : entry,
+        )
+        .filter((entry) => entry !== undefined && entry !== null);
+      if (localValues.length === 0) return false;
+      return items.some((item) => {
+        const foreign = getPath(item, expr.foreignPath);
+        if (!localValues.some((local) => looselyEquals(foreign, local))) return false;
+        return expr.condition ? evaluateExpression(expr.condition, item, ctx) : true;
+      });
     }
     case "anyItemReferencedBy": {
       const items = getPath(resource, expr.itemsPath);
