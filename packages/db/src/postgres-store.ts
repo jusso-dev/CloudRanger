@@ -287,6 +287,114 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     return (await this.getScan(id))!;
   }
 
+  async setRetentionPolicy(
+    provider: Provider,
+    scopeId: string,
+    policy: { keepDays?: number; keepScans?: number } | null,
+  ): Promise<void> {
+    if (policy === null || (policy.keepDays === undefined && policy.keepScans === undefined)) {
+      await this.pool.query("DELETE FROM retention_policies WHERE provider=$1 AND scope_id=$2", [
+        provider,
+        scopeId,
+      ]);
+      return;
+    }
+    await this.pool.query(
+      `INSERT INTO retention_policies (provider, scope_id, keep_days, keep_scans, updated_at)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (provider, scope_id)
+       DO UPDATE SET keep_days = EXCLUDED.keep_days, keep_scans = EXCLUDED.keep_scans, updated_at = EXCLUDED.updated_at`,
+      [
+        provider,
+        scopeId,
+        policy.keepDays ?? null,
+        policy.keepScans ?? null,
+        new Date().toISOString(),
+      ],
+    );
+  }
+
+  async listRetentionPolicies(): Promise<
+    Array<{
+      provider: Provider;
+      scopeId: string;
+      keepDays?: number;
+      keepScans?: number;
+      updatedAt: string;
+    }>
+  > {
+    const result = await this.pool.query(
+      "SELECT * FROM retention_policies ORDER BY provider, scope_id",
+    );
+    return result.rows.map((row) => ({
+      provider: row.provider,
+      scopeId: row.scope_id,
+      keepDays: row.keep_days ?? undefined,
+      keepScans: row.keep_scans ?? undefined,
+      updatedAt: iso(row.updated_at)!,
+    }));
+  }
+
+  async pruneEvidence(input: { provider: Provider; scopeId: string; execute?: boolean }): Promise<{
+    policy: { keepDays?: number; keepScans?: number };
+    protectedScans: number;
+    prunableScans: string[];
+    prunableRecords: number;
+    prunableBytes: number;
+    executed: boolean;
+  }> {
+    const policy = (await this.listRetentionPolicies()).find(
+      (p) => p.provider === input.provider && p.scopeId === input.scopeId,
+    );
+    if (!policy) {
+      throw new Error(`no retention policy for ${input.provider}/${input.scopeId} — set one first`);
+    }
+    const scansResult = await this.pool.query(
+      "SELECT id, created_at FROM scans WHERE provider=$1 AND scope_id=$2 ORDER BY created_at DESC",
+      [input.provider, input.scopeId],
+    );
+    const cutoff =
+      policy.keepDays !== undefined
+        ? new Date(Date.now() - policy.keepDays * 86_400_000)
+        : undefined;
+    const protectedIds = new Set<string>();
+    scansResult.rows.forEach((scan, index) => {
+      const byCount = policy.keepScans !== undefined && index < policy.keepScans;
+      const byAge = cutoff !== undefined && new Date(scan.created_at) >= cutoff;
+      if (byCount || byAge) protectedIds.add(scan.id);
+    });
+    const prunable = scansResult.rows
+      .filter((scan) => !protectedIds.has(scan.id))
+      .map((scan) => scan.id as string);
+    let prunableRecords = 0;
+    let prunableBytes = 0;
+    if (prunable.length > 0) {
+      const counts = await this.pool.query(
+        `SELECT COUNT(*)::int AS records, COALESCE(SUM(LENGTH(output::text)), 0)::bigint AS bytes
+         FROM evidence WHERE scan_id = ANY($1) AND output IS NOT NULL`,
+        [prunable],
+      );
+      prunableRecords = counts.rows[0].records;
+      prunableBytes = Number(counts.rows[0].bytes);
+      if (input.execute && prunableRecords > 0) {
+        await this.pool.query(
+          `UPDATE evidence SET output_bytes = LENGTH(output::text), output = NULL, pruned_at = $2
+           WHERE scan_id = ANY($1) AND output IS NOT NULL`,
+          [prunable, new Date().toISOString()],
+        );
+        await this.pool.query("VACUUM evidence");
+      }
+    }
+    return {
+      policy: { keepDays: policy.keepDays, keepScans: policy.keepScans },
+      protectedScans: protectedIds.size,
+      prunableScans: prunable,
+      prunableRecords,
+      prunableBytes,
+      executed: Boolean(input.execute && prunableRecords > 0),
+    };
+  }
+
   async recordControlRevisions(
     revisions: Array<{
       controlId: string;

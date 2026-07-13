@@ -66,7 +66,11 @@ catalog directory with override semantics, and a Prowler metadata importer
 
 ## Phase 4 — Operations
 
-12. Retention policies (evidence pruning with finding history preserved).
+12. ~~Retention policies (evidence pruning with finding history
+    preserved).~~ **Done** — per-scope keepDays/keepScans policies,
+    dry-run-by-default pruning (MCP `evidence_prune` admin-only with double
+    confirmation; `cloudranger retention` CLI) that clears raw payloads only,
+    preserving findings, evaluations and evidence digests.
 13. DB backup/restore commands; export findings as CSV/JSONL/SARIF.
 14. Multi-scope digests (`report_data` across scopes with per-scope
     breakdown).

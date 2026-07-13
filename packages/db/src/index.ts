@@ -346,6 +346,127 @@ export class CloudRangerStore {
     return this.getScan(id)!;
   }
 
+  // ---- retention ----
+
+  setRetentionPolicy(
+    provider: Provider,
+    scopeId: string,
+    policy: { keepDays?: number; keepScans?: number } | null,
+  ): void {
+    if (policy === null || (policy.keepDays === undefined && policy.keepScans === undefined)) {
+      this.db
+        .prepare("DELETE FROM retention_policies WHERE provider = ? AND scope_id = ?")
+        .run(provider, scopeId);
+      return;
+    }
+    this.db
+      .prepare(
+        `INSERT INTO retention_policies (provider, scope_id, keep_days, keep_scans, updated_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (provider, scope_id)
+         DO UPDATE SET keep_days = excluded.keep_days, keep_scans = excluded.keep_scans, updated_at = excluded.updated_at`,
+      )
+      .run(
+        provider,
+        scopeId,
+        policy.keepDays ?? null,
+        policy.keepScans ?? null,
+        new Date().toISOString(),
+      );
+  }
+
+  listRetentionPolicies(): Array<{
+    provider: Provider;
+    scopeId: string;
+    keepDays?: number;
+    keepScans?: number;
+    updatedAt: string;
+  }> {
+    const rows = this.db
+      .prepare("SELECT * FROM retention_policies ORDER BY provider, scope_id")
+      .all() as any[];
+    return rows.map((row) => ({
+      provider: row.provider,
+      scopeId: row.scope_id,
+      keepDays: row.keep_days ?? undefined,
+      keepScans: row.keep_scans ?? undefined,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  /**
+   * Prune raw evidence payloads for one scope according to its retention
+   * policy. Findings, evaluations, scan metadata and evidence digests
+   * (hash, size, captured-at) are always preserved — only `output` is
+   * cleared, with pruned_at/output_bytes recording what was removed. Dry
+   * run by default; execute performs the update inside a transaction and
+   * VACUUMs afterwards.
+   */
+  pruneEvidence(input: { provider: Provider; scopeId: string; execute?: boolean }): {
+    policy: { keepDays?: number; keepScans?: number };
+    protectedScans: number;
+    prunableScans: string[];
+    prunableRecords: number;
+    prunableBytes: number;
+    executed: boolean;
+  } {
+    const policy = this.listRetentionPolicies().find(
+      (p) => p.provider === input.provider && p.scopeId === input.scopeId,
+    );
+    if (!policy) {
+      throw new Error(`no retention policy for ${input.provider}/${input.scopeId} — set one first`);
+    }
+    const scans = this.db
+      .prepare(
+        "SELECT id, created_at FROM scans WHERE provider = ? AND scope_id = ? ORDER BY created_at DESC, rowid DESC",
+      )
+      .all(input.provider, input.scopeId) as Array<{ id: string; created_at: string }>;
+    const cutoff =
+      policy.keepDays !== undefined
+        ? new Date(Date.now() - policy.keepDays * 86_400_000).toISOString()
+        : undefined;
+    const protectedIds = new Set<string>();
+    for (const [index, scan] of scans.entries()) {
+      const byCount = policy.keepScans !== undefined && index < policy.keepScans;
+      const byAge = cutoff !== undefined && scan.created_at >= cutoff;
+      if (byCount || byAge) protectedIds.add(scan.id);
+    }
+    const prunable = scans.filter((scan) => !protectedIds.has(scan.id)).map((scan) => scan.id);
+    let prunableRecords = 0;
+    let prunableBytes = 0;
+    if (prunable.length > 0) {
+      const placeholders = prunable.map(() => "?").join(",");
+      const row = this.db
+        .prepare(
+          `SELECT COUNT(*) AS records, COALESCE(SUM(LENGTH(output)), 0) AS bytes
+           FROM evidence WHERE scan_id IN (${placeholders}) AND output IS NOT NULL`,
+        )
+        .get(...prunable) as { records: number; bytes: number };
+      prunableRecords = row.records;
+      prunableBytes = row.bytes;
+      if (input.execute && prunableRecords > 0) {
+        const now = new Date().toISOString();
+        this.db.transaction(() => {
+          this.db
+            .prepare(
+              `UPDATE evidence SET output_bytes = LENGTH(output), output = NULL, pruned_at = ?
+               WHERE scan_id IN (${placeholders}) AND output IS NOT NULL`,
+            )
+            .run(now, ...prunable);
+        })();
+        this.db.exec("VACUUM");
+      }
+    }
+    return {
+      policy: { keepDays: policy.keepDays, keepScans: policy.keepScans },
+      protectedScans: protectedIds.size,
+      prunableScans: prunable,
+      prunableRecords,
+      prunableBytes,
+      executed: Boolean(input.execute && prunableRecords > 0),
+    };
+  }
+
   // ---- control revisions ----
 
   /**

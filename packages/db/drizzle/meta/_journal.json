@@ -29,6 +29,13 @@
       "when": 1783945851855,
       "tag": "0003_same_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783946206377,
+      "tag": "0004_parallel_toro",
+      "breakpoints": true
     }
   ]
 }

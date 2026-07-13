@@ -367,3 +367,63 @@ describe("control revisions", () => {
     expect(store.listControlRevisions("CR-NOPE-X-001")).toEqual([]);
   });
 });
+
+describe("evidence retention", () => {
+  it("prunes only unprotected scans' payloads, preserving digests and findings", () => {
+    store.setRetentionPolicy("aws", "123456789012", { keepScans: 1 });
+    const record = {
+      collectorId: "aws.s3.list_buckets",
+      output: { Buckets: [{ Name: "b1" }] },
+      exitCode: 0,
+    };
+    const older = store.createScan({
+      provider: "aws",
+      scopeId: "123456789012",
+      regions: [],
+      controlIds: ["CR-AWS-S3-001"],
+    });
+    store.addEvidence(older.id, [record]);
+    store.finalizeScan(
+      older.id,
+      [failResult()],
+      [{ controlId: "CR-AWS-S3-001", status: "evaluated", missingCollectors: [] }],
+    );
+    const newer = store.createScan({
+      provider: "aws",
+      scopeId: "123456789012",
+      regions: [],
+      controlIds: ["CR-AWS-S3-001"],
+    });
+    store.addEvidence(newer.id, [record]);
+
+    const dry = store.pruneEvidence({ provider: "aws", scopeId: "123456789012" });
+    expect(dry.executed).toBe(false);
+    expect(dry.prunableScans).toEqual([older.id]);
+    expect(dry.prunableRecords).toBe(1);
+    expect(dry.prunableBytes).toBeGreaterThan(0);
+    // Dry run really deleted nothing.
+    expect(store.getEvidence(older.id)[0]!.output).toBeTruthy();
+
+    const done = store.pruneEvidence({ provider: "aws", scopeId: "123456789012", execute: true });
+    expect(done.executed).toBe(true);
+    const pruned = store.getEvidence(older.id)[0]!;
+    expect(pruned.output).toBeNull();
+    // Digest metadata survives; newer scan untouched; findings intact.
+    expect(store.getEvidence(newer.id)[0]!.output).toBeTruthy();
+    expect(store.searchFindings({ state: ["open"] }).findings).toHaveLength(1);
+    // Idempotent: nothing left to prune.
+    expect(store.pruneEvidence({ provider: "aws", scopeId: "123456789012" }).prunableRecords).toBe(
+      0,
+    );
+  });
+
+  it("refuses to prune without a policy and supports clearing policies", () => {
+    expect(() => store.pruneEvidence({ provider: "aws", scopeId: "555555555555" })).toThrow(
+      /no retention policy/,
+    );
+    store.setRetentionPolicy("aws", "555555555555", { keepDays: 30 });
+    expect(store.listRetentionPolicies()).toHaveLength(1);
+    store.setRetentionPolicy("aws", "555555555555", null);
+    expect(store.listRetentionPolicies()).toHaveLength(0);
+  });
+});
