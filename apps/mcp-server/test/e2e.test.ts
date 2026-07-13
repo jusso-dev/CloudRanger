@@ -861,3 +861,13 @@ describe("imported provider-native signals", () => {
     expect(findingsAfter.total).toBe(before.total);
   });
 });
+
+describe("agent-driven notification hooks", () => {
+  it("rejects destinations outside the operator allow-list", async () => {
+    const destinations = await call("notify_destinations", {});
+    expect(destinations.destinations).toEqual([]);
+    await expect(
+      call("notify_scan_digest", { scanId: "whatever", destination: "attacker" }),
+    ).rejects.toThrow(/not on the operator allow-list/);
+  });
+});

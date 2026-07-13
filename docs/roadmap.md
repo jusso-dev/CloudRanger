@@ -99,8 +99,11 @@ catalog directory with override semantics, and a Prowler metadata importer
     **Done** — `signals_import`/`signals_list` MCP tools: sanitised,
     length-capped ingest, upsert on external id, resource-level correlation
     to open CloudRanger findings, never counted in pass/fail stats.
-18. Notification hooks (agent-driven: webhook/Slack emitters the agent can
-    call after `scan_evaluate`).
+18. ~~Notification hooks (agent-driven: webhook/Slack emitters the agent
+    can call after `scan_evaluate`).~~ **Done** — `notify_destinations` +
+    `notify_scan_digest`: operator allow-list by name (URLs never exposed to
+    or accepted from the agent), HMAC-signed webhook payloads, digests carry
+    summaries and finding references only.
 19. Community control contribution guide + CI porting checks.
 
 Issues should follow: problem, scope, non-goals, security considerations,
