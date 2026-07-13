@@ -326,6 +326,60 @@ export function createServer(deps: ServerDeps): McpServer {
   );
 
   server.registerTool(
+    "scan_resume",
+    {
+      title: "Resume an incomplete scan",
+      description:
+        "Rebuild a collecting scan plan from persisted evidence and return only collector steps that are missing or have no successful result.",
+      inputSchema: { scanId: z.string() },
+      annotations: readOnly,
+    },
+    audited("scan_resume", async (args: { scanId: string }) => {
+      const scan = await store.getScan(args.scanId);
+      if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
+      if (scan.status !== "collecting") {
+        throw new Error(`scan ${scan.id} is ${scan.status}; only collecting scans can resume`);
+      }
+      const controls = catalog.controls.filter((control) => scan.controlIds.includes(control.id));
+      const plan = buildPlan(controls, catalog.collectors, {
+        provider: scan.provider,
+        regions: scan.regions,
+        scopeId: scan.scopeId,
+      });
+      const evidence = await store.getEvidence(scan.id);
+      const pendingSteps = plan.steps
+        .filter(
+          (step) =>
+            !evidence.some(
+              (record) =>
+                record.collectorId === step.collectorId &&
+                record.region === step.region &&
+                record.exitCode === 0,
+            ),
+        )
+        .map((step) => ({
+          ...step,
+          failedResourceKeys: evidence
+            .filter(
+              (record) =>
+                record.collectorId === step.collectorId &&
+                record.region === step.region &&
+                record.exitCode !== 0 &&
+                record.resourceKey,
+            )
+            .map((record) => record.resourceKey),
+        }));
+      return {
+        scanId: scan.id,
+        persistedEvidenceRecords: evidence.length,
+        completedSteps: plan.steps.length - pendingSteps.length,
+        pendingSteps,
+        instructions: plan.instructions,
+      };
+    }),
+  );
+
+  server.registerTool(
     "evidence_submit",
     {
       title: "Submit collected evidence",

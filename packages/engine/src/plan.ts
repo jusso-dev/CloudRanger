@@ -29,6 +29,7 @@ export interface PlanStep {
     maxAttempts: number;
     initialBackoffMs: number;
     maxBackoffMs: number;
+    maxConcurrency: number;
   };
   notes?: string;
 }
@@ -123,6 +124,7 @@ export function buildPlan(
           maxAttempts: collector.maxAttempts ?? 3,
           initialBackoffMs: collector.initialBackoffMs ?? 250,
           maxBackoffMs: collector.maxBackoffMs ?? 5_000,
+          maxConcurrency: collector.maxConcurrency ?? 4,
         },
         notes: collector.notes,
       });

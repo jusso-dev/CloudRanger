@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runCollector } from "../src/index.js";
+import { runCollector, runCollectorBatch } from "../src/index.js";
 
 describe("collector runtime", () => {
   it("retries transient failures with exponential backoff", async () => {
@@ -38,5 +38,20 @@ describe("collector runtime", () => {
         { timeoutMs: 1, maxAttempts: 1 },
       ),
     ).rejects.toThrow(/timed out/);
+  });
+
+  it("bounds concurrent collector operations", async () => {
+    let active = 0;
+    let peak = 0;
+    const operations = Array.from({ length: 8 }, (_, value) => async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      active -= 1;
+      return value;
+    });
+    const results = await runCollectorBatch(operations, { maxConcurrency: 3 });
+    expect(peak).toBe(3);
+    expect(results.map((result) => result.value)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 });

@@ -81,6 +81,33 @@ describe("MCP scan loop", () => {
     ).rejects.toThrow(/invalid scopeId/);
   });
 
+  it("resumes a scan from persisted evidence without repeating completed steps", async () => {
+    const started = await call("scan_start", {
+      provider: "aws",
+      scopeId: "123456789012",
+      regions: ["ap-southeast-2"],
+      controlIds: ["CR-AWS-S3-001"],
+    });
+    await call("evidence_submit", {
+      scanId: started.scanId,
+      records: [
+        {
+          collectorId: "aws.s3.list_buckets",
+          exitCode: 0,
+          output: { Buckets: [{ Name: "resume-bucket" }] },
+        },
+      ],
+    });
+    const resumed = await call("scan_resume", { scanId: started.scanId });
+    expect(resumed.persistedEvidenceRecords).toBe(1);
+    expect(resumed.pendingSteps.map((step: any) => step.collectorId)).not.toContain(
+      "aws.s3.list_buckets",
+    );
+    expect(resumed.pendingSteps.map((step: any) => step.collectorId)).toContain(
+      "aws.s3.get_public_access_block",
+    );
+  });
+
   it("accepts evidence and evaluates deterministically", async () => {
     await call("evidence_submit", {
       scanId,

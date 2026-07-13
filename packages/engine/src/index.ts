@@ -29,6 +29,7 @@ export { validateCatalogDocument, controlTemplate, type CustomDocumentResult } f
 export {
   isRetryableCollectorError,
   runCollector,
+  runCollectorBatch,
   type CollectorRuntimeOptions,
   type CollectorRuntimeResult,
 } from "./collector-runtime.js";

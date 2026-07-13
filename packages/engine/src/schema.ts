@@ -87,6 +87,7 @@ export const collectorSchema = z
     maxAttempts: z.number().int().min(1).max(10).optional(),
     initialBackoffMs: z.number().int().nonnegative().max(60_000).optional(),
     maxBackoffMs: z.number().int().nonnegative().max(300_000).optional(),
+    maxConcurrency: z.number().int().min(1).max(32).optional(),
     notes: z.string().optional(),
   })
   .strict()

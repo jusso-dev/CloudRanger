@@ -60,6 +60,8 @@ export interface CollectorDefinition {
   initialBackoffMs?: number;
   /** Upper bound for exponential retry delay. */
   maxBackoffMs?: number;
+  /** Maximum operations from this collector allowed in flight. */
+  maxConcurrency?: number;
   /** Human notes: permissions required, quirks, cost warnings. */
   notes?: string;
 }

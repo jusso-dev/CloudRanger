@@ -52,3 +52,22 @@ export async function runCollector<T>(
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
+
+/** Execute a collection batch without exceeding the provider-safe concurrency limit. */
+export async function runCollectorBatch<T>(
+  operations: Array<(signal: AbortSignal) => Promise<T>>,
+  options: CollectorRuntimeOptions & { maxConcurrency?: number } = {},
+): Promise<Array<CollectorRuntimeResult<T>>> {
+  const results = new Array<CollectorRuntimeResult<T>>(operations.length);
+  const maxConcurrency = Math.max(1, Math.min(options.maxConcurrency ?? 4, operations.length || 1));
+  let next = 0;
+  const worker = async () => {
+    while (next < operations.length) {
+      const index = next;
+      next += 1;
+      results[index] = await runCollector(operations[index]!, options);
+    }
+  };
+  await Promise.all(Array.from({ length: maxConcurrency }, worker));
+  return results;
+}
