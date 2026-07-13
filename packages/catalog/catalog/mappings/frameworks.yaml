@@ -32,6 +32,10 @@ frameworks:
     title: Google Cloud Security Foundations Guide
     version: "current"
     source: https://cloud.google.com/architecture/security-foundations
+  - id: essential-eight
+    title: ACSC Essential Eight (cloud-technical subset)
+    version: "2023"
+    source: https://www.cyber.gov.au/business-government/asds-cyber-security-frameworks/essential-eight
 
 # Each entry is an auditable assertion linking one CloudRanger control to one
 # framework requirement. status is automated, partial, manual, or unsupported.
@@ -256,3 +260,53 @@ mappings:
     controlId: CR-GCP-LOGGING-121
     status: partial
     rationale: The linked metric and alert provide technical evidence of analysis for VPC route changes; review, reporting, and response processes remain outside this check.
+
+  # --- Essential Eight (cloud-technical subset). Every mapping is partial:
+  # E8 maturity levels cover fleets of workstations/servers and processes far
+  # beyond cloud control-plane posture. These entries evidence the cloud slice
+  # of a strategy, nothing more.
+  - framework: essential-eight
+    requirement: multi-factor-authentication
+    controlId: CR-AWS-IAM-001
+    status: partial
+    rationale: Root MFA evidences MFA on the highest-privilege cloud account; E8 MFA covers all users of all internet-facing and privileged systems.
+  - framework: essential-eight
+    requirement: multi-factor-authentication
+    controlId: CR-AWS-IAM-004
+    status: partial
+    rationale: Per-user IAM MFA devices evidence MFA for cloud console users only.
+  - framework: essential-eight
+    requirement: multi-factor-authentication
+    controlId: CR-AWS-IAM-018
+    status: partial
+    rationale: Credential-report root MFA state corroborates MFA on the root account.
+  - framework: essential-eight
+    requirement: restrict-administrative-privileges
+    controlId: CR-AWS-IAM-011
+    status: partial
+    rationale: Detecting AdministratorAccess attached directly to users evidences one aspect of restricting and gating privileged access in the cloud account.
+  - framework: essential-eight
+    requirement: restrict-administrative-privileges
+    controlId: CR-AWS-IAM-025
+    status: partial
+    rationale: Root usage detection evidences that day-to-day work is not done with the unrestricted account.
+  - framework: essential-eight
+    requirement: patch-operating-systems
+    controlId: CR-AWS-RDS-013
+    status: partial
+    rationale: RDS auto minor version upgrade evidences managed-database patch currency; E8 OS patching covers all operating systems and drivers.
+  - framework: essential-eight
+    requirement: patch-operating-systems
+    controlId: CR-AWS-REDSHIFT-007
+    status: partial
+    rationale: Redshift automatic version upgrades evidence patch currency for the warehouse fleet only.
+  - framework: essential-eight
+    requirement: regular-backups
+    controlId: CR-AWS-DYNAMODB-001
+    status: partial
+    rationale: Point-in-time recovery evidences backup capability for DynamoDB data; E8 backups also require tested restoration and retention processes.
+  - framework: essential-eight
+    requirement: regular-backups
+    controlId: CR-AWS-EFS-052
+    status: partial
+    rationale: EFS automatic backups evidence backup capability for file-system data only.

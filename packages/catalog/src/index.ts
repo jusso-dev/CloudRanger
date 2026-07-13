@@ -34,3 +34,17 @@ export function loadDefaultCatalog(): LoadedCatalog {
 }
 
 export { PACKS, getPack, resolvePack, controlMatchesPack, type ControlPack } from "./packs.js";
+export {
+  allFrameworks,
+  complianceStatus,
+  derivedMappingsFromControls,
+  frameworkRequirementTotals,
+  loadFrameworkRegistry,
+  type ControlEvaluationCounts,
+  type FrameworkInfo,
+  type FrameworkRegistry,
+  type FrameworkRollup,
+  type MappingStatus,
+  type RequirementMapping,
+  type RequirementRollup,
+} from "./compliance.js";

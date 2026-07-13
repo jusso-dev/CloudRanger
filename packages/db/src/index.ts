@@ -498,6 +498,28 @@ export class CloudRangerStore {
     };
   }
 
+  /** Evaluation rows for one scan, aggregated per control by the caller. */
+  getEvaluations(scanId: string): Array<{
+    controlId: string;
+    status: string;
+    resourceId: string;
+    region?: string;
+    severity: string;
+  }> {
+    const rows = this.db
+      .prepare(
+        "SELECT control_id, status, resource_id, region, severity FROM evaluations WHERE scan_id = ?",
+      )
+      .all(scanId) as any[];
+    return rows.map((row) => ({
+      controlId: row.control_id,
+      status: row.status,
+      resourceId: row.resource_id,
+      region: row.region ?? undefined,
+      severity: row.severity,
+    }));
+  }
+
   cancelScan(id: string): void {
     this.db
       .prepare("UPDATE scans SET status = 'cancelled' WHERE id = ? AND status = 'collecting'")

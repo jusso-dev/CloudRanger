@@ -9,9 +9,12 @@ import { writeHtmlReport, writePdfReport } from "./report.js";
 import { complianceCoverage } from "./compliance.js";
 import {
   catalogDir,
+  complianceStatus,
   customCatalogDir,
   fixturesDir,
   loadDefaultCatalog,
+  loadFrameworkRegistry,
+  type ControlEvaluationCounts,
 } from "@cloudranger/catalog";
 import { createRepository } from "@cloudranger/db";
 import {
@@ -39,6 +42,8 @@ Usage:
   cloudranger report html [--output output/html/cloudranger-report.html] [--since-days 30] [--provider aws|azure|gcp]
   cloudranger report pdf [--output output/pdf/cloudranger-report.pdf] [--since-days 30] [--provider aws|azure|gcp]
   cloudranger compliance coverage [--framework <id>] [--provider aws|azure|gcp] [--json]
+  cloudranger compliance status --provider aws|azure|gcp --scope <scopeId> [--framework <id>] [--json]
+                                        Per-requirement rollup of the latest evaluated scan
   cloudranger scans                     List recent scans
   cloudranger scans compare <baselineScanId> <currentScanId>
   cloudranger audit [--limit 50]        Show recent audit entries
@@ -336,6 +341,87 @@ async function main(): Promise<number> {
     } else console.log(JSON.stringify(report, null, 2));
     await store.close();
     return 0;
+  }
+
+  if (command === "compliance" && subcommand === "status") {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        provider: { type: "string" },
+        scope: { type: "string" },
+        framework: { type: "string" },
+        json: { type: "boolean" },
+      },
+    });
+    if (!values.provider || !["aws", "azure", "gcp"].includes(values.provider) || !values.scope) {
+      console.error("compliance status requires --provider aws|azure|gcp and --scope <scopeId>");
+      return 1;
+    }
+    const provider = values.provider as "aws" | "azure" | "gcp";
+    const store = createRepository({ sqlitePath: dbPath() });
+    try {
+      const latest = (await store.listScans(200)).find(
+        (scan) =>
+          scan.status === "evaluated" &&
+          scan.provider === provider &&
+          scan.scopeId === values.scope,
+      );
+      const evaluations = new Map<string, ControlEvaluationCounts>();
+      if (latest) {
+        for (const row of await store.getEvaluations(latest.id)) {
+          const counts = evaluations.get(row.controlId) ?? {
+            pass: 0,
+            fail: 0,
+            error: 0,
+            notApplicable: 0,
+          };
+          if (row.status === "pass") counts.pass += 1;
+          else if (row.status === "fail") counts.fail += 1;
+          else if (row.status === "error") counts.error += 1;
+          else if (row.status === "not_applicable") counts.notApplicable += 1;
+          evaluations.set(row.controlId, counts);
+        }
+      }
+      const frameworks = complianceStatus({
+        controls: loadDefaultCatalog().controls,
+        registry: loadFrameworkRegistry(),
+        evaluations,
+        framework: values.framework,
+        provider,
+      });
+      if (values.json) {
+        console.log(
+          JSON.stringify(
+            { scanId: latest?.id, evaluatedAt: latest?.evaluatedAt, frameworks },
+            null,
+            2,
+          ),
+        );
+        return 0;
+      }
+      if (!latest) {
+        console.log("no evaluated scan for this scope — every requirement is not assessed\n");
+      }
+      for (const fw of frameworks) {
+        const t = fw.totals;
+        const coverage =
+          t.totalRequirements === null
+            ? `${t.mappedRequirements} mapped (total unknown)`
+            : `${t.mappedRequirements}/${t.totalRequirements} mapped (${Math.round((t.mappedRatio ?? 0) * 100)}%)`;
+        console.log(`${fw.framework} ${fw.version} — ${coverage}`);
+        for (const req of fw.requirements) {
+          console.log(
+            `  ${req.status.padEnd(14)} [${req.automation.padEnd(7)}] ${req.requirement}  (${req.controls.map((c) => c.controlId).join(", ")})`,
+          );
+        }
+      }
+      console.log(
+        "\nStatuses reflect CloudRanger technical evidence only; partial/manual requirements need assessment beyond these checks.",
+      );
+      return 0;
+    } finally {
+      await store.close();
+    }
   }
 
   if (command === "compliance" && subcommand === "coverage") {

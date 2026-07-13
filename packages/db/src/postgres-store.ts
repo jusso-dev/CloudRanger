@@ -324,6 +324,28 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     }));
   }
 
+  async getEvaluations(scanId: string): Promise<
+    Array<{
+      controlId: string;
+      status: string;
+      resourceId: string;
+      region?: string;
+      severity: string;
+    }>
+  > {
+    const result = await this.pool.query(
+      "SELECT control_id, status, resource_id, region, severity FROM evaluations WHERE scan_id=$1",
+      [scanId],
+    );
+    return result.rows.map((row) => ({
+      controlId: row.control_id,
+      status: row.status,
+      resourceId: row.resource_id,
+      region: row.region ?? undefined,
+      severity: row.severity,
+    }));
+  }
+
   async getScan(id: string): Promise<ScanRow | undefined> {
     const row = await this.db.query.scans.findFirst({ where: eq(scans.id, id) });
     return row ? typedScanRow(row) : undefined;

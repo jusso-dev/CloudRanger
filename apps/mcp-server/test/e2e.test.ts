@@ -419,9 +419,9 @@ describe("parameterised controls over MCP", () => {
     const listed = await call("parameters_list", { provider: "aws", scopeId: SCOPE });
     expect(listed.overrides).toHaveLength(1);
     expect(listed.overrides[0].controlId).toBe("CR-AWS-IAM-003");
-    expect(
-      listed.parameterisedControls.some((c: any) => c.controlId === "CR-AWS-IAM-005"),
-    ).toBe(true);
+    expect(listed.parameterisedControls.some((c: any) => c.controlId === "CR-AWS-IAM-005")).toBe(
+      true,
+    );
 
     await expect(
       call("parameters_set", {
@@ -504,5 +504,73 @@ describe("parameterised controls over MCP", () => {
         parameters: { "CR-AWS-IAM-999": { anything: 1 } },
       }),
     ).rejects.toThrow(/not in this scan/);
+  });
+});
+
+describe("compliance_status over MCP", () => {
+  const SCOPE = "555566667777";
+
+  it("reports everything not assessed when no scan exists", async () => {
+    const result = await call("compliance_status", {
+      provider: "aws",
+      scopeId: SCOPE,
+      framework: "cis-aws-foundations",
+    });
+    expect(result.scanId).toBeUndefined();
+    expect(result.note).toMatch(/No evaluated scan/);
+    expect(result.frameworks[0].requirements.every((r: any) => r.status === "not_assessed")).toBe(
+      true,
+    );
+  });
+
+  it("rolls the latest evaluated scan up to framework requirements", async () => {
+    const started = await call("scan_start", {
+      provider: "aws",
+      scopeId: SCOPE,
+      regions: ["ap-southeast-2"],
+      controlIds: ["CR-AWS-IAM-001"],
+    });
+    await call("evidence_submit", {
+      scanId: started.scanId,
+      records: [
+        {
+          collectorId: "aws.iam.get_account_summary",
+          output: { SummaryMap: { AccountMFAEnabled: 0, AccountAccessKeysPresent: 0 } },
+          exitCode: 0,
+        },
+      ],
+    });
+    await call("scan_evaluate", { scanId: started.scanId });
+
+    const result = await call("compliance_status", { provider: "aws", scopeId: SCOPE });
+    expect(result.scanId).toBe(started.scanId);
+    const e8 = result.frameworks.find((f: any) => f.framework === "essential-eight");
+    expect(e8).toBeDefined();
+    const mfa = e8.requirements.find((r: any) => r.requirement === "multi-factor-authentication");
+    // Root MFA disabled → CR-AWS-IAM-001 fails → requirement non_compliant,
+    // and E8 mappings are all partial automation.
+    expect(mfa.status).toBe("non_compliant");
+    expect(mfa.automation).toBe("partial");
+    expect(mfa.fullyAssessed).toBe(false); // IAM-004/018 not in the scan
+    const ism = result.frameworks.find((f: any) => f.framework === "ism");
+    expect(ism.totals.totalRequirements).toBeGreaterThan(1000);
+    expect(ism.totals.mappedRatio).toBeLessThan(0.05);
+  });
+
+  it("scan_start accepts the framework-aligned packs", async () => {
+    const cis = await call("scan_start", {
+      provider: "aws",
+      scopeId: SCOPE,
+      regions: ["ap-southeast-2"],
+      pack: "cis-aws-3.0",
+    });
+    expect(cis.controlCount).toBeGreaterThan(10);
+    const e8 = await call("scan_start", {
+      provider: "aws",
+      scopeId: SCOPE,
+      regions: ["ap-southeast-2"],
+      pack: "essential-eight-technical",
+    });
+    expect(e8.controlCount).toBeGreaterThanOrEqual(8);
   });
 });
