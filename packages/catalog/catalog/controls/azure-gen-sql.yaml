@@ -57,7 +57,7 @@ controls:
       - encryption-in-transit
     source:
       engine: prowler
-      id: sqlserver_tls_version_is_encrypted
+      id: sqlserver_recommended_minimal_tls_version
       license: Apache-2.0
     collector: azure.sql.list_servers
     resourcesPath: $
@@ -374,7 +374,7 @@ controls:
       - public-exposure
     source:
       engine: prowler
-      id: sqlserver_firewall_rule_allow_internet_ips
+      id: sqlserver_unrestricted_inbound_access
       license: Apache-2.0
     collector: azure.sql.firewall_rule_list
     resourceIdField: $resourceKey
@@ -465,3 +465,382 @@ controls:
           - 4.1.1
     references:
       - https://learn.microsoft.com/azure/azure-sql/database/auditing-overview
+  - id: CR-AZURE-SQL-150
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: Microsoft Defender for SQL is enabled on the SQL server
+    description: Verifies each Azure SQL logical server has Advanced Threat
+      Protection (Microsoft Defender for SQL) state set to Enabled.
+    rationale: >
+      Without Microsoft Defender for SQL the server has no behavioral threat
+      detection for anomalous access, SQL injection or credential exfiltration,
+      leaving intrusions undetected.
+    severity: high
+    categories:
+      - database
+      - logging
+      - threat-detection
+    source:
+      engine: prowler
+      id: sqlserver_microsoft_defender_enabled
+      license: Apache-2.0
+    collector: azure.sql.atp_setting_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: state
+      value: Enabled
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: Microsoft Defender for SQL is not enabled on the SQL server.
+    passMessage: Microsoft Defender for SQL is enabled on the SQL server.
+    remediation:
+      summary: Enable Microsoft Defender for SQL at the server level.
+      steps:
+        - Enable Advanced Threat Protection / Microsoft Defender for SQL on the
+          server (operator action).
+      verifyCommand: az sql server advanced-threat-protection-setting show --ids
+        <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.2.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/threat-detection-configure
+  - id: CR-AZURE-SQL-151
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server Transparent Data Encryption uses a customer-managed key
+    description: Verifies each SQL logical server TDE protector serverKeyType is
+      AzureKeyVault (customer-managed key), not ServiceManaged.
+    rationale: >
+      A service-managed TDE key is controlled entirely by the platform; a
+      customer-managed key in Key Vault gives the tenant control over key
+      rotation, revocation and separation of duties for encrypted data at rest.
+    severity: medium
+    categories:
+      - database
+      - encryption
+      - encryption-at-rest
+    source:
+      engine: prowler
+      id: sqlserver_tde_encrypted_with_cmk
+      license: Apache-2.0
+    collector: azure.sql.tde_key_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: serverKeyType
+      value: AzureKeyVault
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server TDE uses a service-managed key, not a customer-managed key.
+    passMessage: SQL server TDE uses a customer-managed key.
+    remediation:
+      summary: Configure a customer-managed key from Key Vault as the TDE protector.
+      steps:
+        - Create or select a Key Vault key with soft delete and purge protection.
+        - Grant the server managed identity access to the key.
+        - Set the server TDE protector to the Key Vault key (operator action).
+      verifyCommand: az sql server tde-key show --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.3
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/transparent-data-encryption-byok-overview
+  - id: CR-AZURE-SQL-152
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server TDE protector key vault URI is configured
+    description: Verifies a customer-managed TDE protector references a Key Vault
+      key URI when serverKeyType is AzureKeyVault.
+    rationale: >
+      A customer-managed TDE protector without a resolvable Key Vault key URI
+      indicates a misconfigured or detached key, which can block access to
+      encrypted data or silently fall back to a weaker posture.
+    severity: low
+    categories:
+      - database
+      - encryption
+      - encryption-at-rest
+    source:
+      engine: prowler
+      id: sqlserver_tde_encrypted_with_cmk
+      license: Apache-2.0
+    collector: azure.sql.tde_key_show
+    resourceIdField: $resourceKey
+    applicableWhen:
+      op: equals
+      path: serverKeyType
+      value: AzureKeyVault
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: uri
+        - op: not
+          expr:
+            op: isEmpty
+            path: uri
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server customer-managed TDE protector has no Key Vault key URI.
+    passMessage: SQL server customer-managed TDE protector references a Key Vault key URI.
+    remediation:
+      summary: Ensure the TDE protector points to a valid Key Vault key.
+      steps:
+        - Verify the Key Vault key exists and is accessible to the server
+          identity.
+        - Re-assign the TDE protector to the correct Key Vault key URI (operator
+          action).
+      verifyCommand: az sql server tde-key show --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.3
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/transparent-data-encryption-byok-overview
+  - id: CR-AZURE-SQL-153
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server enforces a modern minimal TLS version
+    description: Verifies each SQL logical server minimalTlsVersion is set (not
+      empty and not below 1.2), rejecting servers with no minimum enforced.
+    rationale: >
+      A server with no minimal TLS version, or one set below 1.2, accepts legacy
+      cipher negotiation vulnerable to downgrade and interception of database
+      traffic.
+    severity: medium
+    categories:
+      - database
+      - encryption-in-transit
+    source:
+      engine: prowler
+      id: sqlserver_recommended_minimal_tls_version
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: in
+      path: minimalTlsVersion
+      values:
+        - "1.2"
+        - "1.3"
+    failMessage: SQL server does not enforce TLS 1.2 or higher.
+    passMessage: SQL server enforces TLS 1.2 or higher.
+    remediation:
+      summary: Set the server minimal TLS version to 1.2.
+      steps:
+        - Set the server minimal TLS version to 1.2 (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.3
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+  - id: CR-AZURE-SQL-154
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server firewall does not allow a broad public IP range
+    description: Verifies no server firewall rule starts at 0.0.0.0, which would
+      admit a broad or full public IP range to the SQL endpoint.
+    rationale: >
+      Any firewall rule beginning at 0.0.0.0 (whether ending at 0.0.0.0 for all
+      Azure services or a wide public range) opens the database to networks far
+      beyond intended callers.
+    severity: high
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sqlserver_unrestricted_inbound_access
+      license: Apache-2.0
+    collector: azure.sql.firewall_rule_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: equals
+        path: startIpAddress
+        value: 0.0.0.0
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server firewall has a rule starting at 0.0.0.0 (broad public exposure).
+    passMessage: SQL server firewall has no rule starting at 0.0.0.0.
+    remediation:
+      summary: Remove firewall rules that start at 0.0.0.0.
+      steps:
+        - Delete any firewall rule with startIpAddress 0.0.0.0 (operator action).
+        - Replace with narrow IP ranges or private endpoints.
+      verifyCommand: az sql server firewall-rule list --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/firewall-configure
+  - id: CR-AZURE-SQL-155
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server firewall rules span narrow IP ranges
+    description: Verifies no single firewall rule spans an excessively large IPv4
+      range by rejecting rules that cover 0.0.0.0 through 255.255.255.255.
+    rationale: >
+      An overly wide firewall rule effectively disables IP-based access control,
+      exposing the SQL endpoint to the whole internet even when public network
+      access is otherwise permitted.
+    severity: critical
+    categories:
+      - database
+      - network
+      - public-exposure
+    source:
+      engine: prowler
+      id: sqlserver_unrestricted_inbound_access
+      license: Apache-2.0
+    collector: azure.sql.firewall_rule_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: startIpAddress
+            value: 0.0.0.0
+          - op: equals
+            path: endIpAddress
+            value: 255.255.255.255
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server firewall has a rule spanning the entire IPv4 range.
+    passMessage: SQL server firewall has no rule spanning the entire IPv4 range.
+    remediation:
+      summary: Replace full-range firewall rules with narrow ranges.
+      steps:
+        - Delete any rule spanning 0.0.0.0 to 255.255.255.255 (operator action).
+        - Add specific IP ranges or use private endpoints.
+      verifyCommand: az sql server firewall-rule list --ids <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/firewall-configure
+  - id: CR-AZURE-SQL-156
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server public network access is disabled
+    description: Verifies each SQL logical server has publicNetworkAccess set to
+      Disabled so it is reachable only via private connectivity.
+    rationale: >
+      A publicly reachable SQL endpoint exposes the authentication surface to
+      the internet; disabling public network access forces private connectivity
+      and removes broad exposure to credential attacks.
+    severity: high
+    categories:
+      - database
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: sqlserver_public_network_access_disabled
+      license: Apache-2.0
+    collector: azure.sql.list_servers
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: publicNetworkAccess
+      value: Disabled
+    failMessage: SQL server allows public network access.
+    passMessage: SQL server public network access is disabled.
+    remediation:
+      summary: Disable public network access and use private endpoints.
+      steps:
+        - Create private endpoints for consuming applications.
+        - Set the server public network access to Disabled (operator action).
+      verifyCommand: az sql server list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.1.2
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings
+  - id: CR-AZURE-SQL-157
+    version: 1.0.0
+    provider: azure
+    service: sql
+    title: SQL server Defender setting name is the server default policy
+    description: Verifies the Advanced Threat Protection setting returned for the
+      server is the Default policy and reports Enabled, confirming server-scope
+      Defender coverage rather than a stale or missing setting.
+    rationale: >
+      Confirming the Default server-scope Defender policy is present and enabled
+      guards against cases where threat protection appears configured at another
+      scope but leaves the server itself unprotected.
+    severity: medium
+    categories:
+      - database
+      - threat-detection
+      - logging
+    source:
+      engine: prowler
+      id: sqlserver_microsoft_defender_enabled
+      license: Apache-2.0
+    collector: azure.sql.atp_setting_show
+    resourceIdField: $resourceKey
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: state
+          value: Enabled
+        - op: equals
+          path: name
+          value: Default
+    onError:
+      - contains: AuthorizationFailed
+        status: error
+    failMessage: SQL server Defender default policy is missing or not enabled.
+    passMessage: SQL server Defender default policy is present and enabled.
+    remediation:
+      summary: Enable the default server-scope Microsoft Defender for SQL policy.
+      steps:
+        - Enable Advanced Threat Protection at the server level so the Default
+          policy reports Enabled (operator action).
+      verifyCommand: az sql server advanced-threat-protection-setting show --ids
+        <server-id> --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 4.2.1
+    references:
+      - https://learn.microsoft.com/azure/azure-sql/database/threat-detection-configure

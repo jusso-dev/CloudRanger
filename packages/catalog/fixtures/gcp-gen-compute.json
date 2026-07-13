@@ -182,7 +182,9 @@
                 "serviceAccounts": [
                   {
                     "email": "app@my-proj.iam.gserviceaccount.com",
-                    "scopes": ["https://www.googleapis.com/auth/cloud-platform"]
+                    "scopes": [
+                      "https://www.googleapis.com/auth/cloud-platform"
+                    ]
                   }
                 ]
               }
@@ -571,7 +573,9 @@
                 "serviceAccounts": [
                   {
                     "email": "app@my-proj.iam.gserviceaccount.com",
-                    "scopes": ["https://www.googleapis.com/auth/logging.write"]
+                    "scopes": [
+                      "https://www.googleapis.com/auth/logging.write"
+                    ]
                   }
                 ]
               }
@@ -633,6 +637,421 @@
                 "name": "vm-stopped",
                 "status": "TERMINATED",
                 "deletionProtection": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-151",
+    "cases": [
+      {
+        "name": "passes with automatic restart on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "svc-1",
+                "scheduling": {
+                  "automaticRestart": true,
+                  "onHostMaintenance": "MIGRATE",
+                  "preemptible": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with automatic restart off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "svc-2",
+                "scheduling": {
+                  "automaticRestart": false,
+                  "onHostMaintenance": "TERMINATE",
+                  "preemptible": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-152",
+    "cases": [
+      {
+        "name": "passes with single NIC",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "single-nic",
+                "networkInterfaces": [
+                  {
+                    "name": "nic0",
+                    "network": "projects/p/global/networks/default",
+                    "networkIP": "10.0.0.2"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with two NICs",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "multi-nic",
+                "networkInterfaces": [
+                  {
+                    "name": "nic0",
+                    "network": "projects/p/global/networks/vpc-a",
+                    "networkIP": "10.0.0.2"
+                  },
+                  {
+                    "name": "nic1",
+                    "network": "projects/p/global/networks/vpc-b",
+                    "networkIP": "10.1.0.2"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-153",
+    "cases": [
+      {
+        "name": "fails using default compute service account",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-default-sa",
+                "serviceAccounts": [
+                  {
+                    "email": "123456789012-compute@developer.gserviceaccount.com",
+                    "scopes": [
+                      "https://www.googleapis.com/auth/devstorage.read_only"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes using dedicated service account",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "vm-dedicated-sa",
+                "serviceAccounts": [
+                  {
+                    "email": "app-runtime@my-project.iam.gserviceaccount.com",
+                    "scopes": [
+                      "https://www.googleapis.com/auth/devstorage.read_only"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-154",
+    "cases": [
+      {
+        "name": "passes when 2FA enabled in project metadata",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": {
+              "name": "my-project",
+              "commonInstanceMetadata": {
+                "items": [
+                  {
+                    "key": "enable-oslogin",
+                    "value": "TRUE"
+                  },
+                  {
+                    "key": "enable-oslogin-2fa",
+                    "value": "TRUE"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when 2FA not present",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.project_info",
+            "exitCode": 0,
+            "output": {
+              "name": "my-project",
+              "commonInstanceMetadata": {
+                "items": [
+                  {
+                    "key": "enable-oslogin",
+                    "value": "TRUE"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-155",
+    "cases": [
+      {
+        "name": "passes with vTPM enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "shielded-1",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with vTPM disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "shielded-2",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": false,
+                  "enableVtpm": false,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-156",
+    "cases": [
+      {
+        "name": "passes with integrity monitoring enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "shielded-3",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with integrity monitoring disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "shielded-4",
+                "shieldedInstanceConfig": {
+                  "enableSecureBoot": true,
+                  "enableVtpm": true,
+                  "enableIntegrityMonitoring": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-157",
+    "cases": [
+      {
+        "name": "fails when shared with allUsers",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.image_iam_policy",
+            "resourceKey": "golden-image-1",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXhAbC123=",
+              "bindings": [
+                {
+                  "role": "roles/compute.imageUser",
+                  "members": [
+                    "allUsers"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when shared only with specific principals",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.image_iam_policy",
+            "resourceKey": "golden-image-2",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXhAbC456=",
+              "bindings": [
+                {
+                  "role": "roles/compute.imageUser",
+                  "members": [
+                    "serviceAccount:builder@my-project.iam.gserviceaccount.com"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when no bindings at all",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.image_iam_policy",
+            "resourceKey": "golden-image-3",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwXhAbC789="
+            }
+          }
+        ]
+      },
+      {
+        "name": "errors on permission denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.compute.image_iam_policy",
+            "resourceKey": "golden-image-4",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.compute.images.get-iam-policy) PERMISSION_DENIED: Required 'compute.images.getIamPolicy' permission"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-COMPUTE-158",
+    "cases": [
+      {
+        "name": "passes with recent snapshot",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.compute.snapshots_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "snap-recent",
+                "status": "READY",
+                "creationTimestamp": "2026-07-01T10:00:00.000-07:00",
+                "sourceDisk": "projects/p/zones/us-central1-a/disks/data",
+                "diskSizeGb": "50",
+                "storageBytes": "1073741824"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fails with stale snapshot",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.compute.snapshots_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "snap-old",
+                "status": "READY",
+                "creationTimestamp": "2024-01-15T10:00:00.000-07:00",
+                "sourceDisk": "projects/p/zones/us-central1-a/disks/data",
+                "diskSizeGb": "50",
+                "storageBytes": "1073741824"
               }
             ]
           }

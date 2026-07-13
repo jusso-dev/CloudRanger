@@ -135,7 +135,9 @@
                 "virtualMachine": {
                   "name": "vm-private",
                   "network": {
-                    "privateIpAddresses": ["10.0.0.4"],
+                    "privateIpAddresses": [
+                      "10.0.0.4"
+                    ],
                     "publicIpAddresses": []
                   }
                 }
@@ -156,7 +158,9 @@
                 "virtualMachine": {
                   "name": "vm-public",
                   "network": {
-                    "privateIpAddresses": ["10.0.0.5"],
+                    "privateIpAddresses": [
+                      "10.0.0.5"
+                    ],
                     "publicIpAddresses": [
                       {
                         "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Network/publicIPAddresses/vm-public-ip",
@@ -477,6 +481,411 @@
                 "diskState": "Attached",
                 "publicNetworkAccess": "Enabled",
                 "networkAccessPolicy": "AllowAll",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-150",
+    "cases": [
+      {
+        "name": "OS disk uses a disk encryption set (CMK)",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-cmk",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-cmk",
+                "name": "vm-cmk",
+                "storageProfile": {
+                  "osDisk": {
+                    "name": "vm-cmk_OsDisk",
+                    "managedDisk": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/vm-cmk_OsDisk",
+                      "storageAccountType": "Premium_LRS",
+                      "diskEncryptionSet": {
+                        "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "OS disk has no disk encryption set (platform key only)",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-pmk",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-pmk",
+                "name": "vm-pmk",
+                "storageProfile": {
+                  "osDisk": {
+                    "name": "vm-pmk_OsDisk",
+                    "managedDisk": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/vm-pmk_OsDisk",
+                      "storageAccountType": "Premium_LRS"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-151",
+    "cases": [
+      {
+        "name": "VM securityType is TrustedLaunch",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-tl",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-tl",
+                "name": "vm-tl",
+                "securityProfile": {
+                  "securityType": "TrustedLaunch",
+                  "uefiSettings": {
+                    "secureBootEnabled": true,
+                    "vTpmEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "VM securityType is Standard (no security profile type)",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std",
+                "name": "vm-std",
+                "securityProfile": {
+                  "securityType": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-152",
+    "cases": [
+      {
+        "name": "Trusted Launch VM with secure boot enabled",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-sb-on",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-sb-on",
+                "name": "vm-sb-on",
+                "securityProfile": {
+                  "securityType": "TrustedLaunch",
+                  "uefiSettings": {
+                    "secureBootEnabled": true,
+                    "vTpmEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Trusted Launch VM with secure boot disabled",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-sb-off",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-sb-off",
+                "name": "vm-sb-off",
+                "securityProfile": {
+                  "securityType": "TrustedLaunch",
+                  "uefiSettings": {
+                    "secureBootEnabled": false,
+                    "vTpmEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Standard VM is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std2",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std2",
+                "name": "vm-std2",
+                "securityProfile": {
+                  "securityType": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-153",
+    "cases": [
+      {
+        "name": "Trusted Launch VM with vTPM enabled",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-vtpm-on",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-vtpm-on",
+                "name": "vm-vtpm-on",
+                "securityProfile": {
+                  "securityType": "TrustedLaunch",
+                  "uefiSettings": {
+                    "secureBootEnabled": true,
+                    "vTpmEnabled": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Trusted Launch VM with vTPM disabled",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-vtpm-off",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-vtpm-off",
+                "name": "vm-vtpm-off",
+                "securityProfile": {
+                  "securityType": "TrustedLaunch",
+                  "uefiSettings": {
+                    "secureBootEnabled": true,
+                    "vTpmEnabled": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Standard VM is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std3",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-std3",
+                "name": "vm-std3",
+                "securityProfile": {
+                  "securityType": "Standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-154",
+    "cases": [
+      {
+        "name": "Approved marketplace publisher (Canonical)",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-ubuntu",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-ubuntu",
+                "name": "vm-ubuntu",
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "0001-com-ubuntu-server-jammy",
+                    "sku": "22_04-lts-gen2",
+                    "version": "latest",
+                    "exactVersion": "22.04.202401010"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Private Shared Image Gallery image",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-gallery",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-gallery",
+                "name": "vm-gallery",
+                "storageProfile": {
+                  "imageReference": {
+                    "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/galleries/g1/images/golden/versions/1.0.0",
+                    "exactVersion": "1.0.0"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Unapproved third-party marketplace publisher",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-thirdparty",
+        "records": [
+          {
+            "collectorId": "azure.vm.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-thirdparty",
+                "name": "vm-thirdparty",
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "some-unknown-vendor",
+                    "offer": "custom-appliance",
+                    "sku": "byol",
+                    "version": "latest",
+                    "exactVersion": "3.2.1"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-COMPUTE-155",
+    "cases": [
+      {
+        "name": "Unattached disk encrypted with CMK",
+        "expected": "pass",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/orphan-cmk",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/orphan-cmk",
+                "name": "orphan-cmk",
+                "diskState": "Unattached",
+                "encryption": {
+                  "type": "EncryptionAtRestWithCustomerKey",
+                  "diskEncryptionSetId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/diskEncryptionSets/des1"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Unattached disk with platform key only",
+        "expected": "fail",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/orphan-pmk",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/orphan-pmk",
+                "name": "orphan-pmk",
+                "diskState": "Unattached",
+                "encryption": {
+                  "type": "EncryptionAtRestWithPlatformKey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Attached disk is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/attached-pmk",
+        "records": [
+          {
+            "collectorId": "azure.disk.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/disks/attached-pmk",
+                "name": "attached-pmk",
+                "diskState": "Attached",
+                "managedBy": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1",
                 "encryption": {
                   "type": "EncryptionAtRestWithPlatformKey"
                 }

@@ -15,11 +15,16 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.cryptoKeyDecrypter",
-                  "members": ["allUsers", "serviceAccount:app@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "allUsers",
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/viewer",
-                  "members": ["user:alice@example.com"]
+                  "members": [
+                    "user:alice@example.com"
+                  ]
                 }
               ]
             }
@@ -39,11 +44,15 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/owner",
-                  "members": ["user:admin@example.com"]
+                  "members": [
+                    "user:admin@example.com"
+                  ]
                 }
               ]
             }
@@ -68,7 +77,9 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.admin",
-                  "members": ["user:bob@example.com"]
+                  "members": [
+                    "user:bob@example.com"
+                  ]
                 }
               ]
             }
@@ -88,11 +99,15 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.admin",
-                  "members": ["serviceAccount:key-admin@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:key-admin@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-                  "members": ["group:security@example.com"]
+                  "members": [
+                    "group:security@example.com"
+                  ]
                 }
               ]
             }
@@ -117,7 +132,9 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-                  "members": ["allAuthenticatedUsers"]
+                  "members": [
+                    "allAuthenticatedUsers"
+                  ]
                 }
               ]
             }
@@ -137,14 +154,193 @@
               "bindings": [
                 {
                   "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-                  "members": ["serviceAccount:app@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/cloudkms.signerVerifier",
-                  "members": ["serviceAccount:signer@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:signer@proj.iam.gserviceaccount.com"
+                  ]
                 }
               ]
             }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-KMS-150",
+    "cases": [
+      {
+        "name": "encrypt/decrypt key with rotation enabled passes",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-key",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-key",
+                "purpose": "ENCRYPT_DECRYPT",
+                "createTime": "2024-01-15T10:30:00Z",
+                "nextRotationTime": "2026-09-01T00:00:00Z",
+                "rotationPeriod": "7776000s",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"
+                },
+                "labels": {
+                  "env": "prod"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "encrypt/decrypt key without rotation schedule fails",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/no-rotate",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/no-rotate",
+                "purpose": "ENCRYPT_DECRYPT",
+                "createTime": "2024-01-15T10:30:00Z",
+                "versionTemplate": {
+                  "protectionLevel": "HSM",
+                  "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "asymmetric signing key is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/sign-key",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/sign-key",
+                "purpose": "ASYMMETRIC_SIGN",
+                "createTime": "2024-02-01T09:00:00Z",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "EC_SIGN_P256_SHA256"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-KMS-151",
+    "cases": [
+      {
+        "name": "90-day rotation period passes",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-90",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-90",
+                "purpose": "ENCRYPT_DECRYPT",
+                "createTime": "2024-01-15T10:30:00Z",
+                "nextRotationTime": "2026-09-01T00:00:00Z",
+                "rotationPeriod": "7776000s",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "30-day rotation period passes",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-30",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-30",
+                "purpose": "ENCRYPT_DECRYPT",
+                "createTime": "2024-01-15T10:30:00Z",
+                "nextRotationTime": "2026-08-01T00:00:00Z",
+                "rotationPeriod": "2592000s",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "120-day rotation period fails",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-120",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/enc-120",
+                "purpose": "ENCRYPT_DECRYPT",
+                "createTime": "2024-01-15T10:30:00Z",
+                "nextRotationTime": "2026-11-01T00:00:00Z",
+                "rotationPeriod": "10368000s",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "key without rotation configured is not applicable",
+        "expected": "not_applicable",
+        "resourceId": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/no-rotate",
+        "records": [
+          {
+            "collectorId": "gcp.kms.inventory_keys_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/keyRings/ring1/cryptoKeys/no-rotate",
+                "purpose": "ASYMMETRIC_DECRYPT",
+                "createTime": "2024-03-01T00:00:00Z",
+                "versionTemplate": {
+                  "protectionLevel": "SOFTWARE",
+                  "algorithm": "RSA_DECRYPT_OAEP_2048_SHA256"
+                }
+              }
+            ]
           }
         ]
       }

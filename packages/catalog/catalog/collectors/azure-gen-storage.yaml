@@ -21,3 +21,28 @@ collectors:
       isVersioningEnabled, changeFeed.enabled. Fails with
       'StorageAccountNotFound' if the account was deleted between listing and
       collection.
+  - id: azure.storage.file_service_properties_show
+    provider: azure
+    service: storage
+    description: >
+      File service properties (share soft delete retention and SMB protocol
+      settings) for a single storage account.
+    kind: per_resource
+    command: az storage account file-service-properties show --account-name
+      {resource} --output json
+    regional: false
+    parent:
+      collector: azure.storage.list_accounts
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: >
+      Returns the FileServices/default ARM object. Fields are camelCase:
+      shareDeleteRetentionPolicy.enabled/days, and protocolSettings.smb with
+      versions (array of SMB2.1/SMB3.0/SMB3.1.1), channelEncryption (array of
+      AES-128-CCM/AES-128-GCM/AES-256-GCM), authenticationMethods, and
+      kerberosTicketEncryption. protocolSettings (and protocolSettings.smb) are
+      commonly null/absent when the account has never customised SMB settings.
+      Fails with 'StorageAccountNotFound' if the account was deleted between
+      listing and collection, and 'AuthorizationFailed' without Reader on the
+      account.

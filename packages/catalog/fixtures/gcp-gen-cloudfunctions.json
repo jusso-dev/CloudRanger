@@ -326,5 +326,206 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-GCP-FUNCTIONS-150",
+    "cases": [
+      {
+        "name": "pass no public members",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.functions.get_iam_policy",
+            "resourceKey": "projects/p1/locations/us-central1/functions/fn-private",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABCDEF12=",
+              "bindings": [
+                {
+                  "role": "roles/cloudfunctions.invoker",
+                  "members": [
+                    "serviceAccount:caller@p1.iam.gserviceaccount.com",
+                    "user:alice@example.com"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass no bindings at all",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.functions.get_iam_policy",
+            "resourceKey": "projects/p1/locations/us-central1/functions/fn-nobindings",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABCEmpty="
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail allUsers invoker",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.functions.get_iam_policy",
+            "resourceKey": "projects/p1/locations/us-central1/functions/fn-public",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABCGHIJ34=",
+              "bindings": [
+                {
+                  "role": "roles/cloudfunctions.invoker",
+                  "members": [
+                    "allUsers"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail allAuthenticatedUsers on run invoker",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.functions.get_iam_policy",
+            "resourceKey": "projects/p1/locations/us-central1/functions/fn-gen2public",
+            "exitCode": 0,
+            "output": {
+              "version": 1,
+              "etag": "BwYABCKLMN56=",
+              "bindings": [
+                {
+                  "role": "roles/run.invoker",
+                  "members": [
+                    "serviceAccount:caller@p1.iam.gserviceaccount.com",
+                    "allAuthenticatedUsers"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "error permission denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "gcp.functions.get_iam_policy",
+            "resourceKey": "projects/p1/locations/us-central1/functions/fn-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "ERROR: (gcloud.functions.get-iam-policy) PERMISSION_DENIED: Permission 'cloudfunctions.functions.getIamPolicy' denied on resource"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-FUNCTIONS-151",
+    "cases": [
+      {
+        "name": "pass gen1 top-level vpcConnector",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-gen1vpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-gen1vpc",
+                "status": "ACTIVE",
+                "runtime": "python312",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                "vpcConnector": "projects/p1/locations/us-central1/connectors/conn1",
+                "vpcConnectorEgressSettings": "ALL_TRAFFIC",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pass gen2 serviceConfig vpcConnector",
+        "expected": "pass",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-gen2vpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-gen2vpc",
+                "environment": "GEN_2",
+                "state": "ACTIVE",
+                "serviceConfig": {
+                  "ingressSettings": "ALLOW_INTERNAL_ONLY",
+                  "vpcConnector": "projects/p1/locations/us-central1/connectors/conn1",
+                  "vpcConnectorEgressSettings": "ALL_TRAFFIC",
+                  "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com",
+                  "uri": "https://fn-gen2vpc-abc-uc.a.run.app"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail gen1 no connector",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-gen1novpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-gen1novpc",
+                "status": "ACTIVE",
+                "runtime": "nodejs20",
+                "environment": "GEN_1",
+                "ingressSettings": "ALLOW_ALL",
+                "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail gen2 serviceConfig without connector",
+        "expected": "fail",
+        "resourceId": "projects/p1/locations/us-central1/functions/fn-gen2novpc",
+        "records": [
+          {
+            "collectorId": "gcp.functions.list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/p1/locations/us-central1/functions/fn-gen2novpc",
+                "environment": "GEN_2",
+                "state": "ACTIVE",
+                "serviceConfig": {
+                  "ingressSettings": "ALLOW_ALL",
+                  "serviceAccountEmail": "fn-runtime@p1.iam.gserviceaccount.com",
+                  "uri": "https://fn-gen2novpc-abc-uc.a.run.app"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

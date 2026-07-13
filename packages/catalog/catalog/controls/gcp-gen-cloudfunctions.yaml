@@ -64,7 +64,7 @@ controls:
       - network
     source:
       engine: prowler
-      id: cloudfunctions_function_vpc_connector_configured
+      id: cloudfunction_function_inside_vpc
       license: Apache-2.0
     collector: gcp.functions.list
     resourcesPath: $
@@ -195,3 +195,114 @@ controls:
     references:
       - https://cloud.google.com/functions/docs/reference/rest/v1/projects.locations.functions#CloudFunctionStatus
       - https://cloud.google.com/functions/docs/reference/rest/v2/projects.locations.functions#State
+  - id: CR-GCP-FUNCTIONS-150
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function is not publicly invokable
+    description: No Cloud Function IAM policy grants an invoker role to allUsers or
+      allAuthenticatedUsers, so the function cannot be triggered by anonymous or
+      any-Google-account principals.
+    rationale: An allUsers or allAuthenticatedUsers invoker binding lets anyone on
+      the internet (or any authenticated Google account) call the function
+      directly. Combined with ALLOW_ALL ingress this exposes the function's
+      logic and any backend it can reach to unauthenticated abuse, data
+      exfiltration and cost-amplification attacks.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: cloudfunction_function_not_publicly_accessible
+      license: Apache-2.0
+    collector: gcp.functions.get_iam_policy
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: or
+        exprs:
+          - op: contains
+            path: members
+            value: allUsers
+          - op: contains
+            path: members
+            value: allAuthenticatedUsers
+    onError:
+      - contains: PERMISSION_DENIED
+        status: error
+      - contains: does not have permission
+        status: error
+    failMessage: Cloud Function IAM policy grants invoke access to
+      allUsers/allAuthenticatedUsers, making it publicly invokable.
+    passMessage: Cloud Function is not publicly invokable.
+    remediation:
+      summary: Remove allUsers/allAuthenticatedUsers from the function IAM policy.
+      steps:
+        - For a 1st gen function run gcloud functions remove-iam-policy-binding
+          FUNCTION --member=allUsers --role=roles/cloudfunctions.invoker (repeat
+          for allAuthenticatedUsers).
+        - For a 2nd gen function remove the public member from the backing Cloud
+          Run service with --role=roles/run.invoker.
+        - Grant invoke access only to specific authenticated principals or
+          service accounts that must call the function.
+      verifyCommand: gcloud functions get-iam-policy FUNCTION --project PROJECT_ID
+        --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/securing/managing-access-iam
+      - https://cloud.google.com/functions/docs/reference/iam/roles
+  - id: CR-GCP-FUNCTIONS-151
+    version: 1.0.0
+    provider: gcp
+    service: cloudfunctions
+    title: Cloud Function is attached to a Serverless VPC connector (both generations)
+    description: Each Cloud Function has a vpcConnector configured either at the top
+      level (1st gen) or under serviceConfig (2nd gen), so outbound traffic is
+      routed through a Serverless VPC Access connector rather than the default
+      public egress path.
+    rationale: Without a VPC connector a function's egress bypasses VPC firewall
+      rules, Cloud NAT and private connectivity, and it cannot reach private
+      resources over internal IPs. This weakens network segmentation and forces
+      internal APIs and databases to be reached over the public internet. The
+      generation-aware check closes the gap where a 2nd gen function stores the
+      connector under serviceConfig.vpcConnector and would otherwise look
+      unconfigured.
+    severity: medium
+    categories:
+      - network
+    source:
+      engine: prowler
+      id: cloudfunction_function_inside_vpc
+      license: Apache-2.0
+    collector: gcp.functions.list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    passWhen:
+      op: or
+      exprs:
+        - op: exists
+          path: vpcConnector
+        - op: exists
+          path: serviceConfig.vpcConnector
+    failMessage: Cloud Function has no Serverless VPC connector (neither
+      vpcConnector nor serviceConfig.vpcConnector is set); its egress bypasses
+      VPC network controls.
+    passMessage: Cloud Function routes egress through a Serverless VPC connector.
+    remediation:
+      summary: Attach a Serverless VPC Access connector to the function.
+      steps:
+        - Create a Serverless VPC Access connector in the function's region with
+          gcloud compute networks vpc-access connectors create.
+        - Redeploy the function with gcloud functions deploy FUNCTION
+          --vpc-connector CONNECTOR.
+        - Optionally set --egress-settings all-traffic to route all egress
+          through the VPC and its firewall rules.
+      verifyCommand: gcloud functions list --project PROJECT_ID --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/functions/docs/networking/connecting-vpc
+      - https://cloud.google.com/vpc/docs/serverless-vpc-access

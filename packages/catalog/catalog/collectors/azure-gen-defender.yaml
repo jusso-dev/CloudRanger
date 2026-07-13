@@ -26,3 +26,25 @@ collectors:
       Requires Security Reader or Reader on the subscription. Returns an object
       with a value[] array; the item named 'default' has autoProvision set to
       'On' or 'Off'.
+  - id: azure.security.settings_list
+    provider: azure
+    service: defender
+    description: >
+      Microsoft Defender for Cloud subscription-level integration settings (data
+      export settings) such as MCAS (Microsoft Defender for Cloud Apps) and
+      WDATP (Microsoft Defender for Endpoint) integration toggles.
+    kind: single
+    command: az security setting list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires Security Reader or Reader on the subscription. The az/aaz command
+      returns the ARM SettingsList 'value' array as the JSON ROOT (a bare
+      array), with client-flattened properties. Each element is a
+      DataExportSettings object: { id, kind: "DataExportSettings", name:
+      <"MCAS"|"WDATP"|"Sentinel"|
+      "WDATP_EXCLUDE_LINUX_PUBLIC_PREVIEW"|"WDATP_UNIFIED_SOLUTION">, type:
+      "Microsoft.Security/settings", enabled: <bool> }. The 'enabled' field is
+      flattened from properties.enabled. A setting that has never been
+      configured may be absent from the array (treat absent as not enabled =
+      fail).

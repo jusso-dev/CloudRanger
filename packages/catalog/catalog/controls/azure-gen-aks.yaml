@@ -309,3 +309,233 @@ controls:
           - PR.AC
     references:
       - https://learn.microsoft.com/azure/aks/manage-azure-rbac
+  - id: CR-AZURE-AKS-150
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has an auto-upgrade channel configured
+    description: >
+      Verifies each AKS cluster sets a cluster auto-upgrade channel
+      (autoUpgradeProfile.upgradeChannel is patch, stable, rapid, or node-image)
+      so Kubernetes control-plane versions are kept patched automatically.
+    rationale: >
+      A cluster left on channel "none" will drift onto unsupported, unpatched
+      Kubernetes versions, accumulating known control-plane CVEs that attackers
+      can exploit until an operator manually intervenes.
+    severity: medium
+    categories:
+      - kubernetes
+      - resilience
+      - patch-management
+    source:
+      engine: prowler
+      id: aks_cluster_auto_upgrade_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: autoUpgradeProfile.upgradeChannel
+      values:
+        - patch
+        - stable
+        - rapid
+        - node-image
+    failMessage: AKS cluster has no auto-upgrade channel configured.
+    passMessage: AKS cluster has an auto-upgrade channel configured.
+    remediation:
+      summary: Configure a cluster auto-upgrade channel.
+      steps:
+        - Run az aks update --auto-upgrade-channel stable for the cluster.
+        - Pair with a maintenance window to control when upgrades run.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://learn.microsoft.com/azure/aks/auto-upgrade-cluster
+  - id: CR-AZURE-AKS-151
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster API server is private
+    description: >
+      Verifies the cluster is provisioned as a private cluster
+      (apiServerAccessProfile.enablePrivateCluster is true) so the Kubernetes
+      API server has no public IP.
+    rationale: >
+      A public API server endpoint exposes Kubernetes authentication and any
+      control-plane vulnerability to the internet; a private cluster keeps the
+      API server reachable only from the cluster virtual network.
+    severity: high
+    categories:
+      - kubernetes
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: aks_clusters_public_access_disabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: apiServerAccessProfile.enablePrivateCluster
+      value: true
+    failMessage: AKS cluster API server is publicly reachable (not a private cluster).
+    passMessage: AKS cluster API server is private.
+    remediation:
+      summary: Provision the cluster as a private cluster.
+      steps:
+        - Create the cluster with --enable-private-cluster (private clusters
+          cannot be enabled on an existing public cluster; a rebuild is
+          required).
+        - Where a private cluster is not feasible, restrict the public API
+          server with authorized IP ranges.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/private-clusters
+  - id: CR-AZURE-AKS-152
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has Microsoft Defender for Containers enabled
+    description: >
+      Verifies the Defender security profile is enabled on the cluster
+      (securityProfile.defender.securityMonitoring.enabled is true) so runtime
+      threat detection is active.
+    rationale: >
+      Without the Defender profile there is no agent-based runtime threat
+      detection on the cluster, so container escapes, crypto-mining, and other
+      in-cluster attacks go unnoticed.
+    severity: high
+    categories:
+      - kubernetes
+      - logging
+      - threat-detection
+    source:
+      engine: prowler
+      id: aks_cluster_defender_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: securityProfile.defender.securityMonitoring.enabled
+      value: true
+    failMessage: AKS cluster does not have Microsoft Defender for Containers enabled.
+    passMessage: AKS cluster has Microsoft Defender for Containers enabled.
+    remediation:
+      summary: Enable the Defender security profile on the cluster.
+      steps:
+        - Run az aks update --enable-defender --defender-config <config> for the
+          cluster (requires Defender for Containers enabled on the
+          subscription).
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - DE.CM
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-containers-enable
+  - id: CR-AZURE-AKS-153
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has a node OS auto-upgrade channel configured
+    description: >
+      Verifies each AKS cluster sets a node OS image auto-upgrade channel
+      (autoUpgradeProfile.nodeOsUpgradeChannel is NodeImage or SecurityPatch) so
+      node operating systems receive security updates automatically.
+    rationale: >
+      With the node OS upgrade channel set to None, worker node images never
+      receive OS-level security patches automatically, leaving hosts running
+      kernels and packages with known, exploitable vulnerabilities.
+    severity: medium
+    categories:
+      - kubernetes
+      - resilience
+      - patch-management
+    source:
+      engine: prowler
+      id: aks_cluster_node_os_auto_upgrade_enabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: in
+      path: autoUpgradeProfile.nodeOsUpgradeChannel
+      values:
+        - NodeImage
+        - SecurityPatch
+    failMessage: AKS cluster has no node OS auto-upgrade channel configured.
+    passMessage: AKS cluster has a node OS auto-upgrade channel configured.
+    remediation:
+      summary: Configure the node OS auto-upgrade channel.
+      steps:
+        - Run az aks update --node-os-upgrade-channel SecurityPatch for the
+          cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.IP
+    references:
+      - https://learn.microsoft.com/azure/aks/auto-upgrade-node-os-image
+  - id: CR-AZURE-AKS-154
+    version: 1.0.0
+    provider: azure
+    service: aks
+    title: AKS cluster has the command invoke feature disabled
+    description: >
+      Verifies az aks command invoke is disabled on the cluster
+      (apiServerAccessProfile.disableRunCommand is true) so the run-command
+      bypass to a private/IP-restricted API server is closed.
+    rationale: >
+      The run command feature lets any principal with the
+      Microsoft.ContainerService runCommand action execute arbitrary commands
+      inside the cluster from Azure, bypassing private-cluster and
+      authorized-IP-range network controls.
+    severity: medium
+    categories:
+      - kubernetes
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: aks_cluster_run_command_disabled
+      license: Apache-2.0
+    collector: azure.aks.list
+    resourcesPath: $
+    resourceIdField: id
+    resourceNameField: name
+    passWhen:
+      op: equals
+      path: apiServerAccessProfile.disableRunCommand
+      value: true
+    failMessage: AKS cluster allows the command invoke (run command) feature.
+    passMessage: AKS cluster has the command invoke feature disabled.
+    remediation:
+      summary: Disable the run command feature on the cluster.
+      steps:
+        - Run az aks update --disable-run-command for the cluster.
+      verifyCommand: az aks list --output json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.AC
+    references:
+      - https://learn.microsoft.com/azure/aks/access-private-cluster

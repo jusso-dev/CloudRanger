@@ -243,6 +243,48 @@ function validate() {
   report(manifest);
 }
 
+/**
+ * Re-credit the existing manifest against the current catalog WITHOUT a Prowler
+ * source checkout. Reuses the upstream check list already recorded in the
+ * manifest (id/service/title/severity/deprecated) and re-applies exactly the
+ * same crediting rule as `sync`: an unmapped check flips to implemented when a
+ * Prowler-attributed control with the exact source id has both pass and fail
+ * fixtures. Non-unmapped decisions (superseded/unsupported/deprecated) and
+ * their justifications are preserved untouched.
+ */
+function recredit() {
+  if (!existsSync(manifestPath)) throw new Error(`manifest not found: ${manifestPath}`);
+  const manifest = readJson(manifestPath);
+  const { controls, fixtures } = readCatalog();
+  const exactControls = new Map();
+  for (const control of controls) {
+    if (control.source?.engine !== "prowler") continue;
+    const key = `${control.provider}:${control.source.id}`;
+    const list = exactControls.get(key) ?? [];
+    list.push(control.id);
+    exactControls.set(key, list);
+  }
+
+  for (const check of manifest.checks ?? []) {
+    // Only unmapped/implemented records are derived from the catalog; explicit
+    // superseded/unsupported/deprecated decisions stay as authored.
+    if (check.status !== "unmapped" && check.status !== "implemented") continue;
+    const key = `${check.provider}:${check.id}`;
+    const controlIds = (exactControls.get(key) ?? []).sort();
+    if (controlIds.length > 0 && controlIds.every((id) => fixtureHasPassAndFail(fixtures.get(id)))) {
+      check.status = "implemented";
+      check.controlIds = controlIds;
+    } else {
+      check.status = "unmapped";
+      check.controlIds = [];
+    }
+  }
+
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(`re-credited ${manifest.checks.length} checks in ${relative(ROOT, manifestPath)}`);
+  report(manifest);
+}
+
 function report(manifest = readJson(manifestPath)) {
   console.log(`Prowler ${manifest.upstream.version} (${manifest.upstream.revision.slice(0, 12)}) coverage:`);
   for (const provider of PROVIDERS) {
@@ -258,8 +300,9 @@ function report(manifest = readJson(manifestPath)) {
 try {
   if (command === "sync") sync();
   else if (command === "validate") validate();
+  else if (command === "recredit") recredit();
   else if (command === "report") report();
-  else throw new Error("usage: prowler-coverage.mjs <sync|validate|report> [--prowler PATH] [--manifest PATH]");
+  else throw new Error("usage: prowler-coverage.mjs <sync|recredit|validate|report> [--prowler PATH] [--manifest PATH]");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

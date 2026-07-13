@@ -45,7 +45,7 @@ controls:
         - Create or identify a Cloud KMS key and grant the BigQuery service
           account the Encrypter/Decrypter role.
         - Update the dataset default encryption via 'gcloud alpha bq datasets
-          update <dataset> --default-kms-key <keyResource>' (or bq update
+          update <dataset> --default-kms-key <key-resource>' (or bq update
           --default_kms_key).
         - Recreate or re-load existing tables so they adopt the customer-managed
           key.

@@ -540,5 +540,528 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-150",
+    "cases": [
+      {
+        "name": "share soft delete enabled 14 days",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctpass",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/acctpass/fileServices/default",
+              "name": "default",
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 14
+              },
+              "protocolSettings": {
+                "smb": {}
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "share soft delete disabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctfail",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/acctfail/fileServices/default",
+              "name": "default",
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "shareDeleteRetentionPolicy": {
+                "enabled": false,
+                "days": null
+              },
+              "protocolSettings": null
+            }
+          }
+        ]
+      },
+      {
+        "name": "account deleted between list and collect",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctgone",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(StorageAccountNotFound) The storage account acctgone was not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-151",
+    "cases": [
+      {
+        "name": "channel encryption AES-GCM only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctpass",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "protocolSettings": {
+                "smb": {
+                  "versions": "SMB3.0;SMB3.1.1",
+                  "authenticationMethods": "Kerberos",
+                  "channelEncryption": [
+                    "AES-128-GCM",
+                    "AES-256-GCM"
+                  ],
+                  "kerberosTicketEncryption": "AES-256"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "channel encryption still offers AES-128-CCM",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctfail",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "protocolSettings": {
+                "smb": {
+                  "versions": "SMB3.0;SMB3.1.1",
+                  "channelEncryption": [
+                    "AES-128-CCM",
+                    "AES-128-GCM",
+                    "AES-256-GCM"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "smb protocol settings never configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctunset",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": false,
+                "days": null
+              },
+              "protocolSettings": null
+            }
+          }
+        ]
+      },
+      {
+        "name": "authorization denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctdenied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Storage/storageAccounts/fileServices/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-152",
+    "cases": [
+      {
+        "name": "versions exclude SMB2.1",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctpass",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "protocolSettings": {
+                "smb": {
+                  "versions": [
+                    "SMB3.0",
+                    "SMB3.1.1"
+                  ],
+                  "channelEncryption": [
+                    "AES-256-GCM"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "versions still allow SMB2.1",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctfail",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "protocolSettings": {
+                "smb": {
+                  "versions": [
+                    "SMB2.1",
+                    "SMB3.0",
+                    "SMB3.1.1"
+                  ],
+                  "channelEncryption": [
+                    "AES-256-GCM"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "smb settings never configured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.storage.file_service_properties_show",
+            "resourceKey": "acctunset",
+            "exitCode": 0,
+            "output": {
+              "name": "default",
+              "shareDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+              },
+              "protocolSettings": {
+                "smb": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-153",
+    "cases": [
+      {
+        "name": "geo-redundant RAGRS",
+        "expected": "pass",
+        "resourceId": "geoacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "geoacct",
+                "location": "eastus",
+                "kind": "StorageV2",
+                "sku": {
+                  "name": "Standard_RAGRS",
+                  "tier": "Standard"
+                },
+                "publicNetworkAccess": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "locally-redundant LRS",
+        "expected": "fail",
+        "resourceId": "lrsacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "lrsacct",
+                "location": "eastus",
+                "kind": "StorageV2",
+                "sku": {
+                  "name": "Standard_LRS",
+                  "tier": "Standard"
+                },
+                "publicNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-154",
+    "cases": [
+      {
+        "name": "approved private endpoint",
+        "expected": "pass",
+        "resourceId": "peacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "peacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "privateEndpointConnections": [
+                  {
+                    "id": "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/peacct/privateEndpointConnections/pe1",
+                    "name": "pe1",
+                    "privateLinkServiceConnectionState": {
+                      "status": "Approved",
+                      "description": "Auto-approved",
+                      "actionRequired": "None"
+                    },
+                    "provisioningState": "Succeeded"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no private endpoint connections",
+        "expected": "fail",
+        "resourceId": "nopeacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "nopeacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "privateEndpointConnections": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "pending private endpoint only",
+        "expected": "fail",
+        "resourceId": "pendacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pendacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "privateEndpointConnections": [
+                  {
+                    "name": "pe2",
+                    "privateLinkServiceConnectionState": {
+                      "status": "Pending"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-155",
+    "cases": [
+      {
+        "name": "deny default with AzureServices bypass",
+        "expected": "pass",
+        "resourceId": "byacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "byacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "deny default with no bypass",
+        "expected": "fail",
+        "resourceId": "nobyacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "nobyacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "bypass": "None",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "firewall allows by default (not applicable)",
+        "expected": "not_applicable",
+        "resourceId": "openacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "openacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Allow",
+                  "bypass": "None",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-STORAGE-156",
+    "cases": [
+      {
+        "name": "default action Deny",
+        "expected": "pass",
+        "resourceId": "denyacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "denyacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "ipRules": [
+                    {
+                      "value": "203.0.113.0/24",
+                      "action": "Allow"
+                    }
+                  ],
+                  "virtualNetworkRules": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "default action Allow",
+        "expected": "fail",
+        "resourceId": "allowacct",
+        "records": [
+          {
+            "collectorId": "azure.storage.list_accounts",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "allowacct",
+                "location": "eastus",
+                "sku": {
+                  "name": "Standard_LRS"
+                },
+                "networkRuleSet": {
+                  "defaultAction": "Allow",
+                  "bypass": "AzureServices",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

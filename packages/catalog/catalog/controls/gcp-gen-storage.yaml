@@ -141,7 +141,7 @@ controls:
       - resilience
     source:
       engine: prowler
-      id: cloudstorage_bucket_retention_policy_lock
+      id: cloudstorage_bucket_sufficient_retention_period
       license: Apache-2.0
     collector: gcp.storage.buckets_list
     resourcesPath: $
@@ -263,3 +263,232 @@ controls:
           - "5.1"
     references:
       - https://cloud.google.com/storage/docs/access-control/making-data-public
+  - id: CR-GCP-STORAGE-150
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has lifecycle management rules configured
+    description: >
+      Verifies the Cloud Storage bucket has at least one lifecycle rule so that
+      objects are transitioned or deleted automatically per a defined policy.
+    rationale: >
+      Without lifecycle rules, stale objects (including noncurrent versions and
+      incomplete uploads) accumulate indefinitely, driving up cost and leaving
+      sensitive data resident far longer than any retention policy requires.
+    severity: low
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_lifecycle_management_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: lifecycle_config.rule
+        - op: lengthGt
+          path: lifecycle_config.rule
+          value: 0
+    failMessage: Bucket has no lifecycle management rules configured.
+    passMessage: Bucket has one or more lifecycle management rules.
+    remediation:
+      summary: Configure lifecycle rules on the bucket.
+      steps:
+        - Define a lifecycle policy that ages out noncurrent versions and
+          incomplete multipart uploads and transitions cold data.
+        - Apply the lifecycle configuration to the bucket (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/storage/docs/lifecycle
+  - id: CR-GCP-STORAGE-151
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has a soft delete policy enabled
+    description: >
+      Verifies the bucket soft delete policy has a nonzero retention duration so
+      deleted or overwritten objects are recoverable for a retention window.
+    rationale: >
+      With soft delete disabled, an accidental or malicious deletion is
+      immediately unrecoverable, removing a key ransomware and human-error
+      recovery control.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_soft_delete_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: soft_delete_policy.retention_duration_seconds
+        - op: gt
+          path: soft_delete_policy.retention_duration_seconds
+          value: 0
+    failMessage: Bucket soft delete policy is disabled (zero retention duration).
+    passMessage: Bucket has a soft delete policy with a nonzero retention duration.
+    remediation:
+      summary: Enable the soft delete policy on the bucket.
+      steps:
+        - Choose a soft delete retention duration that meets recovery
+          requirements (7 days minimum recommended).
+        - Set the bucket soft delete retention duration (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://cloud.google.com/storage/docs/soft-delete
+  - id: CR-GCP-STORAGE-152
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket soft delete retention meets the minimum duration
+    description: >
+      For buckets with soft delete enabled, verifies the retention duration is
+      at least 7 days (604800 seconds) so deleted objects remain recoverable
+      long enough to detect and respond.
+    rationale: >
+      A soft delete window shorter than the incident-detection window provides
+      no practical recovery guarantee; a too-short duration is functionally
+      close to no protection at all.
+    severity: low
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_soft_delete_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: soft_delete_policy.retention_duration_seconds
+        - op: gt
+          path: soft_delete_policy.retention_duration_seconds
+          value: 0
+    passWhen:
+      op: gte
+      path: soft_delete_policy.retention_duration_seconds
+      value: 604800
+    failMessage: Bucket soft delete retention is shorter than 7 days.
+    passMessage: Bucket soft delete retention is at least 7 days.
+    remediation:
+      summary: Increase the soft delete retention duration to at least 7 days.
+      steps:
+        - Set the bucket soft delete retention duration to 604800 seconds or
+          more (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://cloud.google.com/storage/docs/soft-delete
+  - id: CR-GCP-STORAGE-153
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket retention policy is locked with a sufficient period
+    description: >
+      For buckets with a retention policy, verifies the policy is locked and the
+      retention period is at least 365 days (31536000 seconds), enforcing
+      durable WORM-style protection.
+    rationale: >
+      An unlocked or short retention policy can be shortened or removed by an
+      admin, so it offers no real immutability; a locked, sufficiently long
+      period is required to guarantee data cannot be prematurely destroyed.
+    severity: medium
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_sufficient_retention_period
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: exists
+      path: retention_policy.retention_period
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: retention_policy.is_locked
+          value: true
+        - op: gte
+          path: retention_policy.retention_period
+          value: 31536000
+    failMessage: Bucket retention policy is unlocked or shorter than 365 days.
+    passMessage: Bucket retention policy is locked with a period of at least 365 days.
+    remediation:
+      summary: Lock the retention policy with a sufficient period.
+      steps:
+        - Set the retention period to at least 31536000 seconds (365 days).
+        - Confirm the period is correct, then lock the retention policy (locking
+          is irreversible) (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance:
+      - framework: nist-csf
+        controls:
+          - PR.DS
+    references:
+      - https://cloud.google.com/storage/docs/bucket-lock
+  - id: CR-GCP-STORAGE-155
+    version: 1.0.0
+    provider: gcp
+    service: storage
+    title: Bucket has Autoclass enabled
+    description: >
+      Verifies Autoclass is enabled so objects are automatically moved between
+      storage classes based on access patterns without lifecycle-triggered
+      early-deletion or retrieval charges.
+    rationale: >
+      Without Autoclass, cold data lingers in Standard storage (needless cost)
+      or manual class transitions incur retrieval and early-deletion fees, and
+      cold tiers can slow recovery during an incident.
+    severity: informational
+    categories:
+      - storage
+      - resilience
+    source:
+      engine: prowler
+      id: cloudstorage_bucket_autoclass_enabled
+      license: Apache-2.0
+    collector: gcp.storage.buckets_list
+    resourcesPath: $
+    resourceIdField: name
+    passWhen:
+      op: equals
+      path: autoclass.enabled
+      value: true
+    failMessage: Bucket does not have Autoclass enabled.
+    passMessage: Bucket has Autoclass enabled.
+    remediation:
+      summary: Enable Autoclass on the bucket.
+      steps:
+        - Enable Autoclass on the bucket so storage class transitions are
+          managed automatically (operator action).
+      verifyCommand: gcloud storage buckets list --project <project> --format json
+    compliance: []
+    references:
+      - https://cloud.google.com/storage/docs/autoclass

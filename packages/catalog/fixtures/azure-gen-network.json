@@ -203,7 +203,9 @@
                     "direction": "Inbound",
                     "protocol": "Tcp",
                     "destinationPortRange": null,
-                    "destinationPortRanges": ["445"],
+                    "destinationPortRanges": [
+                      "445"
+                    ],
                     "sourceAddressPrefix": "Internet",
                     "sourceAddressPrefixes": []
                   }
@@ -327,7 +329,9 @@
                     "destinationPortRange": "27017",
                     "destinationPortRanges": [],
                     "sourceAddressPrefix": null,
-                    "sourceAddressPrefixes": ["0.0.0.0/0"]
+                    "sourceAddressPrefixes": [
+                      "0.0.0.0/0"
+                    ]
                   }
                 ]
               }
@@ -492,6 +496,424 @@
                 ]
               }
             ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-150",
+    "cases": [
+      {
+        "name": "ddos protection enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_vnets",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet-prod",
+                "name": "vnet-prod",
+                "location": "eastus",
+                "enableDdosProtection": true,
+                "ddosProtectionPlan": {
+                  "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/ddosProtectionPlans/plan1"
+                },
+                "subnets": [
+                  {
+                    "name": "app",
+                    "networkSecurityGroup": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ddos protection disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_vnets",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet-dev",
+                "name": "vnet-dev",
+                "location": "eastus",
+                "enableDdosProtection": false,
+                "ddosProtectionPlan": null,
+                "subnets": [
+                  {
+                    "name": "default",
+                    "networkSecurityGroup": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-151",
+    "cases": [
+      {
+        "name": "all workload subnets have nsg, gateway subnet excluded",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_vnets",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet-prod",
+                "name": "vnet-prod",
+                "location": "eastus",
+                "enableDdosProtection": true,
+                "subnets": [
+                  {
+                    "name": "app",
+                    "networkSecurityGroup": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app"
+                    }
+                  },
+                  {
+                    "name": "GatewaySubnet"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "workload subnet missing nsg fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_vnets",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet-prod",
+                "name": "vnet-prod",
+                "location": "eastus",
+                "enableDdosProtection": true,
+                "subnets": [
+                  {
+                    "name": "app",
+                    "networkSecurityGroup": {
+                      "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app"
+                    }
+                  },
+                  {
+                    "name": "data"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-152",
+    "cases": [
+      {
+        "name": "http open to internet fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-web",
+                "name": "nsg-web",
+                "location": "eastus",
+                "securityRules": [
+                  {
+                    "name": "allow-http",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "80",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "0.0.0.0/0",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "http restricted to corp range passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-web",
+                "name": "nsg-web",
+                "location": "eastus",
+                "securityRules": [
+                  {
+                    "name": "allow-http-corp",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "80",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/8",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-153",
+    "cases": [
+      {
+        "name": "udp open to internet fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-udp",
+                "name": "nsg-udp",
+                "location": "eastus",
+                "securityRules": [
+                  {
+                    "name": "allow-udp",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Udp",
+                    "destinationPortRange": "53",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "only tcp internet rule and udp restricted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.list_nsgs",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-udp",
+                "name": "nsg-udp",
+                "location": "eastus",
+                "securityRules": [
+                  {
+                    "name": "allow-udp-corp",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Udp",
+                    "destinationPortRange": "53",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "10.0.0.0/8",
+                    "sourceAddressPrefixes": []
+                  },
+                  {
+                    "name": "allow-https",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "protocol": "Tcp",
+                    "destinationPortRange": "443",
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefix": "Internet",
+                    "sourceAddressPrefixes": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-154",
+    "cases": [
+      {
+        "name": "flow log enabled with 180 day retention passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus/flowLogs/fl-nsg-app",
+              "name": "fl-nsg-app",
+              "location": "eastus",
+              "enabled": true,
+              "targetResourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app",
+              "retentionPolicy": {
+                "enabled": true,
+                "days": 180
+              },
+              "flowAnalyticsConfiguration": {
+                "networkWatcherFlowAnalyticsConfiguration": {
+                  "enabled": true,
+                  "workspaceId": "w-guid"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flow log enabled but only 30 day retention fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-short",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus/flowLogs/fl-nsg-short",
+              "name": "fl-nsg-short",
+              "location": "eastus",
+              "enabled": true,
+              "targetResourceId": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-short",
+              "retentionPolicy": {
+                "enabled": true,
+                "days": 30
+              },
+              "flowAnalyticsConfiguration": {
+                "networkWatcherFlowAnalyticsConfiguration": {
+                  "enabled": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "no flow log configured maps to fail",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-none",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(NetworkWatcherNotFound) Network Watcher not found for region eastus."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-NETWORK-155",
+    "cases": [
+      {
+        "name": "traffic analytics enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-app",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus/flowLogs/fl-nsg-app",
+              "name": "fl-nsg-app",
+              "location": "eastus",
+              "enabled": true,
+              "retentionPolicy": {
+                "enabled": true,
+                "days": 90
+              },
+              "flowAnalyticsConfiguration": {
+                "networkWatcherFlowAnalyticsConfiguration": {
+                  "enabled": true,
+                  "workspaceId": "w-guid",
+                  "trafficAnalyticsInterval": 60
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "traffic analytics disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-noanalytics",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus/flowLogs/fl-nsg-noanalytics",
+              "name": "fl-nsg-noanalytics",
+              "location": "eastus",
+              "enabled": true,
+              "retentionPolicy": {
+                "enabled": true,
+                "days": 120
+              },
+              "flowAnalyticsConfiguration": {
+                "networkWatcherFlowAnalyticsConfiguration": {
+                  "enabled": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flow log disabled is not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.network.flow_log_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg-off",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/s1/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_eastus/flowLogs/fl-nsg-off",
+              "name": "fl-nsg-off",
+              "location": "eastus",
+              "enabled": false,
+              "retentionPolicy": {
+                "enabled": false,
+                "days": 0
+              },
+              "flowAnalyticsConfiguration": {
+                "networkWatcherFlowAnalyticsConfiguration": {
+                  "enabled": false
+                }
+              }
+            }
           }
         ]
       }

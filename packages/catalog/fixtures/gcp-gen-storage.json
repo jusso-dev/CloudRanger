@@ -310,7 +310,9 @@
               "bindings": [
                 {
                   "role": "roles/storage.objectViewer",
-                  "members": ["group:analysts@example.com"]
+                  "members": [
+                    "group:analysts@example.com"
+                  ]
                 }
               ],
               "etag": "CAE="
@@ -333,7 +335,9 @@
               "bindings": [
                 {
                   "role": "roles/storage.objectViewer",
-                  "members": ["allUsers"]
+                  "members": [
+                    "allUsers"
+                  ]
                 }
               ],
               "etag": "CAE="
@@ -355,11 +359,361 @@
               "bindings": [
                 {
                   "role": "roles/storage.legacyObjectReader",
-                  "members": ["allAuthenticatedUsers"]
+                  "members": [
+                    "allAuthenticatedUsers"
+                  ]
                 }
               ],
               "etag": "CAE="
             }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-150",
+    "cases": [
+      {
+        "name": "pass has lifecycle rule",
+        "expected": "pass",
+        "resourceId": "app-data",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "app-data",
+                "location": "US",
+                "lifecycle_config": {
+                  "rule": [
+                    {
+                      "action": {
+                        "type": "Delete"
+                      },
+                      "condition": {
+                        "age": 365
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail empty lifecycle rule array",
+        "expected": "fail",
+        "resourceId": "no-lc",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-lc",
+                "location": "US",
+                "lifecycle_config": {
+                  "rule": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail lifecycle absent",
+        "expected": "fail",
+        "resourceId": "bare",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "bare",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-151",
+    "cases": [
+      {
+        "name": "pass soft delete enabled",
+        "expected": "pass",
+        "resourceId": "sd-on",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-on",
+                "location": "US",
+                "soft_delete_policy": {
+                  "retention_duration_seconds": "604800",
+                  "effective_time": "2025-01-01T00:00:00Z"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail soft delete zero",
+        "expected": "fail",
+        "resourceId": "sd-off",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-off",
+                "location": "US",
+                "soft_delete_policy": {
+                  "retention_duration_seconds": "0"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail soft delete absent",
+        "expected": "fail",
+        "resourceId": "sd-none",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-none",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-152",
+    "cases": [
+      {
+        "name": "pass 7 day retention",
+        "expected": "pass",
+        "resourceId": "sd-7d",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-7d",
+                "location": "US",
+                "soft_delete_policy": {
+                  "retention_duration_seconds": "604800"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail 1 day retention",
+        "expected": "fail",
+        "resourceId": "sd-1d",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-1d",
+                "location": "US",
+                "soft_delete_policy": {
+                  "retention_duration_seconds": "86400"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable soft delete disabled",
+        "expected": "not_applicable",
+        "resourceId": "sd-off2",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sd-off2",
+                "location": "US",
+                "soft_delete_policy": {
+                  "retention_duration_seconds": "0"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-153",
+    "cases": [
+      {
+        "name": "pass locked 1 year",
+        "expected": "pass",
+        "resourceId": "worm",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "worm",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": "31536000",
+                  "is_locked": true,
+                  "effective_time": "2024-01-01T00:00:00Z"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail locked but too short",
+        "expected": "fail",
+        "resourceId": "short",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "short",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": "86400",
+                  "is_locked": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail long but unlocked",
+        "expected": "fail",
+        "resourceId": "unlocked",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "unlocked",
+                "location": "US",
+                "retention_policy": {
+                  "retention_period": "31536000",
+                  "is_locked": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "not applicable no retention policy",
+        "expected": "not_applicable",
+        "resourceId": "no-ret",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "no-ret",
+                "location": "US"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-STORAGE-155",
+    "cases": [
+      {
+        "name": "pass autoclass enabled",
+        "expected": "pass",
+        "resourceId": "ac-on",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ac-on",
+                "location": "US",
+                "autoclass": {
+                  "enabled": true,
+                  "toggle_time": "2025-02-01T00:00:00Z"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail autoclass disabled",
+        "expected": "fail",
+        "resourceId": "ac-off",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ac-off",
+                "location": "US",
+                "autoclass": {
+                  "enabled": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "fail autoclass absent",
+        "expected": "fail",
+        "resourceId": "ac-none",
+        "records": [
+          {
+            "collectorId": "gcp.storage.buckets_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ac-none",
+                "location": "US"
+              }
+            ]
           }
         ]
       }

@@ -13,7 +13,9 @@
               "bindings": [
                 {
                   "role": "roles/owner",
-                  "members": ["user:admin@example.com"]
+                  "members": [
+                    "user:admin@example.com"
+                  ]
                 }
               ],
               "etag": "BwXyz==",
@@ -98,7 +100,9 @@
                   "auditLogConfigs": [
                     {
                       "logType": "DATA_READ",
-                      "exemptedMembers": ["serviceAccount:etl@proj.iam.gserviceaccount.com"]
+                      "exemptedMembers": [
+                        "serviceAccount:etl@proj.iam.gserviceaccount.com"
+                      ]
                     },
                     {
                       "logType": "DATA_WRITE"
@@ -148,7 +152,9 @@
               "bindings": [
                 {
                   "role": "roles/viewer",
-                  "members": ["user:a@example.com"]
+                  "members": [
+                    "user:a@example.com"
+                  ]
                 }
               ],
               "etag": "BwXyz=="
@@ -193,7 +199,9 @@
               "bindings": [
                 {
                   "role": "roles/owner",
-                  "members": ["group:admins@example.com"]
+                  "members": [
+                    "group:admins@example.com"
+                  ]
                 }
               ]
             }
@@ -211,11 +219,15 @@
               "bindings": [
                 {
                   "role": "roles/owner",
-                  "members": ["serviceAccount:svc@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:svc@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/viewer",
-                  "members": ["user:bob@example.com"]
+                  "members": [
+                    "user:bob@example.com"
+                  ]
                 }
               ]
             }
@@ -238,7 +250,9 @@
               "bindings": [
                 {
                   "role": "roles/editor",
-                  "members": ["user:dev@example.com"]
+                  "members": [
+                    "user:dev@example.com"
+                  ]
                 }
               ]
             }
@@ -256,11 +270,15 @@
               "bindings": [
                 {
                   "role": "roles/editor",
-                  "members": ["serviceAccount:ci@proj.iam.gserviceaccount.com"]
+                  "members": [
+                    "serviceAccount:ci@proj.iam.gserviceaccount.com"
+                  ]
                 },
                 {
                   "role": "roles/run.developer",
-                  "members": ["user:dev@example.com"]
+                  "members": [
+                    "user:dev@example.com"
+                  ]
                 }
               ]
             }
@@ -283,7 +301,9 @@
               "bindings": [
                 {
                   "role": "roles/iam.serviceAccountTokenCreator",
-                  "members": ["user:dev@example.com"]
+                  "members": [
+                    "user:dev@example.com"
+                  ]
                 }
               ]
             }
@@ -301,7 +321,9 @@
               "bindings": [
                 {
                   "role": "roles/iam.serviceAccountUser",
-                  "members": ["group:deployers@example.com"]
+                  "members": [
+                    "group:deployers@example.com"
+                  ]
                 }
               ]
             }
@@ -319,7 +341,9 @@
               "bindings": [
                 {
                   "role": "roles/viewer",
-                  "members": ["user:dev@example.com"]
+                  "members": [
+                    "user:dev@example.com"
+                  ]
                 }
               ]
             }
@@ -444,6 +468,347 @@
                 "displayName": "app",
                 "disabled": false,
                 "oauth2ClientId": "222222222222222222222"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-150",
+    "cases": [
+      {
+        "name": "fails when a user-managed key is older than 90 days",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "app@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com/keys/aa11",
+                "keyType": "USER_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "keyOrigin": "GOOGLE_PROVIDED",
+                "validAfterTime": "2025-01-01T00:00:00Z",
+                "validBeforeTime": "9999-12-31T23:59:59Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when only recent user-managed keys exist",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "app@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com/keys/bb22",
+                "keyType": "USER_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "keyOrigin": "GOOGLE_PROVIDED",
+                "validAfterTime": "2025-12-01T00:00:00Z",
+                "validBeforeTime": "9999-12-31T23:59:59Z"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when an old key is Google-managed",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_account_keys_list",
+            "resourceKey": "clean@proj.iam.gserviceaccount.com",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/clean@proj.iam.gserviceaccount.com/keys/cc33",
+                "keyType": "SYSTEM_MANAGED",
+                "keyAlgorithm": "KEY_ALG_RSA_2048",
+                "validAfterTime": "2024-01-01T00:00:00Z",
+                "validBeforeTime": "2024-02-01T00:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-151",
+    "cases": [
+      {
+        "name": "fails when cloudkms.admin granted to a service account",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.admin",
+                  "members": [
+                    "serviceAccount:pipeline@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz==",
+              "version": 1
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when cloudkms.admin held only by a human user",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/cloudkms.admin",
+                  "members": [
+                    "user:secops@corp.example.com"
+                  ]
+                },
+                {
+                  "role": "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz==",
+              "version": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-152",
+    "cases": [
+      {
+        "name": "fails when serviceAccountKeyAdmin granted to a service account",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/iam.serviceAccountKeyAdmin",
+                  "members": [
+                    "serviceAccount:ci@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when serviceAccountKeyAdmin held only by a human user",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/iam.serviceAccountKeyAdmin",
+                  "members": [
+                    "user:iamadmin@corp.example.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-153",
+    "cases": [
+      {
+        "name": "fails when a service account holds Editor",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/editor",
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "fails when a service account holds an Admin role",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/compute.admin",
+                  "members": [
+                    "serviceAccount:deployer@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when service accounts hold only narrow predefined roles",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/editor",
+                  "members": [
+                    "user:dev@corp.example.com"
+                  ]
+                },
+                {
+                  "role": "roles/logging.logWriter",
+                  "members": [
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-154",
+    "cases": [
+      {
+        "name": "fails when a personal gmail account is granted access",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/viewer",
+                  "members": [
+                    "user:someone@gmail.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      },
+      {
+        "name": "passes when only corporate accounts are granted access",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.project.iam_policy",
+            "exitCode": 0,
+            "output": {
+              "bindings": [
+                {
+                  "role": "roles/viewer",
+                  "members": [
+                    "user:employee@corp.example.com",
+                    "group:team@corp.example.com",
+                    "serviceAccount:app@proj.iam.gserviceaccount.com"
+                  ]
+                }
+              ],
+              "etag": "BwXyz=="
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-IAM-155",
+    "cases": [
+      {
+        "name": "fails when a service account is disabled but not deleted",
+        "expected": "fail",
+        "resourceId": "legacy@proj.iam.gserviceaccount.com",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/legacy@proj.iam.gserviceaccount.com",
+                "projectId": "proj",
+                "uniqueId": "333333333333333333333",
+                "email": "legacy@proj.iam.gserviceaccount.com",
+                "displayName": "legacy pipeline",
+                "disabled": true,
+                "oauth2ClientId": "333333333333333333333"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "passes when the service account is active",
+        "expected": "pass",
+        "resourceId": "app@proj.iam.gserviceaccount.com",
+        "records": [
+          {
+            "collectorId": "gcp.iam.service_accounts_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "projects/proj/serviceAccounts/app@proj.iam.gserviceaccount.com",
+                "projectId": "proj",
+                "uniqueId": "444444444444444444444",
+                "email": "app@proj.iam.gserviceaccount.com",
+                "displayName": "app",
+                "disabled": false,
+                "oauth2ClientId": "444444444444444444444"
               }
             ]
           }

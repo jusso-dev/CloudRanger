@@ -198,5 +198,469 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-150",
+    "cases": [
+      {
+        "name": "require_secure_transport ON",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "require_secure_transport",
+                "value": "ON",
+                "defaultValue": "ON",
+                "source": "user-override",
+                "dataType": "Boolean"
+              },
+              {
+                "name": "log_checkpoints",
+                "value": "ON",
+                "defaultValue": "ON",
+                "source": "system-default",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "require_secure_transport OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "require_secure_transport",
+                "value": "OFF",
+                "defaultValue": "ON",
+                "source": "user-override",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-151",
+    "cases": [
+      {
+        "name": "throttling ON",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "connection_throttle.enable",
+                "value": "ON",
+                "defaultValue": "ON",
+                "source": "system-default",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "throttling OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "connection_throttle.enable",
+                "value": "OFF",
+                "defaultValue": "ON",
+                "source": "user-override",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-152",
+    "cases": [
+      {
+        "name": "log_checkpoints ON",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_checkpoints",
+                "value": "ON",
+                "defaultValue": "ON",
+                "source": "system-default",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "log_checkpoints OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_checkpoints",
+                "value": "OFF",
+                "defaultValue": "ON",
+                "source": "user-override",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-153",
+    "cases": [
+      {
+        "name": "log_connections ON",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_connections",
+                "value": "ON",
+                "defaultValue": "OFF",
+                "source": "user-override",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "log_connections OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_connections",
+                "value": "OFF",
+                "defaultValue": "OFF",
+                "source": "system-default",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-154",
+    "cases": [
+      {
+        "name": "log_disconnections ON",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_disconnections",
+                "value": "ON",
+                "defaultValue": "OFF",
+                "source": "user-override",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "log_disconnections OFF",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_disconnections",
+                "value": "OFF",
+                "defaultValue": "OFF",
+                "source": "system-default",
+                "dataType": "Boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-155",
+    "cases": [
+      {
+        "name": "retention 7 days",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_retention_days",
+                "value": "7",
+                "defaultValue": "3",
+                "source": "user-override",
+                "dataType": "Integer"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "retention 1 day",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_parameter_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "log_retention_days",
+                "value": "1",
+                "defaultValue": "3",
+                "source": "user-override",
+                "dataType": "Integer"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-156",
+    "cases": [
+      {
+        "name": "geo redundant enabled",
+        "expected": "pass",
+        "resourceId": "pg1",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+                "name": "pg1",
+                "location": "eastus",
+                "version": "15",
+                "state": "Ready",
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                },
+                "highAvailability": {
+                  "mode": "ZoneRedundant",
+                  "state": "Healthy"
+                },
+                "network": {
+                  "publicNetworkAccess": "Disabled"
+                },
+                "sku": {
+                  "name": "Standard_D2ds_v4",
+                  "tier": "GeneralPurpose"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "geo redundant disabled",
+        "expected": "fail",
+        "resourceId": "pg2",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+                "name": "pg2",
+                "location": "eastus",
+                "version": "15",
+                "state": "Ready",
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Disabled"
+                },
+                "highAvailability": {
+                  "mode": "Disabled"
+                },
+                "network": {
+                  "publicNetworkAccess": "Enabled"
+                },
+                "sku": {
+                  "name": "Standard_B1ms",
+                  "tier": "Burstable"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-157",
+    "cases": [
+      {
+        "name": "HA zone redundant",
+        "expected": "pass",
+        "resourceId": "pg1",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+                "name": "pg1",
+                "location": "eastus",
+                "version": "15",
+                "state": "Ready",
+                "backup": {
+                  "geoRedundantBackup": "Enabled"
+                },
+                "highAvailability": {
+                  "mode": "ZoneRedundant",
+                  "state": "Healthy"
+                },
+                "network": {
+                  "publicNetworkAccess": "Disabled"
+                },
+                "sku": {
+                  "name": "Standard_D2ds_v4",
+                  "tier": "GeneralPurpose"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "HA disabled",
+        "expected": "fail",
+        "resourceId": "pg2",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+                "name": "pg2",
+                "location": "eastus",
+                "version": "15",
+                "state": "Ready",
+                "backup": {
+                  "geoRedundantBackup": "Disabled"
+                },
+                "highAvailability": {
+                  "mode": "Disabled"
+                },
+                "network": {
+                  "publicNetworkAccess": "Enabled"
+                },
+                "sku": {
+                  "name": "Standard_B1ms",
+                  "tier": "Burstable"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-POSTGRESQL-158",
+    "cases": [
+      {
+        "name": "no allow-all-azure rule",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "office",
+                "startIpAddress": "203.0.113.10",
+                "endIpAddress": "203.0.113.20"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "allow-all-azure rule present",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.postgresql.flexible_firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg2",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "AllowAllAzureServicesAndResourcesWithinAzureIps",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

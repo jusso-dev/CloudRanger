@@ -349,3 +349,410 @@ controls:
           - 2.1.14
     references:
       - https://learn.microsoft.com/azure/defender-for-cloud/monitoring-components
+  - id: CR-AZURE-DEFENDER-150
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Resource Manager plan set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for Arm (Defender for
+      Resource Manager) is Standard.
+    rationale: >
+      Defender for Resource Manager detects malicious control-plane operations
+      such as suspicious role assignments and resource deployments; without it,
+      Azure management-layer attacks go undetected.
+    severity: high
+    categories:
+      - identity
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_arm_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: Arm
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Resource Manager (Arm) is not set to the Standard tier.
+    passMessage: Defender for Resource Manager is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Resource Manager plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Resource Manager plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.10
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-resource-manager-introduction
+  - id: CR-AZURE-DEFENDER-151
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for DNS plan set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for Dns (Defender for DNS) is
+      Standard.
+    rationale: >
+      Defender for DNS surfaces malicious DNS activity such as data
+      exfiltration, communication with known-bad domains and DNS tunnelling;
+      without it these signals are lost.
+    severity: high
+    categories:
+      - network
+      - logging
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_dns_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: Dns
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for DNS (Dns) is not set to the Standard tier.
+    passMessage: Defender for DNS is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for DNS plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the DNS plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.11
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-dns-introduction
+  - id: CR-AZURE-DEFENDER-152
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for open-source relational databases set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for
+      OpenSourceRelationalDatabases is Standard.
+    rationale: >
+      Defender for open-source relational databases detects anomalous access,
+      brute-force and injection attacks against Azure Database for PostgreSQL,
+      MySQL and MariaDB; without it these database attacks are not surfaced.
+    severity: high
+    categories:
+      - database
+      - logging
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_databases_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: OpenSourceRelationalDatabases
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: >
+      Defender for open-source relational databases
+      (OpenSourceRelationalDatabases) is not set to the Standard tier.
+    passMessage: Defender for open-source relational databases is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for open-source relational databases plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Databases plan (Open-source relational databases) to On
+          (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.6
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-databases-introduction
+  - id: CR-AZURE-DEFENDER-153
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Azure Cosmos DB plan set to Standard
+    description: |
+      Verifies the Defender for Cloud pricing tier for CosmosDbs is Standard.
+    rationale: >
+      Defender for Azure Cosmos DB detects SQL injection, anomalous data
+      extraction and suspicious access-key usage against Cosmos DB accounts;
+      without it these threats are not detected.
+    severity: medium
+    categories:
+      - database
+      - logging
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_cosmosdb_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: CosmosDbs
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender for Azure Cosmos DB (CosmosDbs) is not set to the Standard tier.
+    passMessage: Defender for Azure Cosmos DB is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for Azure Cosmos DB plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Databases plan (Azure Cosmos DB) to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.6
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/concept-defender-for-cosmos
+  - id: CR-AZURE-DEFENDER-154
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Cloud Apps (MCAS) integration is enabled
+    description: >
+      Verifies the subscription's Defender for Cloud data-export setting named
+      MCAS is enabled so Defender integrates with Microsoft Defender for Cloud
+      Apps.
+    rationale: >
+      Without the MCAS integration, cloud app discovery and cross-signal threat
+      correlation between Defender for Cloud and Defender for Cloud Apps is
+      lost, reducing detection coverage.
+    severity: medium
+    categories:
+      - logging
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_mcas_is_enabled
+      license: Apache-2.0
+    collector: azure.security.settings_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: MCAS
+          - op: equals
+            path: enabled
+            value: true
+    failMessage: The MCAS (Defender for Cloud Apps) integration setting is not enabled.
+    passMessage: The MCAS (Defender for Cloud Apps) integration setting is enabled.
+    remediation:
+      summary: Enable the Microsoft Defender for Cloud Apps integration.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription >
+          Integrations, enable the Microsoft Defender for Cloud Apps
+          integration.
+      verifyCommand: az security setting list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.15
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/other-threat-protections
+  - id: CR-AZURE-DEFENDER-155
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for Endpoint (WDATP) integration is enabled
+    description: >
+      Verifies the subscription's Defender for Cloud data-export setting named
+      WDATP is enabled so Defender for Servers integrates with Microsoft
+      Defender for Endpoint.
+    rationale: >
+      Without the WDATP integration, servers do not receive Microsoft Defender
+      for Endpoint EDR protection, leaving endpoint-level attacks undetected.
+    severity: high
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: defender_ensure_wdatp_is_enabled
+      license: Apache-2.0
+    collector: azure.security.settings_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: WDATP
+          - op: equals
+            path: enabled
+            value: true
+    failMessage: The WDATP (Defender for Endpoint) integration setting is not enabled.
+    passMessage: The WDATP (Defender for Endpoint) integration setting is enabled.
+    remediation:
+      summary: Enable the Microsoft Defender for Endpoint integration.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription >
+          Integrations, enable the Microsoft Defender for Endpoint integration.
+      verifyCommand: az security setting list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.16
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/integration-defender-for-endpoint
+  - id: CR-AZURE-DEFENDER-156
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender CSPM (Cloud Security Posture Management) plan set to
+      Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for CloudPosture (Defender
+      CSPM) is Standard.
+    rationale: >
+      The Defender CSPM plan provides agentless scanning, attack-path analysis
+      and contextual risk prioritisation; without it the subscription lacks
+      proactive posture and attack-path visibility.
+    severity: medium
+    categories:
+      - resilience
+      - logging
+    source:
+      engine: prowler
+      id: defender_ensure_defender_cspm_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: CloudPosture
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: Defender CSPM (CloudPosture) is not set to the Standard tier.
+    passMessage: Defender CSPM is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender CSPM plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the Defender CSPM plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance: []
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/concept-cloud-security-posture-management
+  - id: CR-AZURE-DEFENDER-157
+    version: 1.0.0
+    provider: azure
+    service: defender
+    title: Microsoft Defender for SQL servers on machines set to Standard
+    description: >
+      Verifies the Defender for Cloud pricing tier for SqlServerVirtualMachines
+      (Defender for SQL servers on machines) is Standard.
+    rationale: >
+      Defender for SQL servers on machines detects attacks against SQL Server
+      instances running on Azure and hybrid VMs; without it, self-hosted SQL
+      Server threats are not surfaced.
+    severity: high
+    categories:
+      - database
+      - logging
+      - identity
+    source:
+      engine: prowler
+      id: defender_ensure_defender_for_sql_servers_on_machines_is_on
+      license: Apache-2.0
+    collector: azure.security.pricings_list
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: value
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: name
+            value: SqlServerVirtualMachines
+          - op: equals
+            path: pricingTier
+            value: Standard
+    failMessage: >
+      Defender for SQL servers on machines (SqlServerVirtualMachines) is not set
+      to the Standard tier.
+    passMessage: Defender for SQL servers on machines is set to the Standard tier.
+    remediation:
+      summary: Enable the Defender for SQL servers on machines plan.
+      steps:
+        - In Defender for Cloud > Environment settings > the subscription, set
+          the SQL servers on machines plan to On (Standard).
+      verifyCommand: az security pricing list --output json
+    compliance:
+      - framework: cis-azure-foundations
+        version: "2.1"
+        controls:
+          - 2.1.5
+    references:
+      - https://learn.microsoft.com/azure/defender-for-cloud/defender-for-sql-introduction

@@ -801,5 +801,525 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-150",
+    "cases": [
+      {
+        "name": "postgres sets error",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg1",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_error_statement",
+                      "value": "error"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "postgres wrong value",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg2",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_error_statement",
+                      "value": "panic"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "mysql not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "my1",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-151",
+    "cases": [
+      {
+        "name": "disabled -1",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg1",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_duration_statement",
+                      "value": "-1"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "logs all statements",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg2",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_min_duration_statement",
+                      "value": "0"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-152",
+    "cases": [
+      {
+        "name": "on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg1",
+                "databaseVersion": "POSTGRES_15",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_disconnections",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "flag absent",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg2",
+                "databaseVersion": "POSTGRES_15",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-153",
+    "cases": [
+      {
+        "name": "default",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg1",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_error_verbosity",
+                      "value": "default"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "terse",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg2",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "log_error_verbosity",
+                      "value": "terse"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-154",
+    "cases": [
+      {
+        "name": "on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "my1",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "skip_show_database",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "my2",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "skip_show_database",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "postgres not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "pg1",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-155",
+    "cases": [
+      {
+        "name": "off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ss1",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "external scripts enabled",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ss2",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "external scripts enabled",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "mysql not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "my1",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-156",
+    "cases": [
+      {
+        "name": "off",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ss1",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "remote access",
+                      "value": "off"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "on",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "ss2",
+                "databaseVersion": "SQLSERVER_2019_STANDARD",
+                "settings": {
+                  "databaseFlags": [
+                    {
+                      "name": "remote access",
+                      "value": "on"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-157",
+    "cases": [
+      {
+        "name": "cmek configured",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "db1",
+                "databaseVersion": "POSTGRES_14",
+                "diskEncryptionConfiguration": {
+                  "kind": "sql#diskEncryptionConfiguration",
+                  "kmsKeyName": "projects/p/locations/us/keyRings/r/cryptoKeys/k"
+                },
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "google managed",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "db2",
+                "databaseVersion": "POSTGRES_14",
+                "settings": {
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-GCP-SQL-158",
+    "cases": [
+      {
+        "name": "private only",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "db1",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "ipConfiguration": {
+                    "ipv4Enabled": false,
+                    "privateNetwork": "projects/p/global/networks/vpc"
+                  },
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public ip enabled",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "gcp.sql.instances_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "db2",
+                "databaseVersion": "MYSQL_8_0",
+                "settings": {
+                  "ipConfiguration": {
+                    "ipv4Enabled": true
+                  },
+                  "databaseFlags": []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

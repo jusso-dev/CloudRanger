@@ -44,7 +44,7 @@ controls:
           assign a built-in initiative such as the Microsoft cloud security
           benchmark at the subscription scope.
         - Or run az policy assignment create --name <name> --policy-set-definition
-          <initiativeId> --scope /subscriptions/<subId>.
+          <initiative-id> --scope /subscriptions/<sub-id>.
       verifyCommand: az policy assignment list --output json
     compliance: []
     references:
@@ -90,7 +90,7 @@ controls:
         - In the Azure portal open the policy assignment, set Policy enforcement
           to Enabled, and save.
         - Or run az policy assignment update --name <name> --scope
-          /subscriptions/<subId> --enforcement-mode Default.
+          /subscriptions/<sub-id> --enforcement-mode Default.
       verifyCommand: az policy assignment list --output json
     compliance: []
     references:

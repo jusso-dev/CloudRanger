@@ -19,3 +19,70 @@ collectors:
       classic Single Server offering, not Flexible Server. Requires
       Microsoft.DBforPostgreSQL/servers/read. Returns an empty array when no
       Single Servers exist.
+  - id: azure.postgresql.flexible_list
+    provider: azure
+    service: postgresql
+    description: >
+      Lists Azure Database for PostgreSQL Flexible Servers
+      (Microsoft.DBforPostgreSQL/flexibleServers) in the subscription with their
+      security-relevant configuration.
+    kind: single
+    command: az postgres flexible-server list --output json
+    regional: false
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY at the root; one object per Flexible Server. The az
+      CLI surfaces the ARM properties model as nested objects on each item: id,
+      name, location, version, state, fullyQualifiedDomainName;
+      network.publicNetworkAccess (Enabled/Disabled),
+      network.delegatedSubnetResourceId; backup.geoRedundantBackup
+      (Enabled/Disabled), backup.backupRetentionDays; highAvailability.mode
+      (Disabled/ZoneRedundant/SameZone), highAvailability.state;
+      storage.storageSizeGb; sku.name, sku.tier. Applies only to the Flexible
+      Server offering, not classic Single Server. Requires
+      Microsoft.DBforPostgreSQL/flexibleServers/read. Returns an empty array
+      when no Flexible Servers exist.
+  - id: azure.postgresql.flexible_parameter_list
+    provider: azure
+    service: postgresql
+    description: >
+      Server parameters (postgresql.conf settings) for one PostgreSQL Flexible
+      Server, including SSL, throttling, and logging parameters.
+    kind: per_resource
+    command: az postgres flexible-server parameter list --ids {resource} --output json
+    regional: false
+    parent:
+      collector: azure.postgresql.flexible_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY; each element is one configuration parameter with
+      fields name, value, defaultValue, source, dataType, allowedValues,
+      isConfigPendingRestart, isDynamicConfig. Relevant parameters:
+      require_secure_transport (ON/OFF), connection_throttle.enable (ON/OFF),
+      log_checkpoints (ON/OFF), log_connections (ON/OFF), log_disconnections
+      (ON/OFF), log_retention_days (integer string). The --ids form lets the CLI
+      resolve server-name and resource-group from the server resource id.
+      Requires Microsoft.DBforPostgreSQL/flexibleServers/configurations/read.
+  - id: azure.postgresql.flexible_firewall_rule_list
+    provider: azure
+    service: postgresql
+    description: |
+      Server-level firewall rules for one PostgreSQL Flexible Server.
+    kind: per_resource
+    command: az postgres flexible-server firewall-rule list --ids {resource}
+      --output json
+    regional: false
+    parent:
+      collector: azure.postgresql.flexible_list
+      itemsPath: $
+      resourceField: id
+    outputFormat: json
+    notes: >
+      Returns a JSON ARRAY; each rule has name, startIpAddress, endIpAddress.
+      The special rule allowing access from other Azure services uses the range
+      0.0.0.0 to 0.0.0.0 (conventionally named
+      AllowAllAzureServicesAndResourcesWithinAzureIps). Requires
+      Microsoft.DBforPostgreSQL/flexibleServers/firewallRules/read. Empty array
+      when no firewall rules exist.

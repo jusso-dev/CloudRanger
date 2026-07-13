@@ -18,7 +18,7 @@ controls:
       - integrity
     source:
       engine: prowler
-      id: dns_rsasha1_in_use_to_key_sign_in_managed_zones
+      id: dns_rsasha1_in_use_to_key_sign_in_dnssec
       license: Apache-2.0
     collector: gcp.dns.managed_zones_list
     resourcesPath: $
@@ -156,3 +156,160 @@ controls:
     compliance: []
     references:
       - https://cloud.google.com/dns/docs/monitoring
+  - id: CR-GCP-DNS-150
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: DNSSEC enabled on public Cloud DNS managed zones
+    description: >
+      Every public (internet-facing) Cloud DNS managed zone has DNSSEC turned on
+      so that resolvers can cryptographically validate the zone's responses.
+    rationale: >
+      Without DNSSEC, responses from a public zone can be spoofed via cache
+      poisoning or on-path tampering, allowing attackers to redirect users and
+      services to malicious infrastructure. DNSSEC provides origin
+      authentication and integrity for DNS data.
+    severity: high
+    categories:
+      - network
+      - integrity
+      - encryption
+    source:
+      engine: prowler
+      id: dns_dnssec_disabled
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: visibility
+      value: public
+    passWhen:
+      op: equals
+      path: dnssecConfig.state
+      value: on
+    failMessage: Public managed zone does not have DNSSEC enabled.
+    passMessage: Public managed zone has DNSSEC enabled.
+    remediation:
+      summary: Enable DNSSEC on the managed zone and publish the DS record.
+      steps:
+        - Enable DNSSEC on the managed zone.
+        - Retrieve the zone's DS record and add it at your domain registrar to
+          complete the DNSSEC chain of trust.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.3"
+    references:
+      - https://cloud.google.com/dns/docs/dnssec
+      - https://cloud.google.com/dns/docs/dnssec-config
+  - id: CR-GCP-DNS-151
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: No public managed zone leaves DNSSEC disabled
+    description: >
+      Across the whole project, there is no public Cloud DNS managed zone with
+      DNSSEC turned off, ensuring a consistent DNSSEC posture for all
+      internet-facing zones.
+    rationale: >
+      A single public zone with DNSSEC disabled is a spoofing entry point even
+      if other zones are protected. A project-wide check surfaces any lagging
+      zone that would otherwise be missed in a per-zone view.
+    severity: medium
+    categories:
+      - network
+      - integrity
+      - resilience
+    source:
+      engine: prowler
+      id: dns_dnssec_disabled
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: visibility
+            value: public
+          - op: notEquals
+            path: dnssecConfig.state
+            value: on
+    failMessage: At least one public managed zone in the project has DNSSEC disabled.
+    passMessage: All public managed zones in the project have DNSSEC enabled.
+    remediation:
+      summary: Enable DNSSEC on every public managed zone lacking it.
+      steps:
+        - List all managed zones and enable DNSSEC on each public zone whose
+          dnssecConfig state is not "on".
+        - Publish the corresponding DS records at each domain's registrar.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.3"
+    references:
+      - https://cloud.google.com/dns/docs/dnssec
+  - id: CR-GCP-DNS-152
+    version: 1.0.0
+    provider: gcp
+    service: dns
+    title: No RSASHA1 signing algorithm in any DNS managed zone key spec
+    description: >
+      No DNSSEC-enabled Cloud DNS managed zone uses the weak RSASHA1 algorithm
+      in any of its default key specs, whether key-signing or zone-signing.
+    rationale: >
+      RSASHA1 is deprecated and collision-prone. Any key spec (KSK or ZSK) using
+      it weakens the DNSSEC chain of trust and can allow forged, validly-signed
+      DNS responses. This combined check catches RSASHA1 in either key role.
+    severity: medium
+    categories:
+      - network
+      - encryption
+      - integrity
+    source:
+      engine: prowler
+      id: dns_rsasha1_in_use_to_key_sign_in_dnssec
+      license: Apache-2.0
+    collector: gcp.dns.managed_zones_list
+    resourcesPath: $
+    resourceIdField: name
+    applicableWhen:
+      op: equals
+      path: dnssecConfig.state
+      value: on
+    passWhen:
+      op: noneItem
+      path: dnssecConfig.defaultKeySpecs
+      condition:
+        op: equals
+        path: algorithm
+        value: rsasha1
+    failMessage: Managed zone uses RSASHA1 in a DNSSEC key spec.
+    passMessage: Managed zone uses no RSASHA1 in any DNSSEC key spec.
+    remediation:
+      summary: Replace any RSASHA1 key spec with a stronger algorithm.
+      steps:
+        - Disable DNSSEC on the managed zone, recreate its key specs using
+          rsasha256 or ecdsap256sha256 for both key-signing and zone-signing
+          keys, then re-enable DNSSEC.
+        - Republish the DS record with your registrar if the KSK changed.
+      verifyCommand: gcloud dns managed-zones list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "3.4"
+          - "3.5"
+    references:
+      - https://cloud.google.com/dns/docs/dnssec-config-advanced
+      - https://cloud.google.com/dns/docs/dnssec

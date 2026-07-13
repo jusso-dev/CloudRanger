@@ -286,5 +286,443 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-150",
+    "cases": [
+      {
+        "name": "require_secure_transport ON passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_require_secure_transport",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/require_secure_transport",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/require_secure_transport",
+              "name": "require_secure_transport",
+              "value": "ON",
+              "currentValue": "ON",
+              "defaultValue": "ON",
+              "source": "user-override",
+              "dataType": "Enumeration",
+              "allowedValues": "ON,OFF",
+              "isReadOnly": "False"
+            }
+          }
+        ]
+      },
+      {
+        "name": "require_secure_transport OFF fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_require_secure_transport",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/require_secure_transport",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/require_secure_transport",
+              "name": "require_secure_transport",
+              "value": "OFF",
+              "currentValue": "OFF",
+              "defaultValue": "ON",
+              "source": "user-override",
+              "dataType": "Enumeration",
+              "allowedValues": "ON,OFF",
+              "isReadOnly": "False"
+            }
+          }
+        ]
+      },
+      {
+        "name": "server deleted mid-scan errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_require_secure_transport",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-gone/configurations/require_secure_transport",
+            "exitCode": 3,
+            "output": null,
+            "errorText": "(ResourceNotFound) The Resource 'Microsoft.DBforMySQL/flexibleServers/srv-gone' under resource group 'rg1' was not found."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-151",
+    "cases": [
+      {
+        "name": "tls_version TLSv1.2 only passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_tls_version",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/tls_version",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/tls_version",
+              "name": "tls_version",
+              "value": "TLSv1.2",
+              "currentValue": "TLSv1.2",
+              "defaultValue": "TLSv1.2",
+              "source": "system-default",
+              "dataType": "Set",
+              "allowedValues": "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3"
+            }
+          }
+        ]
+      },
+      {
+        "name": "tls_version TLSv1.2 and TLSv1.3 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_tls_version",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-modern/configurations/tls_version",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-modern/configurations/tls_version",
+              "name": "tls_version",
+              "value": "TLSv1.2,TLSv1.3",
+              "currentValue": "TLSv1.2,TLSv1.3",
+              "defaultValue": "TLSv1.2",
+              "source": "user-override",
+              "dataType": "Set",
+              "allowedValues": "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3"
+            }
+          }
+        ]
+      },
+      {
+        "name": "tls_version includes TLSv1.1 fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_tls_version",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/tls_version",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/tls_version",
+              "name": "tls_version",
+              "value": "TLSv1,TLSv1.1,TLSv1.2",
+              "currentValue": "TLSv1,TLSv1.1,TLSv1.2",
+              "defaultValue": "TLSv1.2",
+              "source": "user-override",
+              "dataType": "Set",
+              "allowedValues": "TLSv1,TLSv1.1,TLSv1.2,TLSv1.3"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-152",
+    "cases": [
+      {
+        "name": "audit_log_enabled ON passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_audit_log_enabled",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/audit_log_enabled",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod/configurations/audit_log_enabled",
+              "name": "audit_log_enabled",
+              "value": "ON",
+              "currentValue": "ON",
+              "defaultValue": "OFF",
+              "source": "user-override",
+              "dataType": "Enumeration",
+              "allowedValues": "ON,OFF"
+            }
+          }
+        ]
+      },
+      {
+        "name": "audit_log_enabled OFF (default) fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_param_audit_log_enabled",
+            "resourceKey": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/audit_log_enabled",
+            "exitCode": 0,
+            "output": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy/configurations/audit_log_enabled",
+              "name": "audit_log_enabled",
+              "value": "OFF",
+              "currentValue": "OFF",
+              "defaultValue": "OFF",
+              "source": "system-default",
+              "dataType": "Enumeration",
+              "allowedValues": "ON,OFF"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-153",
+    "cases": [
+      {
+        "name": "geo-redundant backup enabled passes",
+        "expected": "pass",
+        "resourceId": "srv-prod",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod",
+                "name": "srv-prod",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "8.0.21",
+                "state": "Ready",
+                "availabilityZone": "1",
+                "sku": {
+                  "name": "Standard_D2ds_v4",
+                  "tier": "GeneralPurpose"
+                },
+                "storage": {
+                  "storageSizeGb": 128,
+                  "autoGrow": "Enabled",
+                  "autoIoScaling": "Enabled",
+                  "storageRedundancy": "LocalRedundancy"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "backupIntervalHours": 24,
+                  "geoRedundantBackup": "Enabled",
+                  "earliestRestoreDate": "2026-07-06T00:00:00+00:00"
+                },
+                "highAvailability": {
+                  "mode": "ZoneRedundant",
+                  "state": "Healthy",
+                  "standbyAvailabilityZone": "2"
+                },
+                "network": {
+                  "publicNetworkAccess": "Disabled",
+                  "delegatedSubnetResourceId": null,
+                  "privateDnsZoneResourceId": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "geo-redundant backup disabled fails",
+        "expected": "fail",
+        "resourceId": "srv-legacy",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy",
+                "name": "srv-legacy",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "5.7",
+                "state": "Ready",
+                "availabilityZone": "",
+                "sku": {
+                  "name": "Standard_B1ms",
+                  "tier": "Burstable"
+                },
+                "storage": {
+                  "storageSizeGb": 32,
+                  "autoGrow": "Disabled",
+                  "autoIoScaling": "Disabled",
+                  "storageRedundancy": "LocalRedundancy"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "backupIntervalHours": 24,
+                  "geoRedundantBackup": "Disabled",
+                  "earliestRestoreDate": "2026-07-06T00:00:00+00:00"
+                },
+                "highAvailability": {
+                  "mode": "Disabled",
+                  "state": "NotEnabled",
+                  "standbyAvailabilityZone": ""
+                },
+                "network": {
+                  "publicNetworkAccess": "Enabled",
+                  "delegatedSubnetResourceId": null,
+                  "privateDnsZoneResourceId": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-154",
+    "cases": [
+      {
+        "name": "zone-redundant HA passes",
+        "expected": "pass",
+        "resourceId": "srv-prod",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod",
+                "name": "srv-prod",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "8.0.21",
+                "state": "Ready",
+                "sku": {
+                  "name": "Standard_D2ds_v4",
+                  "tier": "GeneralPurpose"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                },
+                "highAvailability": {
+                  "mode": "ZoneRedundant",
+                  "state": "Healthy",
+                  "standbyAvailabilityZone": "2"
+                },
+                "network": {
+                  "publicNetworkAccess": "Disabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "HA disabled fails",
+        "expected": "fail",
+        "resourceId": "srv-legacy",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-legacy",
+                "name": "srv-legacy",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "5.7",
+                "state": "Ready",
+                "sku": {
+                  "name": "Standard_B1ms",
+                  "tier": "Burstable"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Disabled"
+                },
+                "highAvailability": {
+                  "mode": "Disabled",
+                  "state": "NotEnabled",
+                  "standbyAvailabilityZone": ""
+                },
+                "network": {
+                  "publicNetworkAccess": "Enabled"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-MYSQL-155",
+    "cases": [
+      {
+        "name": "public network access disabled passes",
+        "expected": "pass",
+        "resourceId": "srv-prod",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-prod",
+                "name": "srv-prod",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "8.0.21",
+                "state": "Ready",
+                "sku": {
+                  "name": "Standard_D2ds_v4",
+                  "tier": "GeneralPurpose"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Enabled"
+                },
+                "highAvailability": {
+                  "mode": "ZoneRedundant",
+                  "state": "Healthy"
+                },
+                "network": {
+                  "publicNetworkAccess": "Disabled",
+                  "delegatedSubnetResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/mysql",
+                  "privateDnsZoneResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.Network/privateDnsZones/srv-prod.private.mysql.database.azure.com"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public network access enabled fails",
+        "expected": "fail",
+        "resourceId": "srv-public",
+        "records": [
+          {
+            "collectorId": "azure.mysql.flexible_server_list",
+            "exitCode": 0,
+            "output": [
+              {
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg1/providers/Microsoft.DBforMySQL/flexibleServers/srv-public",
+                "name": "srv-public",
+                "location": "australiaeast",
+                "resourceGroup": "rg1",
+                "version": "8.0.21",
+                "state": "Ready",
+                "sku": {
+                  "name": "Standard_B1ms",
+                  "tier": "Burstable"
+                },
+                "backup": {
+                  "backupRetentionDays": 7,
+                  "geoRedundantBackup": "Disabled"
+                },
+                "highAvailability": {
+                  "mode": "Disabled",
+                  "state": "NotEnabled"
+                },
+                "network": {
+                  "publicNetworkAccess": "Enabled",
+                  "delegatedSubnetResourceId": null,
+                  "privateDnsZoneResourceId": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

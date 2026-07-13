@@ -193,3 +193,107 @@ controls:
     references:
       - https://cloud.google.com/kms/docs/reference/permissions-and-roles
       - https://cloud.google.com/kms/docs/iam
+  - id: CR-GCP-KMS-150
+    version: 1.0.0
+    provider: gcp
+    service: kms
+    title: Cloud KMS symmetric encryption keys have automatic rotation enabled
+    description: >
+      Every CryptoKey whose purpose is ENCRYPT_DECRYPT defines an automatic
+      rotation schedule, i.e. both rotationPeriod and nextRotationTime are set.
+    rationale: >
+      Without automatic rotation a symmetric key encrypts an ever-growing volume
+      of data under a single key version; a compromise of that version exposes
+      all data ever protected by the key, and long-lived keys widen the window
+      for cryptanalysis and key leakage.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_key_rotation_enabled
+      license: Apache-2.0
+    collector: gcp.kms.inventory_keys_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: equals
+      path: purpose
+      value: ENCRYPT_DECRYPT
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: rotationPeriod
+        - op: exists
+          path: nextRotationTime
+    failMessage: Symmetric CryptoKey does not have automatic rotation configured.
+    passMessage: Symmetric CryptoKey has automatic rotation enabled.
+    remediation:
+      summary: Set a rotation schedule on the key.
+      steps:
+        - Identify ENCRYPT_DECRYPT keys with no rotationPeriod/nextRotationTime.
+        - Configure automatic rotation, e.g. gcloud kms keys
+          set-rotation-schedule KEY --keyring RING --location LOC
+          --rotation-period 7776000s --next-rotation-time <ISO time> (operator
+          action).
+      verifyCommand: gcloud kms inventory list-keys --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.10"
+    references:
+      - https://cloud.google.com/kms/docs/rotate-key
+      - https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings.cryptoKeys
+  - id: CR-GCP-KMS-151
+    version: 1.0.0
+    provider: gcp
+    service: kms
+    title: Cloud KMS key rotation period is 90 days or less
+    description: >
+      For every CryptoKey that has an automatic rotation schedule, the
+      rotationPeriod is at most 90 days (7,776,000 seconds).
+    rationale: >
+      A rotation period longer than 90 days leaves each key version protecting
+      data for an extended time, increasing the blast radius of a key-version
+      compromise and diverging from the CIS baseline of rotating encryption keys
+      at least every 90 days.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: kms_key_rotation_enabled
+      license: Apache-2.0
+    collector: gcp.kms.inventory_keys_list
+    resourcesPath: $
+    resourceIdField: name
+    resourceNameField: name
+    applicableWhen:
+      op: exists
+      path: rotationPeriod
+    passWhen:
+      op: matches
+      path: rotationPeriod
+      pattern: ^([1-9][0-9]{0,5}|[1-6][0-9]{6}|7[0-6][0-9]{5}|77[0-6][0-9]{4}|777[0-5][0-9]{3}|7776000)s$
+    failMessage: CryptoKey rotation period exceeds 90 days.
+    passMessage: CryptoKey rotation period is 90 days or less.
+    remediation:
+      summary: Lower the rotation period to 90 days or less.
+      steps:
+        - Identify keys whose rotationPeriod exceeds 7776000s (90 days).
+        - Shorten it, e.g. gcloud kms keys set-rotation-schedule KEY --keyring
+          RING --location LOC --rotation-period 7776000s (operator action).
+      verifyCommand: gcloud kms inventory list-keys --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.10"
+    references:
+      - https://cloud.google.com/kms/docs/rotate-key
+      - https://cloud.google.com/kms/docs/reference/rest/v1/projects.locations.keyRings.cryptoKeys

@@ -377,3 +377,337 @@ controls:
           - "1.3"
     references:
       - https://cloud.google.com/iam/docs/service-accounts#default
+  - id: CR-GCP-IAM-150
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: User-managed service account keys are rotated at least every 90 days
+    description: >
+      Verifies that no user-managed service account key is older than 90 days,
+      based on the key's validAfterTime (creation) date. Google-managed
+      (SYSTEM_MANAGED) keys are ignored.
+    rationale: >
+      Long-lived, downloadable service account keys accumulate exposure the
+      longer they exist; a leaked key that is never rotated grants an attacker
+      indefinite access. Regular rotation bounds the useful life of a stolen
+      credential.
+    severity: medium
+    categories:
+      - identity
+      - credentials
+    source:
+      engine: prowler
+      id: iam_sa_user_managed_key_rotation_90_days
+      license: Apache-2.0
+    collector: gcp.iam.service_account_keys_list
+    resourceIdField: $resourceKey
+    passWhen:
+      op: noneItem
+      path: $
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: keyType
+            value: USER_MANAGED
+          - op: daysSinceGt
+            path: validAfterTime
+            value: 90
+    failMessage: A user-managed service account key is older than 90 days.
+    passMessage: All user-managed keys on this service account are 90 days old or newer.
+    remediation:
+      summary: Rotate user-managed keys on a 90-day cycle, or eliminate them entirely.
+      steps:
+        - Create a replacement key and update consumers, or migrate to workload
+          identity federation.
+        - Delete the key older than 90 days once nothing depends on it (operator
+          action).
+      verifyCommand: gcloud iam service-accounts keys list --iam-account <sa-email>
+        --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.7"
+    references:
+      - https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
+  - id: CR-GCP-IAM-151
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Cloud KMS administrative roles are not granted to a service account
+    description: >
+      Verifies the project IAM policy grants no Cloud KMS administrative role
+      (roles/cloudkms.admin) to a serviceAccount: member. Supports separation of
+      duties by keeping automated identities out of key administration.
+    rationale: >
+      A service account that can administer Cloud KMS keys (rotate, destroy,
+      change IAM) is a high-value target; if its credential leaks, an attacker
+      can seize control of the cryptographic material protecting project data.
+      Key administration should be reserved for tightly controlled human
+      identities.
+    severity: medium
+    categories:
+      - encryption
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_role_kms_enforce_separation_of_duties
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: role
+            value: roles/cloudkms.admin
+          - op: anyItem
+            path: members
+            condition:
+              op: startsWith
+              path: $
+              value: "serviceAccount:"
+    failMessage: A Cloud KMS admin role (roles/cloudkms.admin) is granted to a
+      service account.
+    passMessage: No service account holds the Cloud KMS admin role.
+    remediation:
+      summary: Remove roles/cloudkms.admin from service accounts.
+      steps:
+        - "Identify serviceAccount: members bound to roles/cloudkms.admin."
+        - Remove the grant and reserve key administration for controlled human
+          identities (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.11"
+    references:
+      - https://cloud.google.com/kms/docs/separation-of-duties
+  - id: CR-GCP-IAM-152
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Service Account Key Admin is not granted to a service account
+    description: >
+      Verifies the project IAM policy grants roles/iam.serviceAccountKeyAdmin to
+      no serviceAccount: member, so no automated identity can mint downloadable
+      credentials for other service accounts.
+    rationale: >
+      serviceAccountKeyAdmin can create user-managed keys for service accounts;
+      granting it to a service account gives a leaked automated credential the
+      ability to forge long-lived keys for other identities, a direct
+      privilege-escalation and persistence path.
+    severity: high
+    categories:
+      - identity
+      - credentials
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_no_service_roles_at_project_level
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: role
+            value: roles/iam.serviceAccountKeyAdmin
+          - op: anyItem
+            path: members
+            condition:
+              op: startsWith
+              path: $
+              value: "serviceAccount:"
+    failMessage: roles/iam.serviceAccountKeyAdmin is granted to a service account.
+    passMessage: No service account holds roles/iam.serviceAccountKeyAdmin.
+    remediation:
+      summary: Remove serviceAccountKeyAdmin from service accounts.
+      steps:
+        - "Identify serviceAccount: members bound to
+          roles/iam.serviceAccountKeyAdmin."
+        - Remove the grant; reserve key administration for controlled human
+          identities (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.8"
+    references:
+      - https://cloud.google.com/iam/docs/service-account-permissions
+  - id: CR-GCP-IAM-153
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: No service account is granted administrative or primitive roles at the
+      project level
+    description: >
+      Verifies the project IAM policy grants no serviceAccount: member a
+      primitive role (roles/owner, roles/editor) or an administrative role (any
+      role ending in Admin, e.g. roles/iam.serviceAccountAdmin).
+    rationale: >
+      Over-privileged service accounts are prime lateral-movement targets: a
+      compromised key or workload bound to an admin/owner service account grants
+      an attacker project-wide control. Service accounts should hold only the
+      narrow predefined roles their workload needs.
+    severity: high
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_sa_no_administrative_privileges
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: and
+        exprs:
+          - op: or
+            exprs:
+              - op: in
+                path: role
+                values:
+                  - roles/owner
+                  - roles/editor
+              - op: endsWith
+                path: role
+                value: Admin
+              - op: endsWith
+                path: role
+                value: .admin
+          - op: anyItem
+            path: members
+            condition:
+              op: startsWith
+              path: $
+              value: "serviceAccount:"
+    failMessage: A service account is granted an administrative or primitive project role.
+    passMessage: No service account holds administrative or primitive project roles.
+    remediation:
+      summary: Replace admin/primitive grants on service accounts with least-privilege
+        predefined roles.
+      steps:
+        - "Identify serviceAccount: members bound to roles/owner, roles/editor
+          or any *Admin role."
+        - Grant the specific predefined roles the workload needs and remove the
+          broad grant (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.5"
+    references:
+      - https://cloud.google.com/iam/docs/best-practices-service-accounts
+  - id: CR-GCP-IAM-154
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Project IAM policy uses corporate login credentials only
+    description: >
+      Verifies that no user: principal in the project IAM policy is a personal
+      Gmail (@gmail.com) account; access should be granted only to
+      corporate/managed identities.
+    rationale: >
+      Personal Gmail accounts are outside organizational control: they cannot be
+      centrally disabled on employee offboarding, lack enforced MFA/session
+      policy, and leave no admin audit trail, so they are a persistent unmanaged
+      access path into the project.
+    severity: medium
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_organization_only_uses_corporate_login_credentials
+      license: Apache-2.0
+    collector: gcp.project.iam_policy
+    resourceIdField: $scope
+    passWhen:
+      op: noneItem
+      path: bindings
+      condition:
+        op: anyItem
+        path: members
+        condition:
+          op: endsWith
+          path: $
+          value: "@gmail.com"
+    failMessage: A personal @gmail.com account is granted access in the project IAM policy.
+    passMessage: No personal Gmail accounts are present in the project IAM policy.
+    remediation:
+      summary: Replace personal Gmail grants with managed corporate identities.
+      steps:
+        - "Identify user: members ending in @gmail.com in the project IAM
+          policy."
+        - Grant equivalent access to the person's managed corporate account and
+          remove the Gmail binding (operator action).
+      verifyCommand: gcloud projects get-iam-policy <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.1"
+    references:
+      - https://cloud.google.com/docs/enterprise/best-practices-for-enterprise-organizations
+  - id: CR-GCP-IAM-155
+    version: 1.0.0
+    provider: gcp
+    service: iam
+    title: Service accounts are not disabled while still in use
+    description: >
+      Reports service accounts that are disabled. Disabled service accounts are
+      surfaced so operators can confirm they are intentionally retired rather
+      than accidentally broken, and delete truly unused identities.
+    rationale: >
+      A disabled service account is an unused identity that should be deleted to
+      shrink the attack surface; leaving disabled-but-undeleted accounts around
+      risks accidental re-enablement of stale, over-privileged identities and
+      obscures the true set of active principals.
+    severity: low
+    categories:
+      - identity
+      - least-privilege
+    source:
+      engine: prowler
+      id: iam_sa_no_user_managed_keys
+      license: Apache-2.0
+    collector: gcp.iam.service_accounts_list
+    resourceIdField: email
+    resourceNameField: displayName
+    passWhen:
+      op: notEquals
+      path: disabled
+      value: true
+    failMessage: A service account is disabled but not deleted; confirm it is
+      retired and remove it.
+    passMessage: The service account is active.
+    remediation:
+      summary: Delete disabled service accounts that are no longer needed.
+      steps:
+        - Confirm no workload depends on the disabled service account.
+        - Delete the service account so the identity cannot be re-enabled
+          (operator action).
+      verifyCommand: gcloud iam service-accounts list --project <project> --format json
+    compliance:
+      - framework: cis-gcp-foundation
+        version: "3.0"
+        controls:
+          - "1.3"
+    references:
+      - https://cloud.google.com/iam/docs/service-accounts#disabling

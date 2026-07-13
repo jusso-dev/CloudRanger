@@ -1,0 +1,53 @@
+collectors:
+  - id: gcp.compute.images_list
+    provider: gcp
+    service: compute
+    description: >
+      All custom Compute Engine images owned by the project. Returns a JSON
+      array at the root; each element has name, family, status,
+      creationTimestamp, selfLink, sourceDisk and (when superseded) a deprecated
+      object.
+    kind: single
+    command: gcloud compute images list --no-standard-images --project {project}
+      --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires compute.images.list. --no-standard-images restricts the list to
+      images the project owns (excludes public Google/community images), so the
+      public-sharing check only evaluates images the project is responsible for.
+  - id: gcp.compute.image_iam_policy
+    provider: gcp
+    service: compute
+    description: >
+      IAM policy of one custom Compute Engine image (bindings of role to
+      members), used to detect public sharing (allUsers /
+      allAuthenticatedUsers).
+    kind: per_resource
+    command: gcloud compute images get-iam-policy {resource} --project {project}
+      --format json
+    regional: false
+    parent:
+      collector: gcp.compute.images_list
+      itemsPath: $
+      resourceField: name
+    outputFormat: json
+    notes: >
+      Requires compute.images.getIamPolicy. Returns an object with a bindings
+      array (each { role, members }), etag and version. An image with no
+      explicit policy returns an object with only etag/version and no bindings
+      key.
+  - id: gcp.compute.snapshots_list
+    provider: gcp
+    service: compute
+    description: >
+      All Compute Engine persistent-disk snapshots in the project. Returns a
+      JSON array at the root; each element has name, status, creationTimestamp,
+      sourceDisk, diskSizeGb, storageBytes and selfLink.
+    kind: single
+    command: gcloud compute snapshots list --project {project} --format json
+    regional: false
+    outputFormat: json
+    notes: >
+      Requires compute.snapshots.list. creationTimestamp is an RFC3339 / ISO
+      timestamp usable with daysSinceGt.

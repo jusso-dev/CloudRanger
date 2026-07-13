@@ -528,5 +528,403 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-150",
+    "cases": [
+      {
+        "name": "defender enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "creationTime": "2024-01-10T12:00:00Z",
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod/advancedThreatProtectionSettings/Default",
+              "name": "Default",
+              "type": "Microsoft.Sql/servers/advancedThreatProtectionSettings"
+            }
+          }
+        ]
+      },
+      {
+        "name": "defender disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open",
+            "exitCode": 0,
+            "output": {
+              "state": "Disabled",
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open/advancedThreatProtectionSettings/Default",
+              "name": "Default",
+              "type": "Microsoft.Sql/servers/advancedThreatProtectionSettings"
+            }
+          }
+        ]
+      },
+      {
+        "name": "authorization denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Sql/servers/advancedThreatProtectionSettings/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-151",
+    "cases": [
+      {
+        "name": "cmk key vault passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": {
+              "kind": "azurekeyvault",
+              "serverKeyType": "AzureKeyVault",
+              "uri": "https://kv-prod.vault.azure.net/keys/tde-key/0123456789abcdef",
+              "serverKeyName": "kv-prod_tde-key_0123456789abcdef",
+              "name": "kv-prod_tde-key_0123456789abcdef",
+              "type": "Microsoft.Sql/servers/encryptionProtector"
+            }
+          }
+        ]
+      },
+      {
+        "name": "service managed key fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-default",
+            "exitCode": 0,
+            "output": {
+              "kind": "servicemanaged",
+              "serverKeyType": "ServiceManaged",
+              "serverKeyName": "ServiceManaged",
+              "name": "ServiceManaged",
+              "type": "Microsoft.Sql/servers/encryptionProtector"
+            }
+          }
+        ]
+      },
+      {
+        "name": "authorization denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Sql/servers/encryptionProtector/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-152",
+    "cases": [
+      {
+        "name": "cmk with uri passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": {
+              "kind": "azurekeyvault",
+              "serverKeyType": "AzureKeyVault",
+              "uri": "https://kv-prod.vault.azure.net/keys/tde-key/0123456789abcdef",
+              "serverKeyName": "kv-prod_tde-key_0123456789abcdef",
+              "name": "kv-prod_tde-key_0123456789abcdef"
+            }
+          }
+        ]
+      },
+      {
+        "name": "cmk without uri fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-detached",
+            "exitCode": 0,
+            "output": {
+              "kind": "azurekeyvault",
+              "serverKeyType": "AzureKeyVault",
+              "uri": "",
+              "serverKeyName": "kv-prod_tde-key",
+              "name": "kv-prod_tde-key"
+            }
+          }
+        ]
+      },
+      {
+        "name": "service managed not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "azure.sql.tde_key_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-default",
+            "exitCode": 0,
+            "output": {
+              "kind": "servicemanaged",
+              "serverKeyType": "ServiceManaged",
+              "serverKeyName": "ServiceManaged",
+              "name": "ServiceManaged"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-153",
+    "cases": [
+      {
+        "name": "tls 1.2 passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+                "minimalTlsVersion": "1.2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "no minimum tls fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-nomin",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-nomin",
+                "minimalTlsVersion": "None"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-154",
+    "cases": [
+      {
+        "name": "narrow ranges pass",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "office",
+                "startIpAddress": "203.0.113.10",
+                "endIpAddress": "203.0.113.20",
+                "type": "Microsoft.Sql/servers/firewallRules"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "allow-azure rule starting at zero fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "AllowAllWindowsAzureIps",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0",
+                "type": "Microsoft.Sql/servers/firewallRules"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "authorization denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Sql/servers/firewallRules/read'."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-155",
+    "cases": [
+      {
+        "name": "narrow rule passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "office",
+                "startIpAddress": "203.0.113.10",
+                "endIpAddress": "203.0.113.20"
+              },
+              {
+                "name": "AllowAllWindowsAzureIps",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "full ipv4 range fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.firewall_rule_list",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-wide",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "AllowAll",
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "255.255.255.255"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-156",
+    "cases": [
+      {
+        "name": "public access disabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-prod",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+                "publicNetworkAccess": "Disabled"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "public access enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.list_servers",
+            "exitCode": 0,
+            "output": [
+              {
+                "name": "sql-open",
+                "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open",
+                "publicNetworkAccess": "Enabled"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AZURE-SQL-157",
+    "cases": [
+      {
+        "name": "default policy enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod",
+            "exitCode": 0,
+            "output": {
+              "state": "Enabled",
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-prod/advancedThreatProtectionSettings/Default",
+              "name": "Default",
+              "type": "Microsoft.Sql/servers/advancedThreatProtectionSettings"
+            }
+          }
+        ]
+      },
+      {
+        "name": "default policy disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open",
+            "exitCode": 0,
+            "output": {
+              "state": "Disabled",
+              "id": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-open/advancedThreatProtectionSettings/Default",
+              "name": "Default",
+              "type": "Microsoft.Sql/servers/advancedThreatProtectionSettings"
+            }
+          }
+        ]
+      },
+      {
+        "name": "authorization denied errors",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "azure.sql.atp_setting_show",
+            "resourceKey": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Sql/servers/sql-denied",
+            "exitCode": 1,
+            "output": null,
+            "errorText": "(AuthorizationFailed) The client does not have authorization to perform action 'Microsoft.Sql/servers/advancedThreatProtectionSettings/read'."
+          }
+        ]
+      }
+    ]
   }
 ]
