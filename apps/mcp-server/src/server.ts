@@ -4,6 +4,8 @@ import {
   buildPlan,
   controlTemplate,
   evaluateControls,
+  fixtureFileSchema,
+  runFixtureFile,
   validateCatalogDocument,
   validateParamValue,
   validateParameterOverrides,
@@ -255,40 +257,101 @@ export function createServer(deps: ServerDeps): McpServer {
           .string()
           .regex(/^[a-z0-9-]+$/)
           .describe("File name (kebab-case, no extension) to store it under"),
+        fixtures: z
+          .array(
+            z.object({
+              controlId: z.string(),
+              cases: z.array(z.unknown()).min(1),
+            }),
+          )
+          .max(20)
+          .optional()
+          .describe(
+            "Fixture entries ({ controlId, cases: [...] }) validated against the submitted controls before install — the install is rejected if any case's engine verdict disagrees with its declared expectation. Submit at least one pass and one fail case per control so it is regression-protected.",
+          ),
       },
       annotations: { ...readOnly, readOnlyHint: false },
     },
-    audited("catalog_add_custom_control", (args: { yaml: string; filename: string }) => {
-      const result = validateCatalogDocument(args.yaml, catalog.collectors);
-      if (result.errors.length > 0) {
-        throw new Error(`validation failed: ${result.errors.join(" | ")}`);
-      }
-      const dir = join(customCatalogDir(), "controls");
-      mkdirSync(dir, { recursive: true });
-      const path = join(dir, `${args.filename}.yaml`);
-      writeFileSync(path, args.yaml, "utf8");
-      // Apply to the live catalog: overrides replace, new entries append.
-      for (const collector of result.collectors) {
-        catalog.collectors.set(collector.id, collector);
-      }
-      const overridden: string[] = [];
-      for (const control of result.controls) {
-        const index = catalog.controls.findIndex((c) => c.id === control.id);
-        if (index >= 0) {
-          catalog.controls[index] = control;
-          overridden.push(control.id);
-        } else {
-          catalog.controls.push(control);
+    audited(
+      "catalog_add_custom_control",
+      (args: { yaml: string; filename: string; fixtures?: unknown[] }) => {
+        const result = validateCatalogDocument(args.yaml, catalog.collectors);
+        if (result.errors.length > 0) {
+          throw new Error(`validation failed: ${result.errors.join(" | ")}`);
         }
-      }
-      return {
-        saved: path,
-        controls: result.controls.map((c) => c.id),
-        collectors: result.collectors.map((c) => c.id),
-        overridden,
-        note: "Custom control is active now and will load automatically on future server starts. Add fixture cases and test with: cloudranger catalog test",
-      };
-    }),
+
+        // Validate submitted fixtures BEFORE installing anything: a custom
+        // control ships regression-protected or not at all.
+        const submittedIds = new Set(result.controls.map((c) => c.id));
+        const fixtureFiles = (args.fixtures ?? []).map((raw) => {
+          const parsed = fixtureFileSchema.safeParse(raw);
+          if (!parsed.success) {
+            throw new Error(
+              `invalid fixture entry: ${parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`,
+            );
+          }
+          if (JSON.stringify(parsed.data).length > MAX_OUTPUT_BYTES) {
+            throw new Error(`fixture for ${parsed.data.controlId} exceeds the evidence size limit`);
+          }
+          if (!submittedIds.has(parsed.data.controlId)) {
+            throw new Error(
+              `fixture references ${parsed.data.controlId}, which is not in this document`,
+            );
+          }
+          return parsed.data;
+        });
+        if (fixtureFiles.length > 0) {
+          const mergedCollectors = new Map(catalog.collectors);
+          for (const collector of result.collectors) mergedCollectors.set(collector.id, collector);
+          for (const fixture of fixtureFiles) {
+            for (const verdict of runFixtureFile(fixture, result.controls, mergedCollectors)) {
+              if (!verdict.ok) {
+                throw new Error(
+                  `fixture "${verdict.caseName}" for ${verdict.controlId}: expected ${verdict.expected}, engine says ${verdict.actual}${verdict.detail ? ` (${verdict.detail})` : ""} — install rejected`,
+                );
+              }
+            }
+          }
+        }
+
+        const dir = join(customCatalogDir(), "controls");
+        mkdirSync(dir, { recursive: true });
+        const path = join(dir, `${args.filename}.yaml`);
+        writeFileSync(path, args.yaml, "utf8");
+        let fixturesPath: string | undefined;
+        if (fixtureFiles.length > 0) {
+          const fixturesDirPath = join(customCatalogDir(), "fixtures");
+          mkdirSync(fixturesDirPath, { recursive: true });
+          fixturesPath = join(fixturesDirPath, `${args.filename}.json`);
+          writeFileSync(fixturesPath, JSON.stringify(fixtureFiles, null, 2) + "\n", "utf8");
+        }
+        // Apply to the live catalog: overrides replace, new entries append.
+        for (const collector of result.collectors) {
+          catalog.collectors.set(collector.id, collector);
+        }
+        const overridden: string[] = [];
+        for (const control of result.controls) {
+          const index = catalog.controls.findIndex((c) => c.id === control.id);
+          if (index >= 0) {
+            catalog.controls[index] = control;
+            overridden.push(control.id);
+          } else {
+            catalog.controls.push(control);
+          }
+        }
+        return {
+          saved: path,
+          savedFixtures: fixturesPath,
+          fixtureCases: fixtureFiles.reduce((n, f) => n + f.cases.length, 0),
+          controls: result.controls.map((c) => c.id),
+          collectors: result.collectors.map((c) => c.id),
+          overridden,
+          note: fixturesPath
+            ? "Custom control is active now, and its fixtures run with: cloudranger catalog test"
+            : "Custom control is active now. It has NO fixtures — resubmit with the fixtures argument (one pass + one fail case) so it is regression-protected.",
+        };
+      },
+    ),
   );
 
   // ---------- compliance ----------

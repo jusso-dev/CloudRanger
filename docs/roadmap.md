@@ -51,8 +51,11 @@ catalog directory with override semantics, and a Prowler metadata importer
     coverage (ratios only for vendored requirement lists), documented in
     docs/rules/compliance-rollup.md.
 11. Rule deprecation + version history retention on control updates.
-12. Custom-control fixture authoring via MCP (agent submits fixtures alongside
-    a custom control so it is regression-protected at install time).
+12. ~~Custom-control fixture authoring via MCP (agent submits fixtures
+    alongside a custom control so it is regression-protected at install
+    time).~~ **Done** — `catalog_add_custom_control` accepts `fixtures`,
+    rejects installs whose fixture verdicts disagree with the engine, and
+    stores them in the custom fixtures directory run by `catalog test`.
 
 ## Phase 4 — Operations
 

@@ -55,6 +55,12 @@ cloudranger controls dir                                        # where it went
 
 ### Via an agent (MCP)
 
+Agents submit fixtures in the same `catalog_add_custom_control` call
+(`fixtures: [{ controlId, cases: [...] }]`). The install is rejected if any
+case's engine verdict disagrees with its declared expectation, so a custom
+control ships regression-protected or not at all; accepted fixtures land in
+`<custom-catalog>/fixtures/` and run on every `cloudranger catalog test`.
+
 - `catalog_generate_control_template` — returns the scaffold, the full
   expression-operator reference, and the available read-only collectors.
 - `catalog_add_custom_control` — validates and installs a YAML document.
