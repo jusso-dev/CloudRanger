@@ -10,10 +10,48 @@ suite("PostgreSQL repository", () => {
   beforeAll(async () => {
     store = new PostgresCloudRangerStore(databaseUrl!);
     await store.pool.query(
-      "TRUNCATE audit_log,finding_events,findings,evaluations,evidence,scans RESTART IDENTITY CASCADE",
+      "TRUNCATE audit_log,finding_events,findings,evaluations,evidence,scans,workspace_memberships,identities,workspaces RESTART IDENTITY CASCADE",
     );
   });
   afterAll(async () => store.close());
+
+  it("binds the database to one workspace and persists roles", async () => {
+    await expect(
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "admin@example.com",
+      }),
+    ).rejects.toThrow(/not initialized/);
+    await expect(
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "admin@example.com",
+        bootstrapAdmin: true,
+      }),
+    ).resolves.toBe("admin");
+    await store.setWorkspaceMember({
+      workspaceId: "security-team",
+      subject: "auditor@example.com",
+      role: "auditor",
+    });
+    await expect(
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "auditor@example.com",
+      }),
+    ).resolves.toBe("auditor");
+    expect(await store.listWorkspaceMembers("security-team")).toHaveLength(2);
+    await expect(
+      store.initializeWorkspace({
+        workspaceId: "other-team",
+        workspaceName: "Other Team",
+        subject: "admin@example.com",
+      }),
+    ).rejects.toThrow(/bound to workspace security-team/);
+  });
 
   it("persists the complete scan and finding lifecycle", async () => {
     const scan = await store.createScan({

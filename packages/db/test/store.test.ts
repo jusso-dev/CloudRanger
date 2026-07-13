@@ -35,6 +35,53 @@ function runScan(results: EvaluationResult[]) {
   return { scan, summary };
 }
 
+describe("workspace access isolation", () => {
+  it("persists memberships and protects the final administrator", () => {
+    expect(() =>
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "admin@example.com",
+      }),
+    ).toThrow(/not initialized/);
+    expect(
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "admin@example.com",
+        bootstrapAdmin: true,
+      }),
+    ).toBe("admin");
+    store.setWorkspaceMember({
+      workspaceId: "security-team",
+      subject: "operator@example.com",
+      displayName: "Operator",
+      role: "operator",
+    });
+    expect(store.listWorkspaceMembers("security-team")).toEqual([
+      expect.objectContaining({ subject: "admin@example.com", role: "admin" }),
+      expect.objectContaining({ subject: "operator@example.com", role: "operator" }),
+    ]);
+    expect(
+      store.initializeWorkspace({
+        workspaceId: "security-team",
+        workspaceName: "Security Team",
+        subject: "operator@example.com",
+      }),
+    ).toBe("operator");
+    expect(() =>
+      store.initializeWorkspace({
+        workspaceId: "another-team",
+        workspaceName: "Another Team",
+        subject: "admin@example.com",
+      }),
+    ).toThrow(/bound to workspace security-team/);
+    expect(() => store.removeWorkspaceMember("security-team", "admin@example.com")).toThrow(
+      /last workspace admin/,
+    );
+  });
+});
+
 describe("finding lifecycle across scans", () => {
   it("includes the latest posture comparison in report data", () => {
     runScan([failResult()]);
@@ -237,6 +284,9 @@ describe("report data", () => {
     expect(report.openFindingsBySeverity).toEqual({ high: 1, critical: 1 });
     expect(report.metricDefinitions.openFindingsBySeverity).toContain("open or reopened");
     expect(report.recentScans).toHaveLength(1);
+    expect(report.scanTrends).toEqual([
+      expect.objectContaining({ coverageRatio: 1, fail: 2, findingsCreated: 2 }),
+    ]);
   });
 });
 

@@ -3,6 +3,7 @@ import {
   index,
   integer,
   jsonb,
+  primaryKey,
   pgTable,
   text,
   timestamp,
@@ -121,3 +122,37 @@ export const auditLog = pgTable("audit_log", {
   prevHash: text("prev_hash").notNull(),
   entryHash: text("entry_hash").notNull(),
 });
+
+export const workspaces = pgTable("workspaces", {
+  id: varchar("id", { length: 63 }).primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
+export const identities = pgTable("identities", {
+  subject: text("subject").primaryKey(),
+  displayName: text("display_name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
+export const workspaceMemberships = pgTable(
+  "workspace_memberships",
+  {
+    workspaceId: varchar("workspace_id", { length: 63 })
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    subject: text("subject")
+      .notNull()
+      .references(() => identities.subject, { onDelete: "cascade" }),
+    role: varchar("role", {
+      length: 16,
+      enum: ["admin", "operator", "auditor", "reader"],
+    }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.subject] }),
+    index("idx_workspace_memberships_subject").on(table.subject),
+  ],
+);

@@ -219,6 +219,28 @@ async function main(): Promise<number> {
       const control = controlsById.get(item.controlId);
       return { ...item, title: control?.title, description: control?.description };
     });
+    const openFindings = await store.searchFindings({
+      provider: values.provider as any,
+      state: ["open", "reopened"],
+      limit: 200,
+    });
+    const frameworks = new Map<string, { findings: number; controls: Set<string> }>();
+    for (const finding of openFindings.findings) {
+      for (const mapping of controlsById.get(finding.controlId)?.compliance ?? []) {
+        const key = `${mapping.framework}${mapping.version ? ` ${mapping.version}` : ""}`;
+        const entry = frameworks.get(key) ?? { findings: 0, controls: new Set<string>() };
+        entry.findings += 1;
+        entry.controls.add(finding.controlId);
+        frameworks.set(key, entry);
+      }
+    }
+    report.complianceSummary = [...frameworks.entries()]
+      .map(([framework, entry]) => ({
+        framework,
+        openFindings: entry.findings,
+        failingControls: entry.controls.size,
+      }))
+      .sort((a, b) => b.openFindings - a.openFindings || a.framework.localeCompare(b.framework));
     if (subcommand === "html" || subcommand === "pdf") {
       const defaultPath =
         subcommand === "html"

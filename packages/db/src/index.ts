@@ -20,7 +20,7 @@ export { createPostgresDatabase } from "./postgres.js";
 export type { PostgresDatabase } from "./postgres.js";
 export { createRepository, type RepositoryConfig } from "./factory.js";
 export { PostgresCloudRangerStore } from "./postgres-store.js";
-export type { CloudRangerRepository } from "./repository.js";
+export type { CloudRangerRepository, WorkspaceMember, WorkspaceRole } from "./repository.js";
 
 export interface ScanRow {
   id: string;
@@ -154,6 +154,7 @@ export interface ScanComparison {
     baseline: string;
     current: string;
     message?: string;
+    severity?: string;
   }>;
   findingEvents: Record<string, number>;
 }
@@ -193,6 +194,126 @@ export class CloudRangerStore {
     this.db.close();
   }
 
+  initializeWorkspace(input: {
+    workspaceId: string;
+    workspaceName: string;
+    subject: string;
+    displayName?: string;
+    bootstrapAdmin?: boolean;
+  }): import("./repository.js").WorkspaceRole {
+    const existing = this.db.prepare("SELECT id FROM workspaces LIMIT 1").get() as
+      { id: string } | undefined;
+    if (!existing) {
+      if (!input.bootstrapAdmin) {
+        throw new Error("workspace is not initialized; set CLOUDRANGER_BOOTSTRAP_ADMIN=true once");
+      }
+      const now = new Date().toISOString();
+      this.db.transaction(() => {
+        this.db
+          .prepare("INSERT INTO workspaces (id, name, created_at) VALUES (?, ?, ?)")
+          .run(input.workspaceId, input.workspaceName, now);
+        this.db
+          .prepare("INSERT INTO identities (subject, display_name, created_at) VALUES (?, ?, ?)")
+          .run(input.subject, input.displayName ?? null, now);
+        this.db
+          .prepare(
+            "INSERT INTO workspace_memberships (workspace_id, subject, role, created_at, updated_at) VALUES (?, ?, 'admin', ?, ?)",
+          )
+          .run(input.workspaceId, input.subject, now, now);
+      })();
+      return "admin";
+    }
+    if (existing.id !== input.workspaceId) {
+      throw new Error(`database is bound to workspace ${existing.id}, not ${input.workspaceId}`);
+    }
+    const membership = this.db
+      .prepare("SELECT role FROM workspace_memberships WHERE workspace_id = ? AND subject = ?")
+      .get(input.workspaceId, input.subject) as
+      { role: import("./repository.js").WorkspaceRole } | undefined;
+    if (!membership) throw new Error(`identity ${input.subject} is not a workspace member`);
+    return membership.role;
+  }
+
+  listWorkspaceMembers(workspaceId: string): import("./repository.js").WorkspaceMember[] {
+    return this.db
+      .prepare(
+        `SELECT m.subject, i.display_name, m.role, m.created_at, m.updated_at
+         FROM workspace_memberships m JOIN identities i ON i.subject = m.subject
+         WHERE m.workspace_id = ? ORDER BY m.subject`,
+      )
+      .all(workspaceId)
+      .map((row: any) => ({
+        subject: row.subject,
+        displayName: row.display_name ?? undefined,
+        role: row.role,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+  }
+
+  setWorkspaceMember(input: {
+    workspaceId: string;
+    subject: string;
+    displayName?: string;
+    role: import("./repository.js").WorkspaceRole;
+  }): void {
+    const now = new Date().toISOString();
+    this.db.transaction(() => {
+      const workspace = this.db
+        .prepare("SELECT id FROM workspaces WHERE id = ?")
+        .get(input.workspaceId);
+      if (!workspace) throw new Error(`unknown workspace: ${input.workspaceId}`);
+      const existing = this.db
+        .prepare("SELECT role FROM workspace_memberships WHERE workspace_id = ? AND subject = ?")
+        .get(input.workspaceId, input.subject) as { role: string } | undefined;
+      if (existing?.role === "admin" && input.role !== "admin") {
+        const admins = (
+          this.db
+            .prepare(
+              "SELECT COUNT(*) AS count FROM workspace_memberships WHERE workspace_id = ? AND role = 'admin'",
+            )
+            .get(input.workspaceId) as { count: number }
+        ).count;
+        if (admins <= 1) throw new Error("cannot demote the last workspace admin");
+      }
+      this.db
+        .prepare(
+          `INSERT INTO identities (subject, display_name, created_at) VALUES (?, ?, ?)
+           ON CONFLICT(subject) DO UPDATE SET display_name = COALESCE(excluded.display_name, identities.display_name)`,
+        )
+        .run(input.subject, input.displayName ?? null, now);
+      this.db
+        .prepare(
+          `INSERT INTO workspace_memberships (workspace_id, subject, role, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(workspace_id, subject) DO UPDATE SET role = excluded.role, updated_at = excluded.updated_at`,
+        )
+        .run(input.workspaceId, input.subject, input.role, now, now);
+    })();
+  }
+
+  removeWorkspaceMember(workspaceId: string, subject: string): void {
+    this.db.transaction(() => {
+      const member = this.db
+        .prepare("SELECT role FROM workspace_memberships WHERE workspace_id = ? AND subject = ?")
+        .get(workspaceId, subject) as { role: string } | undefined;
+      if (!member) throw new Error(`identity ${subject} is not a workspace member`);
+      if (member.role === "admin") {
+        const admins = (
+          this.db
+            .prepare(
+              "SELECT COUNT(*) AS count FROM workspace_memberships WHERE workspace_id = ? AND role = 'admin'",
+            )
+            .get(workspaceId) as { count: number }
+        ).count;
+        if (admins <= 1) throw new Error("cannot remove the last workspace admin");
+      }
+      this.db
+        .prepare("DELETE FROM workspace_memberships WHERE workspace_id = ? AND subject = ?")
+        .run(workspaceId, subject);
+    })();
+  }
+
   // ---- scans ----
 
   createScan(input: {
@@ -219,7 +340,7 @@ export class CloudRangerStore {
 
   listScans(limit = 20): ScanRow[] {
     const rows = this.db
-      .prepare("SELECT * FROM scans ORDER BY created_at DESC LIMIT ?")
+      .prepare("SELECT * FROM scans ORDER BY created_at DESC, rowid DESC LIMIT ?")
       .all(limit) as any[];
     return rows.map(mapScan);
   }
@@ -237,7 +358,7 @@ export class CloudRangerStore {
     const rows = (scanId: string) =>
       this.db
         .prepare(
-          `SELECT control_id, resource_id, region, status, message
+          `SELECT control_id, resource_id, region, status, message, severity
            FROM evaluations WHERE scan_id = ?
            ORDER BY control_id, resource_id, region`,
         )
@@ -263,6 +384,7 @@ export class CloudRangerStore {
         baseline: baselineRow?.status ?? "not_assessed",
         current: currentRow.status,
         message: currentRow.message,
+        severity: (currentRow as any).severity,
       });
     }
     for (const [entryKey, baselineRow] of before) {
@@ -274,6 +396,7 @@ export class CloudRangerStore {
         baseline: baselineRow.status,
         current: "not_assessed",
         message: "Resource or evaluation was not present in the current scan.",
+        severity: (baselineRow as any).severity,
       });
     }
     const eventRows = this.db
@@ -936,7 +1059,7 @@ export class CloudRangerStore {
       .prepare(
         `SELECT id, provider, scope_id, status, created_at, evaluated_at, summary FROM scans
          ${scanFilters.length ? `WHERE ${scanFilters.join(" AND ")}` : ""}
-         ORDER BY created_at DESC LIMIT 10`,
+         ORDER BY created_at DESC, rowid DESC LIMIT 10`,
       )
       .all(...scanParams) as any[];
     const recentScans = scans.map((s) => ({
@@ -946,13 +1069,45 @@ export class CloudRangerStore {
       status: s.status,
       createdAt: s.created_at,
       evaluatedAt: s.evaluated_at ?? undefined,
-      summary: pj(s.summary, undefined),
+      summary: pj<ScanSummary | undefined>(s.summary, undefined),
     }));
     const evaluatedScans = recentScans.filter((scan) => scan.status === "evaluated");
     const comparison =
       evaluatedScans.length >= 2
         ? this.compareScans(evaluatedScans[1]!.id, evaluatedScans[0]!.id)
         : undefined;
+    const chronologicalScans = recentScans
+      .filter((scan) => scan.status === "evaluated" && scan.summary)
+      .slice()
+      .reverse();
+    const scanTrends = chronologicalScans.map((scan, index) => {
+      const lowerBound = chronologicalScans[index - 1]?.evaluatedAt ?? scan.createdAt;
+      const upperBound = scan.evaluatedAt ?? scan.createdAt;
+      const accepted = (
+        this.db
+          .prepare(
+            `SELECT COUNT(*) AS n FROM finding_events fe
+             JOIN findings f ON f.fingerprint = fe.fingerprint
+             WHERE fe.event_type = 'workflow_change' AND fe.to_state = 'risk_accepted'
+               AND fe.created_at > ? AND fe.created_at <= ?
+               AND f.provider = ? AND f.scope_id = ?`,
+          )
+          .get(lowerBound, upperBound, scan.provider, scan.scopeId) as { n: number }
+      ).n;
+      return {
+        scanId: scan.id,
+        evaluatedAt: scan.evaluatedAt,
+        coverageRatio: scan.summary!.coverageRatio,
+        pass: scan.summary!.pass,
+        fail: scan.summary!.fail,
+        error: scan.summary!.error,
+        findingsCreated: scan.summary!.findingsCreated,
+        findingsRecurred: scan.summary!.findingsRecurred,
+        findingsResolved: scan.summary!.findingsResolved,
+        findingsReopened: scan.summary!.findingsReopened,
+        findingsAccepted: accepted,
+      };
+    });
 
     return {
       generatedAt: new Date().toISOString(),
@@ -976,6 +1131,7 @@ export class CloudRangerStore {
       overdueFindings: overdue,
       unassignedOpenFindings: unassignedOpen,
       recentScans: recentScans,
+      scanTrends,
       comparison,
       metricDefinitions: {
         openFindingsBySeverity:

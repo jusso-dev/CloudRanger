@@ -114,4 +114,25 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE findings ADD COLUMN due_at TEXT;
   CREATE INDEX idx_findings_owner_due ON findings(owner, due_at);
   `,
+  `
+  CREATE TABLE workspaces (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE identities (
+    subject TEXT PRIMARY KEY,
+    display_name TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE workspace_memberships (
+    workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL REFERENCES identities(subject) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('admin','operator','auditor','reader')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (workspace_id, subject)
+  );
+  CREATE INDEX idx_workspace_memberships_subject ON workspace_memberships(subject);
+  `,
 ];

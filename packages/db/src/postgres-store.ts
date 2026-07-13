@@ -15,6 +15,7 @@ import {
 import { scans } from "./drizzle-schema.js";
 import { createPostgresDatabase, type PostgresDatabase } from "./postgres.js";
 import type { CloudRangerRepository } from "./repository.js";
+import type { WorkspaceMember, WorkspaceRole } from "./repository.js";
 import type {
   FindingEventRow,
   FindingRow,
@@ -103,6 +104,163 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     await this.pool.end();
   }
 
+  async initializeWorkspace(input: {
+    workspaceId: string;
+    workspaceName: string;
+    subject: string;
+    displayName?: string;
+    bootstrapAdmin?: boolean;
+  }): Promise<WorkspaceRole> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('cloudranger-workspace-bootstrap'))",
+      );
+      const existing = await client.query<{ id: string }>("SELECT id FROM workspaces LIMIT 1");
+      if (existing.rowCount === 0) {
+        if (!input.bootstrapAdmin) {
+          throw new Error(
+            "workspace is not initialized; set CLOUDRANGER_BOOTSTRAP_ADMIN=true once",
+          );
+        }
+        await client.query("INSERT INTO workspaces (id, name, created_at) VALUES ($1, $2, NOW())", [
+          input.workspaceId,
+          input.workspaceName,
+        ]);
+        await client.query(
+          "INSERT INTO identities (subject, display_name, created_at) VALUES ($1, $2, NOW())",
+          [input.subject, input.displayName ?? null],
+        );
+        await client.query(
+          `INSERT INTO workspace_memberships
+             (workspace_id, subject, role, created_at, updated_at)
+           VALUES ($1, $2, 'admin', NOW(), NOW())`,
+          [input.workspaceId, input.subject],
+        );
+        await client.query("COMMIT");
+        return "admin";
+      }
+      const boundWorkspace = existing.rows[0]!.id;
+      if (boundWorkspace !== input.workspaceId) {
+        throw new Error(
+          `database is bound to workspace ${boundWorkspace}, not ${input.workspaceId}`,
+        );
+      }
+      const membership = await client.query<{ role: WorkspaceRole }>(
+        "SELECT role FROM workspace_memberships WHERE workspace_id = $1 AND subject = $2",
+        [input.workspaceId, input.subject],
+      );
+      if (membership.rowCount === 0) {
+        throw new Error(`identity ${input.subject} is not a workspace member`);
+      }
+      await client.query("COMMIT");
+      return membership.rows[0]!.role;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+    const result = await this.pool.query(
+      `SELECT m.subject, i.display_name, m.role, m.created_at, m.updated_at
+       FROM workspace_memberships m JOIN identities i ON i.subject = m.subject
+       WHERE m.workspace_id = $1 ORDER BY m.subject`,
+      [workspaceId],
+    );
+    return result.rows.map((row) => ({
+      subject: row.subject,
+      displayName: row.display_name ?? undefined,
+      role: row.role,
+      createdAt: iso(row.created_at)!,
+      updatedAt: iso(row.updated_at)!,
+    }));
+  }
+
+  async setWorkspaceMember(input: {
+    workspaceId: string;
+    subject: string;
+    displayName?: string;
+    role: WorkspaceRole;
+  }): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const workspace = await client.query("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE", [
+        input.workspaceId,
+      ]);
+      if (workspace.rowCount === 0) throw new Error(`unknown workspace: ${input.workspaceId}`);
+      const existing = await client.query<{ role: WorkspaceRole }>(
+        "SELECT role FROM workspace_memberships WHERE workspace_id = $1 AND subject = $2",
+        [input.workspaceId, input.subject],
+      );
+      if (existing.rows[0]?.role === "admin" && input.role !== "admin") {
+        const admins = await client.query<{ count: string }>(
+          "SELECT COUNT(*) AS count FROM workspace_memberships WHERE workspace_id = $1 AND role = 'admin'",
+          [input.workspaceId],
+        );
+        if (Number(admins.rows[0]!.count) <= 1) {
+          throw new Error("cannot demote the last workspace admin");
+        }
+      }
+      await client.query(
+        `INSERT INTO identities (subject, display_name, created_at) VALUES ($1, $2, NOW())
+         ON CONFLICT(subject) DO UPDATE
+         SET display_name = COALESCE(EXCLUDED.display_name, identities.display_name)`,
+        [input.subject, input.displayName ?? null],
+      );
+      await client.query(
+        `INSERT INTO workspace_memberships
+           (workspace_id, subject, role, created_at, updated_at)
+         VALUES ($1, $2, $3, NOW(), NOW())
+         ON CONFLICT(workspace_id, subject) DO UPDATE
+         SET role = EXCLUDED.role, updated_at = NOW()`,
+        [input.workspaceId, input.subject, input.role],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async removeWorkspaceMember(workspaceId: string, subject: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE", [workspaceId]);
+      const member = await client.query<{ role: WorkspaceRole }>(
+        "SELECT role FROM workspace_memberships WHERE workspace_id = $1 AND subject = $2",
+        [workspaceId, subject],
+      );
+      if (member.rowCount === 0) throw new Error(`identity ${subject} is not a workspace member`);
+      if (member.rows[0]!.role === "admin") {
+        const admins = await client.query<{ count: string }>(
+          "SELECT COUNT(*) AS count FROM workspace_memberships WHERE workspace_id = $1 AND role = 'admin'",
+          [workspaceId],
+        );
+        if (Number(admins.rows[0]!.count) <= 1) {
+          throw new Error("cannot remove the last workspace admin");
+        }
+      }
+      await client.query(
+        "DELETE FROM workspace_memberships WHERE workspace_id = $1 AND subject = $2",
+        [workspaceId, subject],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async createScan(input: {
     provider: Provider;
     scopeId: string;
@@ -146,7 +304,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     if (baseline.provider !== current.provider || baseline.scopeId !== current.scopeId)
       throw new Error("scans must use the same provider and scope");
     const result = await this.pool.query(
-      `SELECT scan_id, control_id, resource_id, region, status, message FROM evaluations
+      `SELECT scan_id, control_id, resource_id, region, status, message, severity FROM evaluations
        WHERE scan_id IN ($1,$2) ORDER BY control_id, resource_id, region`,
       [baselineScanId, currentScanId],
     );
@@ -169,6 +327,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
         baseline: prior?.status ?? "not_assessed",
         current: row.status,
         message: row.message,
+        severity: row.severity,
       });
     }
     for (const [entryKey, value] of before) {
@@ -181,6 +340,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
         baseline: row.status,
         current: "not_assessed",
         message: "Resource or evaluation was not present in the current scan.",
+        severity: row.severity,
       });
     }
     const events = await this.pool.query(
@@ -835,6 +995,37 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
       evaluated.length >= 2
         ? await this.compareScans(evaluated[1]!.id, evaluated[0]!.id)
         : undefined;
+    const chronologicalScans = recentScans
+      .filter((scan) => scan.status === "evaluated" && scan.summary)
+      .slice()
+      .reverse();
+    const scanTrends = await Promise.all(
+      chronologicalScans.map(async (scan, index) => {
+        const lowerBound = chronologicalScans[index - 1]?.evaluatedAt ?? scan.createdAt;
+        const upperBound = scan.evaluatedAt ?? scan.createdAt;
+        const accepted = await this.pool.query<{ n: number }>(
+          `SELECT COUNT(*)::int AS n FROM finding_events fe
+           JOIN findings f ON f.fingerprint = fe.fingerprint
+           WHERE fe.event_type = 'workflow_change' AND fe.to_state = 'risk_accepted'
+             AND fe.created_at > $1 AND fe.created_at <= $2
+             AND f.provider = $3 AND f.scope_id = $4`,
+          [lowerBound, upperBound, scan.provider, scan.scopeId],
+        );
+        return {
+          scanId: scan.id,
+          evaluatedAt: scan.evaluatedAt,
+          coverageRatio: scan.summary!.coverageRatio,
+          pass: scan.summary!.pass,
+          fail: scan.summary!.fail,
+          error: scan.summary!.error,
+          findingsCreated: scan.summary!.findingsCreated,
+          findingsRecurred: scan.summary!.findingsRecurred,
+          findingsResolved: scan.summary!.findingsResolved,
+          findingsReopened: scan.summary!.findingsReopened,
+          findingsAccepted: accepted.rows[0]!.n,
+        };
+      }),
+    );
     return {
       generatedAt: new Date().toISOString(),
       windowDays: filters.sinceDays ?? 30,
@@ -857,6 +1048,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
       overdueFindings: overdue,
       unassignedOpenFindings: unassignedOpen,
       recentScans,
+      scanTrends,
       comparison,
       metricDefinitions: {
         openFindingsBySeverity:

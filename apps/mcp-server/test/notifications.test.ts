@@ -40,6 +40,8 @@ afterEach(() => {
   delete process.env.CLOUDRANGER_SLACK_WEBHOOK_URL;
   delete process.env.CLOUDRANGER_TEAMS_WEBHOOK_URL;
   delete process.env.CLOUDRANGER_SMTP_HOST;
+  delete process.env.CLOUDRANGER_NOTIFICATION_MIN_SEVERITY;
+  delete process.env.CLOUDRANGER_NOTIFICATION_EVENTS;
 });
 
 describe("notifications", () => {
@@ -59,11 +61,50 @@ describe("notifications", () => {
       status: url.includes("slack") ? 200 : 500,
     })) as unknown as typeof fetch;
     const sendMail = vi.fn(async () => undefined);
-    const result = await createNotificationSender({ fetchImpl, sendMail })(comparison);
+    const result = await createNotificationSender({ fetchImpl, sendMail, maxAttempts: 1 })(
+      comparison,
+    );
     expect(result.enabled).toEqual(["slack", "teams", "email"]);
     expect(result.sent).toEqual(["slack", "email"]);
+    expect(result.deduplicated).toEqual([]);
     expect(result.errors).toEqual([{ channel: "teams", error: "HTTP 500" }]);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(sendMail).toHaveBeenCalledOnce();
+  });
+
+  it("retries transient failures and deduplicates successful delivery", async () => {
+    process.env.CLOUDRANGER_SLACK_WEBHOOK_URL = "https://slack.invalid/webhook";
+    let attempts = 0;
+    const fetchImpl = vi.fn(async () => {
+      attempts += 1;
+      return { ok: attempts > 1, status: attempts > 1 ? 200 : 503 };
+    }) as unknown as typeof fetch;
+    const sender = createNotificationSender({ fetchImpl, sleep: async () => undefined });
+    const retried = await sender({
+      ...comparison,
+      current: { ...comparison.current, scanId: "retry-after" },
+    });
+    expect(retried.sent).toEqual(["slack"]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const duplicate = await sender({
+      ...comparison,
+      current: { ...comparison.current, scanId: "retry-after" },
+    });
+    expect(duplicate.deduplicated).toEqual(["slack"]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("filters control changes below the configured severity threshold", async () => {
+    process.env.CLOUDRANGER_SLACK_WEBHOOK_URL = "https://slack.invalid/webhook";
+    process.env.CLOUDRANGER_NOTIFICATION_MIN_SEVERITY = "critical";
+    process.env.CLOUDRANGER_NOTIFICATION_EVENTS = "";
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200 })) as unknown as typeof fetch;
+    const result = await createNotificationSender({ fetchImpl })({
+      ...comparison,
+      current: { ...comparison.current, scanId: "filtered-after" },
+      controlChanges: [{ ...comparison.controlChanges[0]!, severity: "high" }],
+    });
+    expect(result.sent).toEqual([]);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

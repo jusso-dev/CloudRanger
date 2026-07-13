@@ -16,6 +16,7 @@ import type { CloudRangerRepository, ScanRow } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
 import { createNotificationSender } from "./notifications.js";
+import { authorizeTool, type CloudRangerRole } from "./authorization.js";
 
 const MAX_RECORDS_PER_SUBMIT = 200;
 const MAX_OUTPUT_BYTES = 2_000_000;
@@ -27,6 +28,8 @@ export interface ServerDeps {
   store: CloudRangerRepository;
   catalog: LoadedCatalog;
   actor?: string;
+  role?: CloudRangerRole;
+  workspaceId?: string;
 }
 
 export function createServer(deps: ServerDeps): McpServer {
@@ -68,6 +71,7 @@ export function createServer(deps: ServerDeps): McpServer {
   const audited = <A>(tool: string, handler: (args: A) => unknown | Promise<unknown>) => {
     return async (args: A) => {
       try {
+        authorizeTool(deps.role ?? "admin", tool);
         const result = await handler(args);
         await store.audit({ actor: actor(), tool, args, success: true });
         return json(result);
@@ -80,6 +84,53 @@ export function createServer(deps: ServerDeps): McpServer {
   };
 
   const readOnly = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
+
+  if (deps.workspaceId) {
+    server.registerTool(
+      "workspace_list_members",
+      {
+        title: "List workspace members",
+        description: "List authenticated identities and roles for this isolated workspace.",
+        inputSchema: {},
+        annotations: readOnly,
+      },
+      audited("workspace_list_members", () => store.listWorkspaceMembers(deps.workspaceId!)),
+    );
+    server.registerTool(
+      "workspace_set_member",
+      {
+        title: "Add or update workspace member",
+        description: "Grant an identity access to this workspace or update its persisted role.",
+        inputSchema: {
+          subject: z.string().min(1).max(300),
+          displayName: z.string().min(1).max(300).optional(),
+          role: z.enum(["admin", "operator", "auditor", "reader"]),
+        },
+        annotations: { ...readOnly, readOnlyHint: false },
+      },
+      audited(
+        "workspace_set_member",
+        async (args: { subject: string; displayName?: string; role: CloudRangerRole }) => {
+          await store.setWorkspaceMember({ workspaceId: deps.workspaceId!, ...args });
+          return { workspaceId: deps.workspaceId, subject: args.subject, role: args.role };
+        },
+      ),
+    );
+    server.registerTool(
+      "workspace_remove_member",
+      {
+        title: "Remove workspace member",
+        description:
+          "Revoke an identity's workspace access. The final administrator cannot be removed.",
+        inputSchema: { subject: z.string().min(1).max(300) },
+        annotations: { ...readOnly, readOnlyHint: false },
+      },
+      audited("workspace_remove_member", async (args: { subject: string }) => {
+        await store.removeWorkspaceMember(deps.workspaceId!, args.subject);
+        return { workspaceId: deps.workspaceId, subject: args.subject, removed: true };
+      }),
+    );
+  }
 
   // ---------- catalog ----------
 
@@ -486,7 +537,24 @@ export function createServer(deps: ServerDeps): McpServer {
       );
       const notifications = previous
         ? await createNotificationSender()(await store.compareScans(previous.id, scan.id))
-        : { enabled: [], sent: [], errors: [] };
+        : { enabled: [], sent: [], deduplicated: [], errors: [] };
+      for (const channel of notifications.sent) {
+        await store.audit({
+          actor: actor(),
+          tool: "notification_delivery",
+          args: { scanId: scan.id, channel },
+          success: true,
+        });
+      }
+      for (const delivery of notifications.errors) {
+        await store.audit({
+          actor: actor(),
+          tool: "notification_delivery",
+          args: { scanId: scan.id, channel: delivery.channel },
+          success: false,
+          detail: delivery.error,
+        });
+      }
       const health = await store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan));
       return {
         scanId: scan.id,
@@ -753,8 +821,40 @@ export function createServer(deps: ServerDeps): McpServer {
       },
       annotations: readOnly,
     },
-    audited("report_data", (args: { provider?: Provider; scopeId?: string; sinceDays?: number }) =>
-      store.reportData(args),
+    audited(
+      "report_data",
+      async (args: { provider?: Provider; scopeId?: string; sinceDays?: number }) => {
+        const report = (await store.reportData(args)) as Record<string, unknown>;
+        const findings = await store.searchFindings({
+          provider: args.provider,
+          scopeId: args.scopeId,
+          state: ["open", "reopened"],
+          limit: 200,
+        });
+        const frameworks = new Map<string, { findings: number; controls: Set<string> }>();
+        for (const finding of findings.findings) {
+          const control = catalog.controls.find((item) => item.id === finding.controlId);
+          for (const mapping of control?.compliance ?? []) {
+            const key = `${mapping.framework}${mapping.version ? ` ${mapping.version}` : ""}`;
+            const entry = frameworks.get(key) ?? { findings: 0, controls: new Set<string>() };
+            entry.findings += 1;
+            entry.controls.add(finding.controlId);
+            frameworks.set(key, entry);
+          }
+        }
+        return {
+          ...report,
+          complianceSummary: [...frameworks.entries()]
+            .map(([framework, entry]) => ({
+              framework,
+              openFindings: entry.findings,
+              failingControls: entry.controls.size,
+            }))
+            .sort(
+              (a, b) => b.openFindings - a.openFindings || a.framework.localeCompare(b.framework),
+            ),
+        };
+      },
     ),
   );
 

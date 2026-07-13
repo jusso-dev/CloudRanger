@@ -15,6 +15,16 @@ import type {
   ScanSummary,
 } from "./index.js";
 
+export type WorkspaceRole = "admin" | "operator" | "auditor" | "reader";
+
+export interface WorkspaceMember {
+  subject: string;
+  displayName?: string;
+  role: WorkspaceRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Async persistence contract used by networked and local backends. */
 export interface CloudRangerRepository {
   close(): Promise<void>;
@@ -73,4 +83,19 @@ export interface CloudRangerRepository {
   }): Promise<void>;
   searchAudit(limit?: number): Promise<unknown[]>;
   verifyAuditChain(): Promise<number | null>;
+  initializeWorkspace(input: {
+    workspaceId: string;
+    workspaceName: string;
+    subject: string;
+    displayName?: string;
+    bootstrapAdmin?: boolean;
+  }): Promise<WorkspaceRole>;
+  listWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]>;
+  setWorkspaceMember(input: {
+    workspaceId: string;
+    subject: string;
+    displayName?: string;
+    role: WorkspaceRole;
+  }): Promise<void>;
+  removeWorkspaceMember(workspaceId: string, subject: string): Promise<void>;
 }

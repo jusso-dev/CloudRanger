@@ -4,13 +4,25 @@ import type { ScanComparison } from "@cloudranger/db";
 export interface NotificationResult {
   enabled: string[];
   sent: string[];
+  deduplicated: string[];
   errors: Array<{ channel: string; error: string }>;
 }
 
 export interface NotificationDeps {
   fetchImpl?: typeof fetch;
   sendMail?: (message: { subject: string; text: string }) => Promise<void>;
+  sleep?: (milliseconds: number) => Promise<void>;
+  maxAttempts?: number;
 }
+
+const delivered = new Set<string>();
+const severityRank: Record<string, number> = {
+  informational: 0,
+  low: 1,
+  medium: 2,
+  high: 3,
+  critical: 4,
+};
 
 const transitionCount = (comparison: ScanComparison) =>
   Object.values(comparison.findingEvents).reduce((total, count) => total + count, 0);
@@ -40,6 +52,10 @@ export function notificationText(comparison: ScanComparison): string {
 
 export function createNotificationSender(deps: NotificationDeps = {}) {
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const sleep =
+    deps.sleep ??
+    ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const maxAttempts = Math.max(1, deps.maxAttempts ?? 3);
   const sendMail =
     deps.sendMail ??
     (async (message: { subject: string; text: string }) => {
@@ -61,9 +77,31 @@ export function createNotificationSender(deps: NotificationDeps = {}) {
     });
 
   return async (comparison: ScanComparison): Promise<NotificationResult> => {
-    const result: NotificationResult = { enabled: [], sent: [], errors: [] };
-    if (transitionCount(comparison) === 0 && comparison.controlChanges.length === 0) return result;
-    const text = notificationText(comparison);
+    const result: NotificationResult = { enabled: [], sent: [], deduplicated: [], errors: [] };
+    const minimumSeverity = process.env.CLOUDRANGER_NOTIFICATION_MIN_SEVERITY ?? "medium";
+    if (!(minimumSeverity in severityRank))
+      throw new Error(`invalid CLOUDRANGER_NOTIFICATION_MIN_SEVERITY: ${minimumSeverity}`);
+    const allowedEvents = new Set(
+      (process.env.CLOUDRANGER_NOTIFICATION_EVENTS ?? "created,reopened,resolved")
+        .split(",")
+        .map((event) => event.trim())
+        .filter(Boolean),
+    );
+    const filtered: ScanComparison = {
+      ...comparison,
+      controlChanges: comparison.controlChanges.filter(
+        (change) =>
+          (severityRank[change.severity ?? "high"] ?? severityRank.high!) >=
+          severityRank[minimumSeverity]!,
+      ),
+      findingEvents: Object.fromEntries(
+        Object.entries(comparison.findingEvents).filter(
+          ([event, count]) => allowedEvents.has(event) && count > 0,
+        ),
+      ),
+    };
+    if (transitionCount(filtered) === 0 && filtered.controlChanges.length === 0) return result;
+    const text = notificationText(filtered);
     const subject = `CloudRanger posture change: ${comparison.current.provider.toUpperCase()} ${comparison.current.scopeId}`;
     const channels: Array<{ name: string; url?: string }> = [
       { name: "slack", url: process.env.CLOUDRANGER_SLACK_WEBHOOK_URL },
@@ -72,13 +110,25 @@ export function createNotificationSender(deps: NotificationDeps = {}) {
     for (const channel of channels) {
       if (!channel.url) continue;
       result.enabled.push(channel.name);
+      const dedupeKey = `${comparison.current.scanId}:${channel.name}`;
+      if (delivered.has(dedupeKey)) {
+        result.deduplicated.push(channel.name);
+        continue;
+      }
       try {
-        const response = await fetchImpl(channel.url, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await retry(
+          async () => {
+            const response = await fetchImpl(channel.url!, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ text }),
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          },
+          maxAttempts,
+          sleep,
+        );
+        delivered.add(dedupeKey);
         result.sent.push(channel.name);
       } catch (error) {
         result.errors.push({
@@ -89,8 +139,14 @@ export function createNotificationSender(deps: NotificationDeps = {}) {
     }
     if (process.env.CLOUDRANGER_SMTP_HOST) {
       result.enabled.push("email");
+      const dedupeKey = `${comparison.current.scanId}:email`;
+      if (delivered.has(dedupeKey)) {
+        result.deduplicated.push("email");
+        return result;
+      }
       try {
-        await sendMail({ subject, text });
+        await retry(() => sendMail({ subject, text }), maxAttempts, sleep);
+        delivered.add(dedupeKey);
         result.sent.push("email");
       } catch (error) {
         result.errors.push({
@@ -101,4 +157,22 @@ export function createNotificationSender(deps: NotificationDeps = {}) {
     }
     return result;
   };
+}
+
+async function retry(
+  operation: () => Promise<void>,
+  maxAttempts: number,
+  sleep: (milliseconds: number) => Promise<void>,
+): Promise<void> {
+  let error: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await operation();
+      return;
+    } catch (caught) {
+      error = caught;
+      if (attempt < maxAttempts) await sleep(250 * 2 ** (attempt - 1));
+    }
+  }
+  throw error;
 }

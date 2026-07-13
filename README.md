@@ -131,6 +131,20 @@ CLOUDRANGER_DATABASE_URL=postgresql://user:password@host:5432/cloudranger pnpm -
 
 SQLite and PostgreSQL expose the same async repository contract. PostgreSQL persists scans, raw evidence, evaluations, finding lifecycle and workflow history, report data, and the hash-chained audit trail. Applications embedding CloudRanger can use `createRepository()` for backend selection or `createPostgresDatabase()` for additional typed Drizzle queries against the shared schema.
 
+Shared PostgreSQL deployments use a database-per-workspace isolation boundary. A database is permanently bound to its first workspace, so scans and findings cannot leak across workspaces through a missing query filter. Bootstrap the first administrator once, then remove `CLOUDRANGER_BOOTSTRAP_ADMIN`:
+
+```sh
+export CLOUDRANGER_DATABASE_URL=postgresql://user:password@host:5432/cloudranger
+export CLOUDRANGER_WORKSPACE_ID=security-team
+export CLOUDRANGER_WORKSPACE_NAME="Security Team"
+export CLOUDRANGER_ACTOR=alice@example.com
+export CLOUDRANGER_BOOTSTRAP_ADMIN=true
+```
+
+On later starts, `CLOUDRANGER_ACTOR` must already have a persisted workspace membership. Roles are administered with the `workspace_list_members`, `workspace_set_member`, and `workspace_remove_member` MCP tools. `reader` and `auditor` can inspect posture data but cannot mutate it. `operator` can run scans and manage finding workflow. Membership management and custom control installation require `admin`; the final administrator cannot be removed or demoted. `CLOUDRANGER_ROLE` is intentionally rejected for PostgreSQL because callers cannot self-assert privileges. Local SQLite remains zero-configuration and defaults to `admin`, while its workspace access primitives are available to embedded deployments.
+
+Use a separate PostgreSQL database and database credential for every workspace. This is the enforced isolation mechanism (equivalent to row-level policies) and also gives operators independent backup, retention, and deletion boundaries.
+
 ```bash
 pnpm build      # build all packages
 pnpm test       # engine, catalog, db, mcp e2e tests
