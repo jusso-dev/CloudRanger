@@ -287,6 +287,58 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     return (await this.getScan(id))!;
   }
 
+  async recordControlRevisions(
+    revisions: Array<{
+      controlId: string;
+      version: string;
+      contentHash: string;
+      definition: unknown;
+      deprecated: boolean;
+    }>,
+  ): Promise<number> {
+    let added = 0;
+    for (const r of revisions) {
+      const result = await this.pool.query(
+        `INSERT INTO control_revisions (control_id, version, content_hash, definition, deprecated, first_seen_at)
+         VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+        [
+          r.controlId,
+          r.version,
+          r.contentHash,
+          JSON.stringify(r.definition),
+          r.deprecated,
+          new Date().toISOString(),
+        ],
+      );
+      added += result.rowCount ?? 0;
+    }
+    return added;
+  }
+
+  async listControlRevisions(controlId: string): Promise<
+    Array<{
+      controlId: string;
+      version: string;
+      contentHash: string;
+      definition: unknown;
+      deprecated: boolean;
+      firstSeenAt: string;
+    }>
+  > {
+    const result = await this.pool.query(
+      "SELECT * FROM control_revisions WHERE control_id=$1 ORDER BY first_seen_at, version",
+      [controlId],
+    );
+    return result.rows.map((row) => ({
+      controlId: row.control_id,
+      version: row.version,
+      contentHash: row.content_hash,
+      definition: row.definition,
+      deprecated: row.deprecated,
+      firstSeenAt: iso(row.first_seen_at)!,
+    }));
+  }
+
   async setScopeParameters(
     provider: Provider,
     scopeId: string,

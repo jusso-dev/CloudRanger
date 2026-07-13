@@ -171,3 +171,19 @@ export const scopeParameters = pgTable(
   },
   (table) => [primaryKey({ columns: [table.provider, table.scopeId, table.controlId] })],
 );
+
+export const controlRevisions = pgTable(
+  "control_revisions",
+  {
+    controlId: text("control_id").notNull(),
+    version: text("version").notNull(),
+    contentHash: text("content_hash").notNull(),
+    definition: jsonb("definition").notNull(),
+    deprecated: boolean("deprecated").notNull().default(false),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.controlId, table.version, table.contentHash] }),
+    index("idx_control_revisions_control").on(table.controlId, table.firstSeenAt),
+  ],
+);

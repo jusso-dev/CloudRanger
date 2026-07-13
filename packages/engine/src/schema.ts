@@ -212,6 +212,16 @@ export const controlSchema = z
         .strict(),
     ),
     references: z.array(z.string()),
+    deprecated: z
+      .object({
+        reason: z.string().min(1),
+        supersededBy: z
+          .string()
+          .regex(/^(CR|CUSTOM)-(AWS|AZURE|GCP)-[A-Z0-9]+-\d{3}$/)
+          .optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

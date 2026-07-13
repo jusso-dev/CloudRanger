@@ -111,6 +111,23 @@ its declared range, never disable it — and the effective values used are
 recorded on every finding and evaluation for audit. Fixture cases may set
 `"parameters": { ... }` to pin a case to specific values.
 
+## Deprecation and revision history
+
+Mark a control deprecated instead of deleting it:
+
+```yaml
+deprecated:
+  reason: Superseded by CR-AWS-IAM-030 (credential-report based).
+  supersededBy: CR-AWS-IAM-030
+```
+
+Deprecated controls are excluded from scans by default (`scan_start` reports
+what it skipped); include them with `includeDeprecated: true` or by listing
+them in `controlIds`. Every control revision (version + content hash +
+definition) is recorded in the lifecycle store at server startup and on
+custom installs — `catalog_control_history` returns the history and whether
+the live definition still matches a recorded revision.
+
 ## Grounding (important)
 
 Write `passWhen` against **actual** CLI output you have run and observed — not

@@ -24,7 +24,7 @@ export {
   validateParameterOverrides,
 } from "./params.js";
 export { evaluateControls, type EvaluateOptions } from "./evaluate.js";
-export { findingFingerprint, evidenceHash } from "./fingerprint.js";
+export { findingFingerprint, evidenceHash, controlContentHash } from "./fingerprint.js";
 export {
   reconcileOne,
   type PriorFinding,

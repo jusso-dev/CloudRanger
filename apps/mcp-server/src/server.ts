@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   buildPlan,
+  controlContentHash,
   controlTemplate,
   evaluateControls,
   fixtureFileSchema,
@@ -40,6 +41,26 @@ export interface ServerDeps {
   actor?: string;
   role?: CloudRangerRole;
   workspaceId?: string;
+}
+
+/**
+ * Record the current revision of every catalog control in the lifecycle
+ * store. Called at server startup so control updates leave an auditable
+ * version history behind (findings reference controlId + controlVersion).
+ */
+export async function recordCatalogRevisions(
+  store: CloudRangerRepository,
+  catalog: LoadedCatalog,
+): Promise<number> {
+  return store.recordControlRevisions(
+    catalog.controls.map((control) => ({
+      controlId: control.id,
+      version: control.version,
+      contentHash: controlContentHash(control),
+      definition: control,
+      deprecated: Boolean(control.deprecated),
+    })),
+  );
 }
 
 export function createServer(deps: ServerDeps): McpServer {
@@ -172,6 +193,7 @@ export function createServer(deps: ServerDeps): McpServer {
             severity: c.severity,
             categories: c.categories,
             source: `${c.source.engine}:${c.source.id}`,
+            ...(c.deprecated ? { deprecated: c.deprecated } : {}),
           }));
         return { total: controls.length, controls };
       },
@@ -192,6 +214,40 @@ export function createServer(deps: ServerDeps): McpServer {
       if (!control) throw new Error(`unknown control: ${args.controlId}`);
       const collector = catalog.collectors.get(control.collector);
       return { control, collector };
+    }),
+  );
+
+  server.registerTool(
+    "catalog_control_history",
+    {
+      title: "Control revision history",
+      description:
+        "Version history of one control as recorded by this store: every (version, content hash) revision seen, when it first appeared, and whether the live catalog definition matches a recorded revision (tamper check). Findings reference controlId + controlVersion, so this links historical findings to the exact rule content they were evaluated against.",
+      inputSchema: { controlId: z.string() },
+      annotations: readOnly,
+    },
+    audited("catalog_control_history", async (args: { controlId: string }) => {
+      const revisions = await store.listControlRevisions(args.controlId);
+      const live = catalog.controls.find((c) => c.id === args.controlId);
+      const liveHash = live ? controlContentHash(live) : undefined;
+      return {
+        controlId: args.controlId,
+        revisions: revisions.map(({ definition: _definition, ...meta }) => meta),
+        live: live
+          ? {
+              version: live.version,
+              contentHash: liveHash,
+              deprecated: live.deprecated,
+              matchesRecordedRevision: revisions.some(
+                (r) => r.version === live.version && r.contentHash === liveHash,
+              ),
+            }
+          : undefined,
+        note:
+          revisions.length === 0
+            ? "No revisions recorded yet — the server records revisions at startup."
+            : undefined,
+      };
     }),
   );
 
@@ -274,7 +330,7 @@ export function createServer(deps: ServerDeps): McpServer {
     },
     audited(
       "catalog_add_custom_control",
-      (args: { yaml: string; filename: string; fixtures?: unknown[] }) => {
+      async (args: { yaml: string; filename: string; fixtures?: unknown[] }) => {
         const result = validateCatalogDocument(args.yaml, catalog.collectors);
         if (result.errors.length > 0) {
           throw new Error(`validation failed: ${result.errors.join(" | ")}`);
@@ -329,6 +385,17 @@ export function createServer(deps: ServerDeps): McpServer {
         for (const collector of result.collectors) {
           catalog.collectors.set(collector.id, collector);
         }
+        // Installed/overriding definitions become recorded revisions
+        // immediately, so history captures custom updates too.
+        await store.recordControlRevisions(
+          result.controls.map((control) => ({
+            controlId: control.id,
+            version: control.version,
+            contentHash: controlContentHash(control),
+            definition: control,
+            deprecated: Boolean(control.deprecated),
+          })),
+        );
         const overridden: string[] = [];
         for (const control of result.controls) {
           const index = catalog.controls.findIndex((c) => c.id === control.id);
@@ -531,6 +598,12 @@ export function createServer(deps: ServerDeps): McpServer {
           .string()
           .optional()
           .describe("Restrict to a named control pack (see catalog_list_packs)"),
+        includeDeprecated: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include deprecated controls (excluded by default unless listed in controlIds)",
+          ),
         parameters: z
           .record(z.string(), z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])))
           .optional()
@@ -549,6 +622,7 @@ export function createServer(deps: ServerDeps): McpServer {
         services?: string[];
         controlIds?: string[];
         pack?: string;
+        includeDeprecated?: boolean;
         parameters?: Record<string, Record<string, unknown>>;
       }) => {
         if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
@@ -563,6 +637,15 @@ export function createServer(deps: ServerDeps): McpServer {
           controls = controls.filter((c) => args.services!.includes(c.service));
         if (args.controlIds?.length)
           controls = controls.filter((c) => args.controlIds!.includes(c.id));
+        // Deprecated controls are excluded unless explicitly requested —
+        // either via includeDeprecated or by naming them in controlIds.
+        const explicit = new Set(args.controlIds ?? []);
+        const deprecatedExcluded = args.includeDeprecated
+          ? []
+          : controls.filter((c) => c.deprecated && !explicit.has(c.id)).map((c) => c.id);
+        if (deprecatedExcluded.length > 0) {
+          controls = controls.filter((c) => !deprecatedExcluded.includes(c.id));
+        }
         if (controls.length === 0) throw new Error("no controls match the requested filters");
 
         // Effective parameters: persisted scope overrides ⊕ per-scan overrides
@@ -610,6 +693,13 @@ export function createServer(deps: ServerDeps): McpServer {
           scanId: scan.id,
           controlCount: plan.controlIds.length,
           parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+          ...(deprecatedExcluded.length > 0
+            ? {
+                deprecatedExcluded,
+                deprecationNote:
+                  "Deprecated controls were excluded. Pass includeDeprecated: true or list them in controlIds to scan them anyway.",
+              }
+            : {}),
           plan,
         };
       },

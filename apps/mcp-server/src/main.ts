@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { loadDefaultCatalog } from "@cloudranger/catalog";
 import { createRepository } from "@cloudranger/db";
-import { createServer } from "./server.js";
+import { createServer, recordCatalogRevisions } from "./server.js";
 import { parseRole } from "./authorization.js";
 
 async function main(): Promise<void> {
@@ -44,6 +44,7 @@ async function main(): Promise<void> {
   } else {
     role = parseRole(process.env.CLOUDRANGER_ROLE, false);
   }
+  await recordCatalogRevisions(store, catalog);
   const server = createServer({
     store,
     catalog,
