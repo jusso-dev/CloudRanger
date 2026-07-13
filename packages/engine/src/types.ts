@@ -52,6 +52,14 @@ export interface CollectorDefinition {
   };
   /** Output format produced by the command. Only JSON is evaluated. */
   outputFormat: "json";
+  /** Maximum wall-clock time for one attempt. */
+  timeoutMs?: number;
+  /** Maximum number of attempts for transient provider failures. */
+  maxAttempts?: number;
+  /** Initial retry delay; subsequent delays use exponential backoff. */
+  initialBackoffMs?: number;
+  /** Upper bound for exponential retry delay. */
+  maxBackoffMs?: number;
   /** Human notes: permissions required, quirks, cost warnings. */
   notes?: string;
 }

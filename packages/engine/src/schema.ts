@@ -83,6 +83,10 @@ export const collectorSchema = z
       .strict()
       .optional(),
     outputFormat: z.literal("json"),
+    timeoutMs: z.number().int().positive().max(900_000).optional(),
+    maxAttempts: z.number().int().min(1).max(10).optional(),
+    initialBackoffMs: z.number().int().nonnegative().max(60_000).optional(),
+    maxBackoffMs: z.number().int().nonnegative().max(300_000).optional(),
     notes: z.string().optional(),
   })
   .strict()

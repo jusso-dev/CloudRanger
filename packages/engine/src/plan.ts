@@ -24,6 +24,12 @@ export interface PlanStep {
     instruction: string;
   };
   outputFormat: "json";
+  runtime: {
+    timeoutMs: number;
+    maxAttempts: number;
+    initialBackoffMs: number;
+    maxBackoffMs: number;
+  };
   notes?: string;
 }
 
@@ -35,7 +41,7 @@ export interface CollectionPlan {
   instructions: string;
 }
 
-const PLAN_INSTRUCTIONS = `Run each step's command exactly as given using your shell. All commands are read-only (list/describe/get/show). Do not modify any command; do not run any mutating command. For regional steps, the command is already rendered per region. For per_resource steps, first look at the referenced parent step's JSON output, extract the resource identifiers at itemsPath/resourceField, then run the command once per resource substituting {resource}. Submit each command's parsed JSON output via the evidence_submit tool, including the stepId, and the exact error text plus exit code when a command fails. Never omit failed commands — coverage accounting depends on them.`;
+const PLAN_INSTRUCTIONS = `Run each step's command exactly as given using your shell. All commands are read-only (list/describe/get/show). Do not modify any command or run any mutating command. Apply each step's runtime policy: stop an attempt at timeoutMs, retry only transient/throttling/timeout failures up to maxAttempts, and use exponential backoff capped at maxBackoffMs. For regional steps, the command is already rendered per region. For per_resource steps, first look at the referenced parent step's JSON output, extract the resource identifiers at itemsPath/resourceField, then run the command once per resource substituting {resource}. Submit every attempt's final parsed JSON output via evidence_submit, including the exact error text plus exit code when a command fails. Never omit failed commands — coverage accounting depends on them.`;
 
 export function buildPlan(
   controls: ControlDefinition[],
@@ -112,6 +118,12 @@ export function buildPlan(
             }
           : undefined,
         outputFormat: "json",
+        runtime: {
+          timeoutMs: collector.timeoutMs ?? 120_000,
+          maxAttempts: collector.maxAttempts ?? 3,
+          initialBackoffMs: collector.initialBackoffMs ?? 250,
+          maxBackoffMs: collector.maxBackoffMs ?? 5_000,
+        },
         notes: collector.notes,
       });
     }
