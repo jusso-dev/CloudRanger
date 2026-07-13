@@ -17,10 +17,12 @@
     "@cloudranger/catalog": "workspace:*",
     "@cloudranger/db": "workspace:*",
     "@cloudranger/engine": "workspace:*",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "better-sqlite3": "^12.2.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.0",
+    "@types/better-sqlite3": "^7.6.13"
   }
 }

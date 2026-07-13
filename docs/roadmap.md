@@ -71,7 +71,11 @@ catalog directory with override semantics, and a Prowler metadata importer
     dry-run-by-default pruning (MCP `evidence_prune` admin-only with double
     confirmation; `cloudranger retention` CLI) that clears raw payloads only,
     preserving findings, evaluations and evidence digests.
-13. DB backup/restore commands; export findings as CSV/JSONL/SARIF.
+13. ~~DB backup/restore commands; export findings as CSV/JSONL/SARIF.~~
+    **Done** — consistent online SQLite backup/restore with integrity check
+    and 0600 modes (pg_dump guidance for PostgreSQL), and
+    `cloudranger findings export --format csv|jsonl|sarif`
+    (docs/operations.md).
 14. Multi-scope digests (`report_data` across scopes with per-scope
     breakdown).
 15. Optional streamable-HTTP MCP transport with token auth for remote

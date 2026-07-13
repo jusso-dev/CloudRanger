@@ -427,3 +427,22 @@ describe("evidence retention", () => {
     expect(store.listRetentionPolicies()).toHaveLength(0);
   });
 });
+
+describe("database backup", () => {
+  it("produces a consistent, openable backup while in use", async () => {
+    const { mkdtempSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dir = mkdtempSync(join(tmpdir(), "cr-backup-"));
+    try {
+      runScan([failResult()]);
+      const backupPath = join(dir, "backup.db");
+      await store.backupTo(backupPath);
+      const restored = new CloudRangerStore(backupPath);
+      expect(restored.searchFindings({ state: ["open"] }).findings).toHaveLength(1);
+      restored.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
