@@ -34,7 +34,10 @@ catalog directory with override semantics, and a Prowler metadata importer
 
 ## Phase 3 — Engine depth
 
-7. Parameterised controls (org-tunable thresholds, e.g. key-age days).
+7. ~~Parameterised controls (org-tunable thresholds, e.g. key-age days).~~
+   **Done** — `parameters` declarations with `{ $param: name }` references,
+   scope-level persistence (`parameters_set`/`parameters_list` + CLI), per-scan
+   overrides on `scan_start`, and effective values recorded on findings.
 8. `relationshipExists`/graph evidence for cross-resource controls
    (public LB → unencrypted backend).
 9. ~~Control packs as named selections for `scan_start`.~~ **Done** — 7 packs.

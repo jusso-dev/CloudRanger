@@ -6,6 +6,7 @@ import {
   evaluateControls,
   validateCatalogDocument,
   validateParamValue,
+  validateParameterOverrides,
   type LoadedCatalog,
   type Provider,
 } from "@cloudranger/engine";
@@ -283,6 +284,89 @@ export function createServer(deps: ServerDeps): McpServer {
     }),
   );
 
+  // ---------- scope parameters ----------
+
+  server.registerTool(
+    "parameters_set",
+    {
+      title: "Set persisted parameter overrides for a control in a scope",
+      description:
+        "Persist org-tunable parameter overrides (e.g. key-age days) for one control in one scope. Values are validated against the control's declared type, bounds, and enum — overrides tune a control within its declared range, never disable it. Omit parameters (or pass {}) to clear the override. Future scans of the scope pick these up automatically.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string().describe("AWS account, Azure subscription, or GCP project ID"),
+        controlId: z.string().describe("Control declaring the parameters"),
+        parameters: z
+          .record(z.string(), z.union([z.number(), z.string(), z.boolean()]))
+          .optional()
+          .describe("Parameter values to persist; omit to clear"),
+      },
+      annotations: { ...readOnly, readOnlyHint: false, idempotentHint: true },
+    },
+    audited(
+      "parameters_set",
+      async (args: {
+        provider: Provider;
+        scopeId: string;
+        controlId: string;
+        parameters?: Record<string, number | string | boolean>;
+      }) => {
+        if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
+        const control = catalog.controls.find((c) => c.id === args.controlId);
+        if (!control) throw new Error(`unknown control: ${args.controlId}`);
+        if (!args.parameters || Object.keys(args.parameters).length === 0) {
+          await store.setScopeParameters(args.provider, args.scopeId, args.controlId, null);
+          return { cleared: true, controlId: args.controlId };
+        }
+        if (!control.parameters || Object.keys(control.parameters).length === 0) {
+          throw new Error(`${args.controlId} does not declare any parameters`);
+        }
+        const issues = validateParameterOverrides(control, args.parameters);
+        if (issues.length > 0) throw new Error(`invalid parameters: ${issues.join("; ")}`);
+        await store.setScopeParameters(
+          args.provider,
+          args.scopeId,
+          args.controlId,
+          args.parameters,
+        );
+        return {
+          controlId: args.controlId,
+          parameters: args.parameters,
+          declared: control.parameters,
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    "parameters_list",
+    {
+      title: "List persisted parameter overrides for a scope",
+      description:
+        "Show every persisted parameter override in a scope alongside each control's declared parameters and defaults, so effective values are auditable before a scan.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string(),
+      },
+      annotations: readOnly,
+    },
+    audited("parameters_list", async (args: { provider: Provider; scopeId: string }) => {
+      const overrides = await store.listScopeParameters(args.provider, args.scopeId);
+      return {
+        overrides: overrides.map((row) => ({
+          ...row,
+          declared: catalog.controls.find((c) => c.id === row.controlId)?.parameters,
+        })),
+        parameterisedControls: catalog.controls
+          .filter(
+            (c) =>
+              c.provider === args.provider && c.parameters && Object.keys(c.parameters).length > 0,
+          )
+          .map((c) => ({ controlId: c.id, parameters: c.parameters })),
+      };
+    }),
+  );
+
   // ---------- scans ----------
 
   server.registerTool(
@@ -312,6 +396,12 @@ export function createServer(deps: ServerDeps): McpServer {
           .string()
           .optional()
           .describe("Restrict to a named control pack (see catalog_list_packs)"),
+        parameters: z
+          .record(z.string(), z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])))
+          .optional()
+          .describe(
+            "Per-control parameter overrides for this scan (controlId → name → value); merged over persisted scope parameters and validated against each control's declarations",
+          ),
       },
       annotations: { ...readOnly, readOnlyHint: false },
     },
@@ -324,6 +414,7 @@ export function createServer(deps: ServerDeps): McpServer {
         services?: string[];
         controlIds?: string[];
         pack?: string;
+        parameters?: Record<string, Record<string, unknown>>;
       }) => {
         if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
         const regions = args.regions ?? [];
@@ -338,6 +429,36 @@ export function createServer(deps: ServerDeps): McpServer {
         if (args.controlIds?.length)
           controls = controls.filter((c) => args.controlIds!.includes(c.id));
         if (controls.length === 0) throw new Error("no controls match the requested filters");
+
+        // Effective parameters: persisted scope overrides ⊕ per-scan overrides
+        // (scan wins per key), validated against each control's declarations.
+        const persisted = await store.listScopeParameters(args.provider, args.scopeId);
+        const merged: Record<string, Record<string, unknown>> = {};
+        for (const row of persisted) merged[row.controlId] = { ...row.parameters };
+        for (const [controlId, overrides] of Object.entries(args.parameters ?? {})) {
+          merged[controlId] = { ...merged[controlId], ...overrides };
+        }
+        const inScan = new Set(controls.map((c) => c.id));
+        const parameters: Record<string, Record<string, unknown>> = {};
+        for (const [controlId, overrides] of Object.entries(merged)) {
+          if (!inScan.has(controlId)) {
+            // Persisted overrides for controls outside this scan are ignored;
+            // explicit per-scan overrides for unknown controls are an error.
+            if (args.parameters?.[controlId]) {
+              throw new Error(
+                `parameter overrides reference a control not in this scan: ${controlId}`,
+              );
+            }
+            continue;
+          }
+          const control = controls.find((c) => c.id === controlId)!;
+          const issues = validateParameterOverrides(control, overrides);
+          if (issues.length > 0) {
+            throw new Error(`invalid parameters for ${controlId}: ${issues.join("; ")}`);
+          }
+          parameters[controlId] = overrides;
+        }
+
         const plan = buildPlan(controls, catalog.collectors, {
           provider: args.provider,
           regions,
@@ -348,8 +469,14 @@ export function createServer(deps: ServerDeps): McpServer {
           scopeId: args.scopeId,
           regions,
           controlIds: plan.controlIds,
+          parameters,
         });
-        return { scanId: scan.id, controlCount: plan.controlIds.length, plan };
+        return {
+          scanId: scan.id,
+          controlCount: plan.controlIds.length,
+          parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+          plan,
+        };
       },
     ),
   );
@@ -524,7 +651,7 @@ export function createServer(deps: ServerDeps): McpServer {
         catalog.controls,
         catalog.collectors,
         { provider: scan.provider, scopeId: scan.scopeId, records: evidence },
-        { controlIds: scan.controlIds },
+        { controlIds: scan.controlIds, parameters: scan.parameters },
       );
       const summary = await store.finalizeScan(args.scanId, results, coverage);
       const gaps = coverage.filter((c) => c.status !== "evaluated");

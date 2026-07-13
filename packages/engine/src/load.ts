@@ -4,6 +4,7 @@ import { parse as parseYaml } from "yaml";
 import { collectorSchema, controlSchema } from "./schema.js";
 import type { CollectorDefinition, ControlDefinition } from "./types.js";
 import { validatePreparationCommand, validateReadOnlyCommand } from "./safety.js";
+import { validateControlParameters } from "./params.js";
 
 export interface CatalogIssue {
   file: string;
@@ -114,6 +115,11 @@ export function loadCatalog(rootDirs: string | string[]): LoadedCatalog {
         }
         if (rootControlIds.has(parsed.data.id)) {
           issues.push({ file, message: `${parsed.data.id}: duplicate control id` });
+          continue;
+        }
+        const paramIssues = validateControlParameters(parsed.data as unknown as ControlDefinition);
+        if (paramIssues.length > 0) {
+          issues.push({ file, message: `${parsed.data.id}: ${paramIssues.join("; ")}` });
           continue;
         }
         rootControlIds.add(parsed.data.id);

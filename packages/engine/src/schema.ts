@@ -5,6 +5,10 @@ export const severitySchema = z.enum(["informational", "low", "medium", "high", 
 
 const pathString = z.string().min(1).max(300);
 
+const paramRefSchema = z.object({ $param: z.string().min(1).max(64) }).strict();
+const numberOrParam = z.union([z.number(), paramRefSchema]);
+const intOrParam = z.union([z.number().int(), paramRefSchema]);
+
 export const expressionSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
     z.object({ op: z.literal("equals"), path: pathString, value: z.unknown() }).strict(),
@@ -21,15 +25,15 @@ export const expressionSchema: z.ZodType<unknown> = z.lazy(() =>
     z.object({ op: z.literal("notContains"), path: pathString, value: z.string() }).strict(),
     z.object({ op: z.literal("startsWith"), path: pathString, value: z.string() }).strict(),
     z.object({ op: z.literal("endsWith"), path: pathString, value: z.string() }).strict(),
-    z.object({ op: z.literal("gt"), path: pathString, value: z.number() }).strict(),
-    z.object({ op: z.literal("gte"), path: pathString, value: z.number() }).strict(),
-    z.object({ op: z.literal("lt"), path: pathString, value: z.number() }).strict(),
-    z.object({ op: z.literal("lte"), path: pathString, value: z.number() }).strict(),
-    z.object({ op: z.literal("daysSinceGt"), path: pathString, value: z.number() }).strict(),
-    z.object({ op: z.literal("daysSinceLt"), path: pathString, value: z.number() }).strict(),
+    z.object({ op: z.literal("gt"), path: pathString, value: numberOrParam }).strict(),
+    z.object({ op: z.literal("gte"), path: pathString, value: numberOrParam }).strict(),
+    z.object({ op: z.literal("lt"), path: pathString, value: numberOrParam }).strict(),
+    z.object({ op: z.literal("lte"), path: pathString, value: numberOrParam }).strict(),
+    z.object({ op: z.literal("daysSinceGt"), path: pathString, value: numberOrParam }).strict(),
+    z.object({ op: z.literal("daysSinceLt"), path: pathString, value: numberOrParam }).strict(),
     z.object({ op: z.literal("matches"), path: pathString, pattern: z.string().max(200) }).strict(),
-    z.object({ op: z.literal("lengthEquals"), path: pathString, value: z.number().int() }).strict(),
-    z.object({ op: z.literal("lengthGt"), path: pathString, value: z.number().int() }).strict(),
+    z.object({ op: z.literal("lengthEquals"), path: pathString, value: intOrParam }).strict(),
+    z.object({ op: z.literal("lengthGt"), path: pathString, value: intOrParam }).strict(),
     z.object({ op: z.literal("isEmpty"), path: pathString }).strict(),
     z.object({ op: z.literal("isPublicCidr"), path: pathString }).strict(),
     z
@@ -143,6 +147,21 @@ export const controlSchema = z
           .strict(),
       )
       .min(1)
+      .optional(),
+    parameters: z
+      .record(
+        z.string().regex(/^[a-z][A-Za-z0-9]{0,63}$/),
+        z
+          .object({
+            type: z.enum(["number", "string", "boolean"]),
+            description: z.string().min(1),
+            default: z.union([z.number(), z.string(), z.boolean()]),
+            min: z.number().optional(),
+            max: z.number().optional(),
+            enum: z.array(z.union([z.number(), z.string()])).min(1).optional(),
+          })
+          .strict(),
+      )
       .optional(),
     resourcesPath: z.string().optional(),
     aggregate: z.boolean().optional(),

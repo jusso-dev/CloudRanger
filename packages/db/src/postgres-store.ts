@@ -42,6 +42,7 @@ function scanRow(row: any): ScanRow {
     evaluatedAt: iso(row.evaluated_at),
     coverage: row.coverage ?? undefined,
     summary: row.summary ?? undefined,
+    parameters: row.parameters ?? undefined,
   };
 }
 
@@ -57,6 +58,7 @@ function typedScanRow(row: typeof scans.$inferSelect): ScanRow {
     evaluatedAt: row.evaluatedAt?.toISOString(),
     coverage: row.coverage as ControlCoverage[] | undefined,
     summary: row.summary as ScanSummary | undefined,
+    parameters: row.parameters ?? undefined,
   };
 }
 
@@ -87,6 +89,7 @@ function findingRow(row: any): FindingRow {
     reopenCount: row.reopen_count,
     lastScanId: row.last_scan_id,
     latestEvidence: row.latest_evidence ?? undefined,
+    effectiveParameters: row.effective_parameters ?? undefined,
   };
 }
 
@@ -266,6 +269,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     scopeId: string;
     regions: string[];
     controlIds: string[];
+    parameters?: Record<string, Record<string, unknown>>;
   }): Promise<ScanRow> {
     const id = randomUUID();
     const createdAt = new Date().toISOString();
@@ -277,8 +281,47 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
       controlIds: input.controlIds,
       status: "collecting",
       createdAt: new Date(createdAt),
+      parameters:
+        input.parameters && Object.keys(input.parameters).length > 0 ? input.parameters : null,
     });
     return (await this.getScan(id))!;
+  }
+
+  async setScopeParameters(
+    provider: Provider,
+    scopeId: string,
+    controlId: string,
+    parameters: Record<string, unknown> | null,
+  ): Promise<void> {
+    if (parameters === null || Object.keys(parameters).length === 0) {
+      await this.pool.query(
+        "DELETE FROM scope_parameters WHERE provider=$1 AND scope_id=$2 AND control_id=$3",
+        [provider, scopeId, controlId],
+      );
+      return;
+    }
+    await this.pool.query(
+      `INSERT INTO scope_parameters (provider, scope_id, control_id, parameters, updated_at)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (provider, scope_id, control_id)
+       DO UPDATE SET parameters = EXCLUDED.parameters, updated_at = EXCLUDED.updated_at`,
+      [provider, scopeId, controlId, JSON.stringify(parameters), new Date().toISOString()],
+    );
+  }
+
+  async listScopeParameters(
+    provider: Provider,
+    scopeId: string,
+  ): Promise<Array<{ controlId: string; parameters: Record<string, unknown>; updatedAt: string }>> {
+    const result = await this.pool.query(
+      "SELECT control_id, parameters, updated_at FROM scope_parameters WHERE provider=$1 AND scope_id=$2 ORDER BY control_id",
+      [provider, scopeId],
+    );
+    return result.rows.map((row) => ({
+      controlId: row.control_id,
+      parameters: row.parameters ?? {},
+      updatedAt: iso(row.updated_at)!,
+    }));
   }
 
   async getScan(id: string): Promise<ScanRow | undefined> {
@@ -555,8 +598,8 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
       };
       for (const result of results) {
         await client.query(
-          `INSERT INTO evaluations (scan_id,control_id,control_version,status,severity,service,resource_id,resource_name,region,message,evidence,evaluated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          `INSERT INTO evaluations (scan_id,control_id,control_version,status,severity,service,resource_id,resource_name,region,message,evidence,effective_parameters,evaluated_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
           [
             scanId,
             result.controlId,
@@ -569,6 +612,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
             result.region ?? null,
             result.message,
             JSON.stringify(result.evidence ?? null),
+            result.effectiveParameters ? JSON.stringify(result.effectiveParameters) : null,
             result.evaluatedAt,
           ],
         );
@@ -599,8 +643,8 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
         const action = reconcileOne(scan.scopeId, result, prior);
         if (action.type === "create") {
           await client.query(
-            `INSERT INTO findings (fingerprint,provider,scope_id,control_id,control_version,severity,service,resource_id,resource_name,region,state,message,first_seen_at,last_seen_at,last_scan_id,latest_evidence)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'open',$11,$12,$12,$13,$14)`,
+            `INSERT INTO findings (fingerprint,provider,scope_id,control_id,control_version,severity,service,resource_id,resource_name,region,state,message,first_seen_at,last_seen_at,last_scan_id,latest_evidence,effective_parameters)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'open',$11,$12,$12,$13,$14,$15)`,
             [
               fingerprint,
               result.provider,
@@ -616,6 +660,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
               now,
               scanId,
               JSON.stringify(result.evidence ?? null),
+              result.effectiveParameters ? JSON.stringify(result.effectiveParameters) : null,
             ],
           );
           await this.insertEvent(
@@ -633,7 +678,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
           summary.findingsCreated += 1;
         } else if (action.type === "recur") {
           await client.query(
-            `UPDATE findings SET last_seen_at=$1,occurrence_count=occurrence_count+1,message=$2,severity=$3,control_version=$4,last_scan_id=$5,latest_evidence=$6 WHERE fingerprint=$7`,
+            `UPDATE findings SET last_seen_at=$1,occurrence_count=occurrence_count+1,message=$2,severity=$3,control_version=$4,last_scan_id=$5,latest_evidence=$6,effective_parameters=$7 WHERE fingerprint=$8`,
             [
               now,
               result.message,
@@ -641,6 +686,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
               result.controlVersion,
               scanId,
               JSON.stringify(result.evidence ?? null),
+              result.effectiveParameters ? JSON.stringify(result.effectiveParameters) : null,
               fingerprint,
             ],
           );
@@ -677,7 +723,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
           summary.findingsResolved += 1;
         } else if (action.type === "reopen") {
           await client.query(
-            `UPDATE findings SET state='reopened',resolved_at=NULL,last_seen_at=$1,occurrence_count=occurrence_count+1,reopen_count=reopen_count+1,message=$2,severity=$3,control_version=$4,last_scan_id=$5,latest_evidence=$6 WHERE fingerprint=$7`,
+            `UPDATE findings SET state='reopened',resolved_at=NULL,last_seen_at=$1,occurrence_count=occurrence_count+1,reopen_count=reopen_count+1,message=$2,severity=$3,control_version=$4,last_scan_id=$5,latest_evidence=$6,effective_parameters=$7 WHERE fingerprint=$8`,
             [
               now,
               result.message,
@@ -685,6 +731,7 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
               result.controlVersion,
               scanId,
               JSON.stringify(result.evidence ?? null),
+              result.effectiveParameters ? JSON.stringify(result.effectiveParameters) : null,
               fingerprint,
             ],
           );

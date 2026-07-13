@@ -2,6 +2,7 @@ import { parse as parseYaml } from "yaml";
 import { collectorSchema, controlSchema } from "./schema.js";
 import type { CollectorDefinition, ControlDefinition } from "./types.js";
 import { validatePreparationCommand, validateReadOnlyCommand } from "./safety.js";
+import { validateControlParameters } from "./params.js";
 
 /**
  * Validate a standalone catalog YAML document (as authored by an operator or
@@ -80,6 +81,11 @@ export function validateCatalogDocument(
       errors.push(
         `control ${control.id}: unknown collector ${control.collector} (define it in this document or use an existing one)`,
       );
+      continue;
+    }
+    const paramIssues = validateControlParameters(control);
+    if (paramIssues.length > 0) {
+      errors.push(`control ${control.id}: ${paramIssues.join("; ")}`);
       continue;
     }
     controls.push(control);

@@ -402,3 +402,107 @@ describe("MCP scan loop", () => {
     expect((brief.messages[0]!.content as any).text).toContain("report_data");
   });
 });
+
+describe("parameterised controls over MCP", () => {
+  const SCOPE = "222233334444";
+
+  it("persists, lists, and validates scope parameter overrides", async () => {
+    const set = await call("parameters_set", {
+      provider: "aws",
+      scopeId: SCOPE,
+      controlId: "CR-AWS-IAM-003",
+      parameters: { minimumPasswordLength: 20 },
+    });
+    expect(set.parameters).toEqual({ minimumPasswordLength: 20 });
+    expect(set.declared.minimumPasswordLength.default).toBe(14);
+
+    const listed = await call("parameters_list", { provider: "aws", scopeId: SCOPE });
+    expect(listed.overrides).toHaveLength(1);
+    expect(listed.overrides[0].controlId).toBe("CR-AWS-IAM-003");
+    expect(
+      listed.parameterisedControls.some((c: any) => c.controlId === "CR-AWS-IAM-005"),
+    ).toBe(true);
+
+    await expect(
+      call("parameters_set", {
+        provider: "aws",
+        scopeId: SCOPE,
+        controlId: "CR-AWS-IAM-003",
+        parameters: { minimumPasswordLength: 2 },
+      }),
+    ).rejects.toThrow(/below the minimum/);
+
+    await expect(
+      call("parameters_set", {
+        provider: "aws",
+        scopeId: SCOPE,
+        controlId: "CR-AWS-IAM-001",
+        parameters: { nope: 1 },
+      }),
+    ).rejects.toThrow(/does not declare/);
+  });
+
+  it("applies persisted + scan overrides and records effective values on findings", async () => {
+    const started = await call("scan_start", {
+      provider: "aws",
+      scopeId: SCOPE,
+      regions: ["ap-southeast-2"],
+      controlIds: ["CR-AWS-IAM-003"],
+    });
+    expect(started.parameters).toEqual({
+      "CR-AWS-IAM-003": { minimumPasswordLength: 20 },
+    });
+
+    await call("evidence_submit", {
+      scanId: started.scanId,
+      records: [
+        {
+          collectorId: "aws.iam.get_account_password_policy",
+          output: { PasswordPolicy: { MinimumPasswordLength: 16 } },
+          exitCode: 0,
+        },
+      ],
+    });
+    const evaluated = await call("scan_evaluate", { scanId: started.scanId });
+    // 16 >= 14 default would pass, but the persisted override of 20 fails it.
+    expect(evaluated.summary.fail).toBe(1);
+
+    const findings = await call("findings_search", {
+      scopeId: SCOPE,
+      controlId: "CR-AWS-IAM-003",
+    });
+    expect(findings.findings[0].effectiveParameters).toEqual({ minimumPasswordLength: 20 });
+
+    // A per-scan override wins over the persisted one.
+    const rerun = await call("scan_start", {
+      provider: "aws",
+      scopeId: SCOPE,
+      regions: ["ap-southeast-2"],
+      controlIds: ["CR-AWS-IAM-003"],
+      parameters: { "CR-AWS-IAM-003": { minimumPasswordLength: 12 } },
+    });
+    expect(rerun.parameters).toEqual({ "CR-AWS-IAM-003": { minimumPasswordLength: 12 } });
+    await call("evidence_submit", {
+      scanId: rerun.scanId,
+      records: [
+        {
+          collectorId: "aws.iam.get_account_password_policy",
+          output: { PasswordPolicy: { MinimumPasswordLength: 16 } },
+          exitCode: 0,
+        },
+      ],
+    });
+    const reEvaluated = await call("scan_evaluate", { scanId: rerun.scanId });
+    expect(reEvaluated.summary.pass).toBe(1);
+
+    await expect(
+      call("scan_start", {
+        provider: "aws",
+        scopeId: SCOPE,
+        regions: ["ap-southeast-2"],
+        controlIds: ["CR-AWS-IAM-003"],
+        parameters: { "CR-AWS-IAM-999": { anything: 1 } },
+      }),
+    ).rejects.toThrow(/not in this scan/);
+  });
+});

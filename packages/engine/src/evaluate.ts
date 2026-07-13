@@ -11,11 +11,22 @@ import type {
 import { evaluateExpression, type ExprContext } from "./expr.js";
 import { getPath } from "./path.js";
 import { decodeEvidenceRecord } from "./csv.js";
+import {
+  effectiveParameterValues,
+  resolveExpression,
+  validateParameterOverrides,
+} from "./params.js";
 
 export interface EvaluateOptions {
   now?: Date;
   /** Restrict evaluation to these control IDs (default: all supplied). */
   controlIds?: string[];
+  /**
+   * Per-control parameter overrides (controlId → name → value), validated
+   * against each control's declarations. Invalid overrides throw — callers
+   * validate at intake, so reaching here with bad values is a bug.
+   */
+  parameters?: Record<string, Record<string, unknown>>;
 }
 
 interface ResourceUnit {
@@ -215,6 +226,24 @@ export function evaluateControls(
 
     coverage.push({ controlId: control.id, status: "evaluated", missingCollectors: [] });
 
+    // Resolve declared parameters (defaults ⊕ overrides) into concrete
+    // expressions before any resource is evaluated.
+    let applicableWhen = control.applicableWhen as Expression | undefined;
+    let passWhen = control.passWhen as Expression;
+    let effectiveParameters: Record<string, number | string | boolean> | undefined;
+    if (control.parameters && Object.keys(control.parameters).length > 0) {
+      const overrides = options.parameters?.[control.id];
+      if (overrides) {
+        const issues = validateParameterOverrides(control, overrides);
+        if (issues.length > 0) {
+          throw new Error(`invalid parameter overrides for ${control.id}: ${issues.join("; ")}`);
+        }
+      }
+      effectiveParameters = effectiveParameterValues(control, overrides);
+      passWhen = resolveExpression(passWhen, effectiveParameters);
+      if (applicableWhen) applicableWhen = resolveExpression(applicableWhen, effectiveParameters);
+    }
+
     const relatedError = (control.relatedCollectors ?? [])
       .flatMap((related) => byCollector.get(related.collector) ?? [])
       .find((record) => record.exitCode !== 0 || record.output === null);
@@ -248,6 +277,7 @@ export function evaluateControls(
         severity: control.severity,
         resourceId,
         region: unit.region,
+        effectiveParameters,
         evaluatedAt,
       };
       const nameRaw = control.resourceNameField
@@ -267,10 +297,7 @@ export function evaluateControls(
         continue;
       }
 
-      if (
-        control.applicableWhen &&
-        !evaluateExpression(control.applicableWhen as Expression, unit.resource, ctx)
-      ) {
+      if (applicableWhen && !evaluateExpression(applicableWhen, unit.resource, ctx)) {
         results.push({
           ...base,
           resourceName,
@@ -281,9 +308,9 @@ export function evaluateControls(
         continue;
       }
 
-      const passed = evaluateExpression(control.passWhen as Expression, unit.resource, ctx);
+      const passed = evaluateExpression(passWhen, unit.resource, ctx);
       const evidence: Record<string, unknown> = {};
-      extractEvidence(control.passWhen as Expression, unit.resource, evidence);
+      extractEvidence(passWhen, unit.resource, evidence);
       results.push({
         ...base,
         resourceName,

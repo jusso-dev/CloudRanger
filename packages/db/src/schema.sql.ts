@@ -135,4 +135,17 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_workspace_memberships_subject ON workspace_memberships(subject);
   `,
+  `
+  ALTER TABLE scans ADD COLUMN parameters TEXT;
+  ALTER TABLE evaluations ADD COLUMN effective_parameters TEXT;
+  ALTER TABLE findings ADD COLUMN effective_parameters TEXT;
+  CREATE TABLE scope_parameters (
+    provider TEXT NOT NULL CHECK (provider IN ('aws','azure','gcp')),
+    scope_id TEXT NOT NULL,
+    control_id TEXT NOT NULL,
+    parameters TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (provider, scope_id, control_id)
+  );
+  `,
 ];

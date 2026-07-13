@@ -206,7 +206,7 @@ controls:
     references:
       - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_passwords_account-policy.html
   - id: CR-AWS-IAM-016
-    version: 1.0.0
+    version: 1.1.0
     provider: aws
     service: iam
     title: Password policy requires a minimum length of 14
@@ -224,10 +224,17 @@ controls:
     collector: aws.iam.get_account_password_policy
     resourcesPath: $
     resourceIdField: $scope
+    parameters:
+      minimumPasswordLength:
+        type: number
+        description: Minimum console password length the policy must enforce.
+        default: 14
+        min: 8
+        max: 128
     passWhen:
       op: gte
       path: PasswordPolicy.MinimumPasswordLength
-      value: 14
+      value: { $param: minimumPasswordLength }
     onError:
       - contains: NoSuchEntity
         status: fail

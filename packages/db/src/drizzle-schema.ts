@@ -26,6 +26,7 @@ export const scans = pgTable("scans", {
   evaluatedAt: timestamp("evaluated_at", { withTimezone: true }),
   coverage: jsonb("coverage"),
   summary: jsonb("summary"),
+  parameters: jsonb("parameters").$type<Record<string, Record<string, unknown>>>(),
 });
 
 export const evidence = pgTable(
@@ -58,6 +59,7 @@ export const evaluations = pgTable("evaluations", {
   region: text("region"),
   message: text("message").notNull(),
   evidence: jsonb("evidence"),
+  effectiveParameters: jsonb("effective_parameters"),
   evaluatedAt: timestamp("evaluated_at", { withTimezone: true }).notNull(),
 });
 
@@ -89,6 +91,7 @@ export const findings = pgTable(
     reopenCount: integer("reopen_count").notNull().default(0),
     lastScanId: varchar("last_scan_id", { length: 36 }).notNull(),
     latestEvidence: jsonb("latest_evidence"),
+    effectiveParameters: jsonb("effective_parameters"),
   },
   (table) => [
     index("idx_findings_state").on(table.state, table.severity),
@@ -155,4 +158,16 @@ export const workspaceMemberships = pgTable(
     primaryKey({ columns: [table.workspaceId, table.subject] }),
     index("idx_workspace_memberships_subject").on(table.subject),
   ],
+);
+
+export const scopeParameters = pgTable(
+  "scope_parameters",
+  {
+    provider: varchar("provider", { length: 16 }).notNull(),
+    scopeId: text("scope_id").notNull(),
+    controlId: text("control_id").notNull(),
+    parameters: jsonb("parameters").$type<Record<string, unknown>>().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.provider, table.scopeId, table.controlId] })],
 );

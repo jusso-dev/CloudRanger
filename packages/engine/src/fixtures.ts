@@ -23,6 +23,8 @@ export const fixtureFileSchema = z
             expected: z.enum(["pass", "fail", "not_applicable", "error", "no_results"]),
             /** Which resource's status to assert; default: single result. */
             resourceId: z.string().optional(),
+            /** Parameter overrides for this case (parameterised controls). */
+            parameters: z.record(z.string(), z.unknown()).optional(),
             records: z.array(
               z
                 .object({
@@ -84,7 +86,10 @@ export function runFixtureFile(
       [control],
       collectors,
       { provider: control.provider, scopeId: "fixture-scope", records },
-      { now: FIXED_NOW },
+      {
+        now: FIXED_NOW,
+        parameters: testCase.parameters ? { [control.id]: testCase.parameters } : undefined,
+      },
     );
     let actual: EvaluationStatus | "no_results" | "ambiguous";
     if (testCase.resourceId) {

@@ -29,6 +29,8 @@ export interface ScanRow {
   regions: string[];
   controlIds: string[];
   status: "collecting" | "evaluated" | "cancelled";
+  /** Per-control parameter overrides captured at scan start. */
+  parameters?: Record<string, Record<string, unknown>>;
   createdAt: string;
   evaluatedAt?: string;
   coverage?: ControlCoverage[];
@@ -93,6 +95,8 @@ export interface FindingRow {
   reopenCount: number;
   lastScanId: string;
   latestEvidence?: unknown;
+  /** Effective parameter values in force when the finding was last evaluated. */
+  effectiveParameters?: Record<string, unknown>;
 }
 
 export interface FindingEventRow {
@@ -321,16 +325,68 @@ export class CloudRangerStore {
     scopeId: string;
     regions: string[];
     controlIds: string[];
+    parameters?: Record<string, Record<string, unknown>>;
   }): ScanRow {
     const id = randomUUID();
     const createdAt = new Date().toISOString();
     this.db
       .prepare(
-        `INSERT INTO scans (id, provider, scope_id, regions, control_ids, status, created_at)
-         VALUES (?, ?, ?, ?, ?, 'collecting', ?)`,
+        `INSERT INTO scans (id, provider, scope_id, regions, control_ids, status, created_at, parameters)
+         VALUES (?, ?, ?, ?, ?, 'collecting', ?, ?)`,
       )
-      .run(id, input.provider, input.scopeId, j(input.regions), j(input.controlIds), createdAt);
+      .run(
+        id,
+        input.provider,
+        input.scopeId,
+        j(input.regions),
+        j(input.controlIds),
+        createdAt,
+        input.parameters && Object.keys(input.parameters).length > 0 ? j(input.parameters) : null,
+      );
     return this.getScan(id)!;
+  }
+
+  // ---- scope parameter overrides ----
+
+  /** Set (or clear, with null) persisted parameter overrides for one control in a scope. */
+  setScopeParameters(
+    provider: Provider,
+    scopeId: string,
+    controlId: string,
+    parameters: Record<string, unknown> | null,
+  ): void {
+    if (parameters === null || Object.keys(parameters).length === 0) {
+      this.db
+        .prepare(
+          "DELETE FROM scope_parameters WHERE provider = ? AND scope_id = ? AND control_id = ?",
+        )
+        .run(provider, scopeId, controlId);
+      return;
+    }
+    this.db
+      .prepare(
+        `INSERT INTO scope_parameters (provider, scope_id, control_id, parameters, updated_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (provider, scope_id, control_id)
+         DO UPDATE SET parameters = excluded.parameters, updated_at = excluded.updated_at`,
+      )
+      .run(provider, scopeId, controlId, j(parameters), new Date().toISOString());
+  }
+
+  listScopeParameters(
+    provider: Provider,
+    scopeId: string,
+  ): Array<{ controlId: string; parameters: Record<string, unknown>; updatedAt: string }> {
+    const rows = this.db
+      .prepare(
+        "SELECT control_id, parameters, updated_at FROM scope_parameters WHERE provider = ? AND scope_id = ? ORDER BY control_id",
+      )
+      .all(provider, scopeId) as any[];
+    return rows.map((row) => ({
+      controlId: row.control_id,
+      parameters: pj(row.parameters, {}),
+      updatedAt: row.updated_at,
+    }));
   }
 
   getScan(id: string): ScanRow | undefined {
@@ -613,13 +669,13 @@ export class CloudRangerStore {
     };
 
     const insertEvaluation = this.db.prepare(
-      `INSERT INTO evaluations (scan_id, control_id, control_version, status, severity, service, resource_id, resource_name, region, message, evidence, evaluated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO evaluations (scan_id, control_id, control_version, status, severity, service, resource_id, resource_name, region, message, evidence, effective_parameters, evaluated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     const getFinding = this.db.prepare("SELECT * FROM findings WHERE fingerprint = ?");
     const insertFinding = this.db.prepare(
-      `INSERT INTO findings (fingerprint, provider, scope_id, control_id, control_version, severity, service, resource_id, resource_name, region, state, message, first_seen_at, last_seen_at, last_scan_id, latest_evidence)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?)`,
+      `INSERT INTO findings (fingerprint, provider, scope_id, control_id, control_version, severity, service, resource_id, resource_name, region, state, message, first_seen_at, last_seen_at, last_scan_id, latest_evidence, effective_parameters)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?)`,
     );
     const insertEvent = this.db.prepare(
       `INSERT INTO finding_events (fingerprint, scan_id, event_type, from_state, to_state, message, evidence, actor, created_at)
@@ -640,6 +696,7 @@ export class CloudRangerStore {
           r.region ?? null,
           r.message,
           j(r.evidence ?? null),
+          r.effectiveParameters ? j(r.effectiveParameters) : null,
           r.evaluatedAt,
         );
         if (r.status === "pass") summary.pass++;
@@ -676,6 +733,7 @@ export class CloudRangerStore {
               now,
               scanId,
               j(r.evidence ?? null),
+              r.effectiveParameters ? j(r.effectiveParameters) : null,
             );
             insertEvent.run(
               action.fingerprint,
@@ -693,7 +751,8 @@ export class CloudRangerStore {
             this.db
               .prepare(
                 `UPDATE findings SET last_seen_at = ?, occurrence_count = occurrence_count + 1,
-                 message = ?, severity = ?, control_version = ?, last_scan_id = ?, latest_evidence = ?
+                 message = ?, severity = ?, control_version = ?, last_scan_id = ?, latest_evidence = ?,
+                 effective_parameters = ?
                  WHERE fingerprint = ?`,
               )
               .run(
@@ -703,6 +762,7 @@ export class CloudRangerStore {
                 r.controlVersion,
                 scanId,
                 j(r.evidence ?? null),
+                r.effectiveParameters ? j(r.effectiveParameters) : null,
                 action.fingerprint,
               );
             insertEvent.run(
@@ -741,7 +801,8 @@ export class CloudRangerStore {
               .prepare(
                 `UPDATE findings SET state = 'reopened', resolved_at = NULL, last_seen_at = ?,
                  occurrence_count = occurrence_count + 1, reopen_count = reopen_count + 1,
-                 message = ?, severity = ?, control_version = ?, last_scan_id = ?, latest_evidence = ?
+                 message = ?, severity = ?, control_version = ?, last_scan_id = ?, latest_evidence = ?,
+                 effective_parameters = ?
                  WHERE fingerprint = ?`,
               )
               .run(
@@ -751,6 +812,7 @@ export class CloudRangerStore {
                 r.controlVersion,
                 scanId,
                 j(r.evidence ?? null),
+                r.effectiveParameters ? j(r.effectiveParameters) : null,
                 action.fingerprint,
               );
             insertEvent.run(
@@ -1267,6 +1329,7 @@ function mapScan(row: any): ScanRow {
     regions: pj(row.regions, []),
     controlIds: pj(row.control_ids, []),
     status: row.status,
+    parameters: row.parameters ? pj(row.parameters, undefined) : undefined,
     createdAt: row.created_at,
     evaluatedAt: row.evaluated_at ?? undefined,
     coverage: row.coverage ? pj(row.coverage, undefined) : undefined,
@@ -1301,5 +1364,8 @@ function mapFinding(row: any): FindingRow {
     reopenCount: row.reopen_count,
     lastScanId: row.last_scan_id,
     latestEvidence: row.latest_evidence ? pj(row.latest_evidence, undefined) : undefined,
+    effectiveParameters: row.effective_parameters
+      ? pj(row.effective_parameters, undefined)
+      : undefined,
   };
 }

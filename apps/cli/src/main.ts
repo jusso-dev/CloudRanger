@@ -19,6 +19,7 @@ import {
   fixtureFileSchema,
   runFixtureFile,
   validateCatalogDocument,
+  validateParameterOverrides,
 } from "@cloudranger/engine";
 
 const dbPath = () =>
@@ -31,6 +32,9 @@ Usage:
   cloudranger catalog test              Run all control fixture tests
   cloudranger catalog list [--provider aws|azure|gcp]
   cloudranger findings [--state open,reopened] [--severity critical,high] [--owner team] [--overdue] [--json]
+  cloudranger parameters list --provider aws|azure|gcp --scope <scopeId> [--json]
+  cloudranger parameters set --provider aws|azure|gcp --scope <scopeId> --control <id> [--param name=value ...]
+                                        Persist parameter overrides (no --param clears)
   cloudranger report [--since-days 30] [--provider aws|azure|gcp]
   cloudranger report html [--output output/html/cloudranger-report.html] [--since-days 30] [--provider aws|azure|gcp]
   cloudranger report pdf [--output output/pdf/cloudranger-report.pdf] [--since-days 30] [--provider aws|azure|gcp]
@@ -194,6 +198,84 @@ async function main(): Promise<number> {
     }
     await store.close();
     return 0;
+  }
+
+  if (command === "parameters") {
+    const { values } = parseArgs({
+      args: rest.filter((a): a is string => a !== undefined),
+      options: {
+        provider: { type: "string" },
+        scope: { type: "string" },
+        control: { type: "string" },
+        param: { type: "string", multiple: true },
+        json: { type: "boolean" },
+      },
+    });
+    if (!values.provider || !["aws", "azure", "gcp"].includes(values.provider) || !values.scope) {
+      console.error("parameters requires --provider aws|azure|gcp and --scope <scopeId>");
+      return 1;
+    }
+    const provider = values.provider as "aws" | "azure" | "gcp";
+    const store = createRepository({ sqlitePath: dbPath() });
+    try {
+      if (subcommand === "list") {
+        const rows = await store.listScopeParameters(provider, values.scope);
+        if (values.json) {
+          console.log(JSON.stringify(rows, null, 2));
+        } else if (rows.length === 0) {
+          console.log("no persisted parameter overrides for this scope");
+        } else {
+          for (const row of rows) {
+            console.log(
+              `${row.controlId}  ${JSON.stringify(row.parameters)}  (updated ${row.updatedAt})`,
+            );
+          }
+        }
+        return 0;
+      }
+      if (subcommand === "set") {
+        if (!values.control) {
+          console.error("parameters set requires --control <controlId>");
+          return 1;
+        }
+        const catalog = loadDefaultCatalog();
+        const control = catalog.controls.find((c) => c.id === values.control);
+        if (!control) {
+          console.error(`unknown control: ${values.control}`);
+          return 1;
+        }
+        const overrides: Record<string, number | string | boolean> = {};
+        for (const pair of values.param ?? []) {
+          const eq = pair.indexOf("=");
+          if (eq <= 0) {
+            console.error(`invalid --param ${pair}; expected name=value`);
+            return 1;
+          }
+          const name = pair.slice(0, eq);
+          const raw = pair.slice(eq + 1);
+          const decl = control.parameters?.[name];
+          overrides[name] =
+            decl?.type === "number" ? Number(raw) : decl?.type === "boolean" ? raw === "true" : raw;
+        }
+        if (Object.keys(overrides).length === 0) {
+          await store.setScopeParameters(provider, values.scope, values.control, null);
+          console.log(`cleared overrides for ${values.control}`);
+          return 0;
+        }
+        const issues = validateParameterOverrides(control, overrides);
+        if (issues.length > 0) {
+          console.error(`invalid parameters: ${issues.join("; ")}`);
+          return 1;
+        }
+        await store.setScopeParameters(provider, values.scope, values.control, overrides);
+        console.log(`saved ${JSON.stringify(overrides)} for ${values.control} in ${values.scope}`);
+        return 0;
+      }
+      console.error("usage: cloudranger parameters list|set ...");
+      return 1;
+    } finally {
+      await store.close();
+    }
   }
 
   if (command === "report") {

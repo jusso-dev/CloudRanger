@@ -125,6 +125,28 @@ export interface ControlSource {
   license: string;
 }
 
+/**
+ * Org-tunable parameter declared by a control. Rules reference parameters
+ * with `{ $param: "name" }` in value positions; the engine substitutes the
+ * effective value (declaration default, overridden per scope/scan) before
+ * evaluation. No expressions — typed value substitution only.
+ */
+export interface ParameterDeclaration {
+  type: "number" | "string" | "boolean";
+  description: string;
+  default: number | string | boolean;
+  /** Inclusive bounds, numbers only. */
+  min?: number;
+  max?: number;
+  /** Allowed values; when present, overrides and default must be members. */
+  enum?: Array<number | string>;
+}
+
+/** Reference to a declared parameter inside an expression value position. */
+export interface ParamRef {
+  $param: string;
+}
+
 export interface ErrorMatchRule {
   /** Substring matched against the collector errorText. */
   contains: string;
@@ -166,6 +188,13 @@ export interface ControlDefinition {
   resourceIdField: string;
   /** Optional name field for display. */
   resourceNameField?: string;
+  /**
+   * Org-tunable thresholds referenced by applicableWhen/passWhen via
+   * `{ $param: name }`. Defaults must reproduce the control's documented
+   * behaviour; scope- or scan-level overrides are validated against the
+   * declaration and recorded on findings.
+   */
+  parameters?: Record<string, ParameterDeclaration>;
   /** Expression: resource is in scope for this control. Default: always. */
   applicableWhen?: Expression;
   /** Expression: resource passes the control. */
@@ -196,15 +225,15 @@ export type Expression =
   | { op: "notContains"; path: string; value: string }
   | { op: "startsWith"; path: string; value: string }
   | { op: "endsWith"; path: string; value: string }
-  | { op: "gt"; path: string; value: number }
-  | { op: "gte"; path: string; value: number }
-  | { op: "lt"; path: string; value: number }
-  | { op: "lte"; path: string; value: number }
-  | { op: "daysSinceGt"; path: string; value: number }
-  | { op: "daysSinceLt"; path: string; value: number }
+  | { op: "gt"; path: string; value: number | ParamRef }
+  | { op: "gte"; path: string; value: number | ParamRef }
+  | { op: "lt"; path: string; value: number | ParamRef }
+  | { op: "lte"; path: string; value: number | ParamRef }
+  | { op: "daysSinceGt"; path: string; value: number | ParamRef }
+  | { op: "daysSinceLt"; path: string; value: number | ParamRef }
   | { op: "matches"; path: string; pattern: string }
-  | { op: "lengthEquals"; path: string; value: number }
-  | { op: "lengthGt"; path: string; value: number }
+  | { op: "lengthEquals"; path: string; value: number | ParamRef }
+  | { op: "lengthGt"; path: string; value: number | ParamRef }
   | { op: "isEmpty"; path: string }
   | { op: "isPublicCidr"; path: string }
   | { op: "portIncludes"; fromPath: string; toPath: string; value: number }
@@ -237,6 +266,8 @@ export interface EvaluationResult {
   message: string;
   /** Values that determined the outcome, extracted from evidence. */
   evidence: unknown;
+  /** Effective parameter values used, for controls that declare parameters. */
+  effectiveParameters?: Record<string, number | string | boolean>;
   evaluatedAt: string;
 }
 
