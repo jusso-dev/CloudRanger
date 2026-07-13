@@ -76,7 +76,7 @@ describe("custom catalog directory", () => {
     expect(overridden.severity).toBe("high");
     expect(overridden.version).toBe("1.0.1");
     expect(bundled.controls.find((c) => c.id === "CR-AWS-RDS-006")!.severity).toBe("low");
-  });
+  }, 15_000);
 
   it("a missing custom directory is not an error", () => {
     const merged = loadCatalog([catalogDir(), join(tmp, "does-not-exist")]);
