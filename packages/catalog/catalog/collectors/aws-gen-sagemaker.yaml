@@ -33,3 +33,70 @@ collectors:
       InstanceMetadataServiceConfiguration
       .MinimumInstanceMetadataServiceVersion is "1" or "2"; "2" requires IMDSv2.
       A deleted/nonexistent instance returns a ValidationException.
+  - id: aws.sagemaker.list_training_jobs
+    provider: aws
+    service: sagemaker
+    description: Lists SageMaker training jobs in a region with summary attributes
+      (name, ARN, status).
+    kind: single
+    command: aws sagemaker list-training-jobs --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a TrainingJobSummaries array of TrainingJobSummary objects. The
+      summary does not include VPC, encryption or network-isolation settings, so
+      per-job configuration must be fetched with describe-training-job. An empty
+      TrainingJobSummaries array means no training jobs exist in the region.
+  - id: aws.sagemaker.describe_training_job
+    provider: aws
+    service: sagemaker
+    description: Full configuration for one SageMaker training job including
+      EnableNetworkIsolation, EnableInterContainerTrafficEncryption, VpcConfig,
+      OutputDataConfig.KmsKeyId and ResourceConfig.VolumeKmsKeyId.
+    kind: per_resource
+    command: aws sagemaker describe-training-job --training-job-name {resource}
+      --region {region} --output json
+    regional: true
+    parent:
+      collector: aws.sagemaker.list_training_jobs
+      itemsPath: TrainingJobSummaries
+      resourceField: TrainingJobName
+    outputFormat: json
+    notes: The response root is the training job object (no wrapper).
+      EnableNetworkIsolation and EnableInterContainerTrafficEncryption are
+      booleans that may be absent when never set (absent means not enabled).
+      VpcConfig is only present when the job runs in a VPC and carries Subnets
+      and SecurityGroupIds arrays. OutputDataConfig.KmsKeyId and
+      ResourceConfig.VolumeKmsKeyId are only present when a KMS key was
+      supplied. A deleted/nonexistent job returns a ResourceNotFound error.
+  - id: aws.sagemaker.list_models
+    provider: aws
+    service: sagemaker
+    description: Lists SageMaker models in a region with summary attributes (name,
+      ARN, creation time).
+    kind: single
+    command: aws sagemaker list-models --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: Returns a Models array of ModelSummary objects. The summary does not
+      include VPC or network-isolation settings, so per-model configuration must
+      be fetched with describe-model. An empty Models array means no models
+      exist in the region.
+  - id: aws.sagemaker.describe_model
+    provider: aws
+    service: sagemaker
+    description: Full configuration for one SageMaker model including
+      EnableNetworkIsolation and VpcConfig.
+    kind: per_resource
+    command: aws sagemaker describe-model --model-name {resource} --region {region}
+      --output json
+    regional: true
+    parent:
+      collector: aws.sagemaker.list_models
+      itemsPath: Models
+      resourceField: ModelName
+    outputFormat: json
+    notes: The response root is the model object (no wrapper).
+      EnableNetworkIsolation is a boolean that may be absent when never set
+      (absent means not enabled). VpcConfig is only present when the model is
+      attached to a VPC and carries Subnets and SecurityGroupIds arrays. A
+      deleted/nonexistent model returns a ResourceNotFound error.

@@ -220,3 +220,290 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/glue/latest/dg/encryption-security-configuration.html
+  - id: CR-AWS-GLUE-006
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: Glue Data Catalog is encrypted at rest with SSE-KMS
+    description: The Glue Data Catalog encryption-at-rest setting uses
+      CatalogEncryptionMode SSE-KMS and references a KMS key, so metadata is
+      encrypted under a KMS key rather than left disabled.
+    rationale: SSE-KMS gives auditable, revocable, key-policy controlled encryption
+      of catalog metadata. Any other mode (DISABLED) leaves table schemas,
+      column names, and S3 locations without KMS-enforced protection at rest.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: glue_data_catalogs_metadata_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_data_catalog_encryption_settings
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: DataCatalogEncryptionSettings.EncryptionAtRest.CatalogEncryptionMode
+          value: SSE-KMS
+        - op: exists
+          path: DataCatalogEncryptionSettings.EncryptionAtRest.SseAwsKmsKeyId
+    failMessage: Glue Data Catalog is not encrypted at rest with an SSE-KMS key.
+    passMessage: Glue Data Catalog is encrypted at rest with SSE-KMS.
+    remediation:
+      summary: Set Data Catalog encryption at rest to SSE-KMS with a KMS key.
+      steps:
+        - Run aws glue put-data-catalog-encryption-settings with
+          EncryptionAtRest CatalogEncryptionMode=SSE-KMS and SseAwsKmsKeyId set
+          to a customer KMS key ARN.
+      verifyCommand: aws glue get-data-catalog-encryption-settings --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encrypt-glue-data-catalog.html
+  - id: CR-AWS-GLUE-007
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: Glue connection-password encryption references a KMS key
+    description: When connection-password encryption is enabled, the Data Catalog
+      ConnectionPasswordEncryption setting also references an AwsKmsKeyId, so
+      passwords are encrypted under a specific KMS key.
+    rationale: Enabling ReturnConnectionPasswordEncrypted without binding a KMS key
+      leaves the encryption incomplete and unauditable. A named KMS key allows
+      key-policy controlled, revocable protection of stored connection
+      credentials.
+    severity: high
+    categories:
+      - encryption
+      - identity
+    source:
+      engine: prowler
+      id: glue_data_catalogs_connection_passwords_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_data_catalog_encryption_settings
+    resourcesPath: $
+    resourceIdField: $scope
+    passWhen:
+      op: and
+      exprs:
+        - op: equals
+          path: DataCatalogEncryptionSettings.ConnectionPasswordEncryption.ReturnConnectionPasswordEncrypted
+          value: true
+        - op: exists
+          path: DataCatalogEncryptionSettings.ConnectionPasswordEncryption.AwsKmsKeyId
+    failMessage: Glue connection-password encryption is disabled or has no KMS key.
+    passMessage: Glue connection-password encryption references a KMS key.
+    remediation:
+      summary: Enable connection-password encryption with an explicit KMS key.
+      steps:
+        - Run aws glue put-data-catalog-encryption-settings with
+          ConnectionPasswordEncryption ReturnConnectionPasswordEncrypted=true
+          and AwsKmsKeyId set to a customer KMS key ARN.
+      verifyCommand: aws glue get-data-catalog-encryption-settings --region <region>
+        --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encrypt-connection-passwords.html
+  - id: CR-AWS-GLUE-008
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: At least one Glue security configuration exists in the region
+    description: The account/region has at least one Glue security configuration
+      defined, so ETL jobs can be attached to an encryption-enforcing
+      configuration.
+    rationale: Glue jobs only receive enforced S3, CloudWatch, and job-bookmark
+      encryption when attached to a security configuration. A region with no
+      security configuration at all cannot enforce any of those encryption
+      guarantees, leaving job data and logs unprotected by default.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: glue_etl_jobs_amazon_s3_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_security_configurations
+    aggregate: true
+    resourceIdField: $scope
+    passWhen:
+      op: anyItem
+      path: SecurityConfigurations
+      condition:
+        op: exists
+        path: Name
+    failMessage: No Glue security configuration exists in this region.
+    passMessage: At least one Glue security configuration exists.
+    remediation:
+      summary: Create a Glue security configuration with encryption enabled.
+      steps:
+        - Run aws glue create-security-configuration with an
+          EncryptionConfiguration enabling S3Encryption (SSE-KMS or SSE-S3),
+          CloudWatchEncryption, and JobBookmarksEncryption.
+        - Attach the security configuration to your Glue ETL jobs.
+      verifyCommand: aws glue get-security-configurations --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encryption-security-configuration.html
+  - id: CR-AWS-GLUE-009
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: Glue security configuration binds CloudWatch encryption to a KMS key
+    description: When CloudWatch log encryption is enabled (mode SSE-KMS), the
+      security configuration also references a KmsKeyArn, so job logs are
+      encrypted under a specific KMS key.
+    rationale: A CloudWatch encryption mode of SSE-KMS without a KmsKeyArn is an
+      incomplete configuration that cannot enforce encryption with an auditable,
+      revocable key. Glue job logs can contain query fragments and data samples,
+      so they warrant KMS-key controlled protection.
+    severity: low
+    categories:
+      - encryption
+      - logging
+    source:
+      engine: prowler
+      id: glue_etl_jobs_logs_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_security_configurations
+    resourcesPath: SecurityConfigurations
+    resourceIdField: Name
+    resourceNameField: Name
+    applicableWhen:
+      op: equals
+      path: EncryptionConfiguration.CloudWatchEncryption.CloudWatchEncryptionMode
+      value: SSE-KMS
+    passWhen:
+      op: exists
+      path: EncryptionConfiguration.CloudWatchEncryption.KmsKeyArn
+    failMessage: Glue CloudWatch encryption is SSE-KMS but no KMS key is bound.
+    passMessage: Glue CloudWatch encryption is bound to a KMS key.
+    remediation:
+      summary: Recreate the security configuration with a CloudWatch KMS key.
+      steps:
+        - Security configuration encryption settings are immutable; create a new
+          one with aws glue create-security-configuration setting
+          CloudWatchEncryption CloudWatchEncryptionMode=SSE-KMS and a KmsKeyArn.
+        - Attach the new security configuration to the affected Glue jobs.
+      verifyCommand: aws glue get-security-configurations --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encryption-security-configuration.html
+  - id: CR-AWS-GLUE-010
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: Glue security configuration encrypts S3 job data with SSE-KMS
+    description: Every S3Encryption entry in the security configuration uses
+      S3EncryptionMode SSE-KMS and references a KmsKeyArn, so Glue job output is
+      encrypted under a customer-managed KMS key rather than SSE-S3 or disabled.
+    rationale: SSE-S3 uses AWS-managed keys with no key policy or CloudTrail key
+      usage auditing. Requiring SSE-KMS with a bound key gives revocable,
+      auditable, customer-controlled encryption for potentially sensitive Glue
+      job output written to S3.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: glue_etl_jobs_amazon_s3_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_security_configurations
+    resourcesPath: SecurityConfigurations
+    resourceIdField: Name
+    resourceNameField: Name
+    applicableWhen:
+      op: exists
+      path: EncryptionConfiguration.S3Encryption
+    passWhen:
+      op: allItems
+      path: EncryptionConfiguration.S3Encryption
+      condition:
+        op: and
+        exprs:
+          - op: equals
+            path: S3EncryptionMode
+            value: SSE-KMS
+          - op: exists
+            path: KmsKeyArn
+    failMessage: Glue security configuration does not encrypt S3 data with an SSE-KMS key.
+    passMessage: Glue security configuration encrypts S3 data with SSE-KMS.
+    remediation:
+      summary: Recreate the security configuration with S3 SSE-KMS encryption.
+      steps:
+        - Security configuration encryption settings are immutable; create a new
+          one with aws glue create-security-configuration setting S3Encryption
+          S3EncryptionMode=SSE-KMS and a KmsKeyArn.
+        - Attach the new security configuration to the affected Glue jobs.
+      verifyCommand: aws glue get-security-configurations --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encryption-security-configuration.html
+  - id: CR-AWS-GLUE-011
+    version: 1.0.0
+    provider: aws
+    service: glue
+    title: Glue security configuration fully enforces encryption on all sinks
+    description: The security configuration has S3, CloudWatch, and job-bookmark
+      encryption all set to a non-DISABLED mode, so no ETL sink is left
+      unencrypted.
+    rationale: A security configuration that enables only some of its sinks still
+      leaves job output, logs, or bookmark state unencrypted on the disabled
+      sinks. Requiring all three closes the gap so an attached job cannot
+      silently write plaintext to any sink.
+    severity: medium
+    categories:
+      - encryption
+      - resilience
+    source:
+      engine: prowler
+      id: glue_etl_jobs_job_bookmark_encryption_enabled
+      license: Apache-2.0
+    collector: aws.glue.get_security_configurations
+    resourcesPath: SecurityConfigurations
+    resourceIdField: Name
+    resourceNameField: Name
+    applicableWhen:
+      op: exists
+      path: EncryptionConfiguration.S3Encryption
+    passWhen:
+      op: and
+      exprs:
+        - op: allItems
+          path: EncryptionConfiguration.S3Encryption
+          condition:
+            op: and
+            exprs:
+              - op: exists
+                path: S3EncryptionMode
+              - op: notEquals
+                path: S3EncryptionMode
+                value: DISABLED
+        - op: notEquals
+          path: EncryptionConfiguration.CloudWatchEncryption.CloudWatchEncryptionMode
+          value: DISABLED
+        - op: exists
+          path: EncryptionConfiguration.CloudWatchEncryption.CloudWatchEncryptionMode
+        - op: notEquals
+          path: EncryptionConfiguration.JobBookmarksEncryption.JobBookmarksEncryptionMode
+          value: DISABLED
+        - op: exists
+          path: EncryptionConfiguration.JobBookmarksEncryption.JobBookmarksEncryptionMode
+    failMessage: Glue security configuration leaves at least one sink unencrypted.
+    passMessage: Glue security configuration encrypts S3, CloudWatch, and bookmarks.
+    remediation:
+      summary: Recreate the security configuration with all three sinks encrypted.
+      steps:
+        - Security configuration encryption settings are immutable; create a new
+          one with aws glue create-security-configuration enabling S3Encryption,
+          CloudWatchEncryption, and JobBookmarksEncryption with non-DISABLED
+          modes.
+        - Attach the new security configuration to the affected Glue jobs.
+      verifyCommand: aws glue get-security-configurations --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/glue/latest/dg/encryption-security-configuration.html

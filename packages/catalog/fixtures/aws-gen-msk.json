@@ -1,0 +1,415 @@
+[
+  {
+    "controlId": "CR-AWS-MSK-001",
+    "cases": [
+      {
+        "name": "pass TLS only",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "State": "ACTIVE",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionAtRest": {
+                        "DataVolumeKMSKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                      },
+                      "EncryptionInTransit": {
+                        "ClientBroker": "TLS",
+                        "InCluster": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail TLS_PLAINTEXT",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/legacy/bbbb-2",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/legacy/bbbb-2",
+                  "ClusterName": "legacy",
+                  "ClusterType": "PROVISIONED",
+                  "State": "ACTIVE",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionAtRest": {
+                        "DataVolumeKMSKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                      },
+                      "EncryptionInTransit": {
+                        "ClientBroker": "TLS_PLAINTEXT",
+                        "InCluster": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "not_applicable serverless",
+        "expected": "not_applicable",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/sless/cccc-3",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/sless/cccc-3",
+                  "ClusterName": "sless",
+                  "ClusterType": "SERVERLESS",
+                  "State": "ACTIVE",
+                  "Serverless": {
+                    "ClientAuthentication": {
+                      "Sasl": {
+                        "Iam": {
+                          "Enabled": true
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MSK-002",
+    "cases": [
+      {
+        "name": "pass in-cluster true",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionInTransit": {
+                        "ClientBroker": "TLS",
+                        "InCluster": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail in-cluster false",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/plain/dddd-4",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/plain/dddd-4",
+                  "ClusterName": "plain",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionInTransit": {
+                        "ClientBroker": "TLS",
+                        "InCluster": false
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MSK-003",
+    "cases": [
+      {
+        "name": "pass kms key set",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionAtRest": {
+                        "DataVolumeKMSKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail no encryptionatrest",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/nokms/eeee-5",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/nokms/eeee-5",
+                  "ClusterName": "nokms",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EncryptionInfo": {
+                      "EncryptionInTransit": {
+                        "ClientBroker": "TLS",
+                        "InCluster": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MSK-004",
+    "cases": [
+      {
+        "name": "pass public disabled",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "BrokerNodeGroupInfo": {
+                      "InstanceType": "kafka.m5.large",
+                      "ConnectivityInfo": {
+                        "PublicAccess": {
+                          "Type": "DISABLED"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail public service provider",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/pub/ffff-6",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/pub/ffff-6",
+                  "ClusterName": "pub",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "BrokerNodeGroupInfo": {
+                      "InstanceType": "kafka.m5.large",
+                      "ConnectivityInfo": {
+                        "PublicAccess": {
+                          "Type": "SERVICE_PROVIDED_EIPS"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MSK-005",
+    "cases": [
+      {
+        "name": "pass unauthenticated disabled",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "ClientAuthentication": {
+                      "Sasl": {
+                        "Iam": {
+                          "Enabled": true
+                        }
+                      },
+                      "Unauthenticated": {
+                        "Enabled": false
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail unauthenticated enabled",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/open/gggg-7",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/open/gggg-7",
+                  "ClusterName": "open",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "ClientAuthentication": {
+                      "Unauthenticated": {
+                        "Enabled": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-MSK-006",
+    "cases": [
+      {
+        "name": "pass per_broker",
+        "expected": "pass",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/prod/aaaa-1",
+                  "ClusterName": "prod",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EnhancedMonitoring": "PER_TOPIC_PER_BROKER"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail default monitoring",
+        "expected": "fail",
+        "resourceId": "arn:aws:kafka:us-east-1:111122223333:cluster/basic/hhhh-8",
+        "records": [
+          {
+            "collectorId": "aws.msk.list_clusters_v2",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "ClusterInfoList": [
+                {
+                  "ClusterArn": "arn:aws:kafka:us-east-1:111122223333:cluster/basic/hhhh-8",
+                  "ClusterName": "basic",
+                  "ClusterType": "PROVISIONED",
+                  "Provisioned": {
+                    "EnhancedMonitoring": "DEFAULT"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

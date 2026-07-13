@@ -386,3 +386,263 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html
+  - id: CR-AWS-CLOUDFRONT-010
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Field-level encryption is configured on the default cache behavior
+    description: The default cache behavior references a non-empty
+      FieldLevelEncryptionId so sensitive form fields are encrypted at the edge.
+    rationale: Without field-level encryption, sensitive fields (payment data, PII)
+      travel to the origin and its logs in a form that only transport encryption
+      protects, widening exposure if the origin or its logs are compromised.
+    severity: medium
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: cloudfront_distributions_field_level_encryption_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: DefaultCacheBehavior.FieldLevelEncryptionId
+        - op: not
+          expr:
+            op: isEmpty
+            path: DefaultCacheBehavior.FieldLevelEncryptionId
+    failMessage: Default cache behavior has no field-level encryption configuration.
+    passMessage: Default cache behavior enforces field-level encryption.
+    remediation:
+      summary: Attach a field-level encryption configuration to the default cache
+        behavior.
+      steps:
+        - Create a field-level encryption profile and configuration with the
+          sensitive field patterns.
+        - Associate the field-level encryption configuration with the
+          distribution's default cache behavior.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/field-level-encryption.html
+  - id: CR-AWS-CLOUDFRONT-011
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Custom origins do not allow deprecated origin SSL protocols
+    description: No custom origin lists SSLv3, TLSv1, or TLSv1.1 in
+      CustomOriginConfig.OriginSslProtocols.Items for the origin-fetch
+      connection.
+    rationale: Allowing legacy SSL/TLS on the CloudFront-to-origin hop permits
+      downgrade attacks and use of broken ciphers on origin-fetch traffic, even
+      when viewer connections are modern.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: cloudfront_distributions_using_deprecated_ssl_protocols
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: noneItem
+      path: Origins.Items
+      condition:
+        op: anyItem
+        path: CustomOriginConfig.OriginSslProtocols.Items
+        condition:
+          op: in
+          path: $
+          values:
+            - SSLv3
+            - TLSv1
+            - TLSv1.1
+    failMessage: A custom origin allows a deprecated origin SSL protocol (SSLv3,
+      TLSv1, or TLSv1.1).
+    passMessage: All custom origins restrict origin SSL protocols to TLSv1.2.
+    remediation:
+      summary: Remove SSLv3, TLSv1, and TLSv1.1 from each custom origin's allowed SSL
+        protocols.
+      steps:
+        - Edit each custom origin on the distribution.
+        - Set the Minimum origin SSL protocol to TLSv1.2 and remove older
+          protocols.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html
+  - id: CR-AWS-CLOUDFRONT-012
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution has origin failover configured
+    description: The distribution defines at least one origin group
+      (OriginGroups.Quantity greater than zero) for automatic origin failover.
+    rationale: A distribution with a single origin and no failover group loses
+      availability entirely when that origin becomes unhealthy, reducing
+      resilience during origin outages.
+    severity: low
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: cloudfront_distributions_multiple_origin_failover_configured
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: gt
+      path: OriginGroups.Quantity
+      value: 0
+    failMessage: Distribution has no origin failover group configured.
+    passMessage: Distribution has at least one origin failover group.
+    remediation:
+      summary: Configure an origin group with a primary and secondary origin for
+        failover.
+      steps:
+        - Add a secondary origin to the distribution.
+        - Create an origin group listing the primary and failover origins and
+          the failover status codes.
+        - Point cache behaviors at the origin group.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/high_availability_origin_failover.html
+  - id: CR-AWS-CLOUDFRONT-013
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution uses a custom SSL certificate rather than the default
+      CloudFront certificate
+    description: ViewerCertificate.CloudFrontDefaultCertificate is false, indicating
+      the distribution serves a custom domain with its own ACM/IAM certificate.
+    rationale: Relying on the default *.cloudfront.net certificate means the
+      distribution cannot serve a branded custom domain over the organisation's
+      own trusted certificate, and forces the shared CloudFront cipher/protocol
+      defaults rather than a managed, auditable certificate lifecycle.
+    severity: low
+    categories:
+      - encryption
+    source:
+      engine: prowler
+      id: cloudfront_distributions_custom_ssl_certificate
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: equals
+      path: ViewerCertificate.CloudFrontDefaultCertificate
+      value: false
+    failMessage: Distribution uses the default CloudFront certificate instead of a
+      custom SSL certificate.
+    passMessage: Distribution uses a custom SSL certificate.
+    remediation:
+      summary: Attach a custom ACM (us-east-1) or IAM SSL certificate and alternate
+        domain names to the distribution.
+      steps:
+        - Request or import a certificate in ACM in us-east-1 for your domain.
+        - Add the alternate domain name (CNAME) to the distribution and select
+          the custom certificate.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html
+  - id: CR-AWS-CLOUDFRONT-014
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Origin Shield is enabled on all custom origins
+    description: Every custom origin has OriginShield.Enabled set to true, adding a
+      caching layer in front of the origin.
+    rationale: Without Origin Shield, more requests reach the origin directly during
+      cache misses and regional POP scaling, increasing origin load and the
+      blast radius of origin-facing abuse or scraping.
+    severity: informational
+    categories:
+      - resilience
+      - network
+    source:
+      engine: prowler
+      id: cloudfront_distributions_origin_shield_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.list_distributions
+    resourcesPath: DistributionList.Items
+    resourceIdField: Id
+    resourceNameField: DomainName
+    passWhen:
+      op: noneItem
+      path: Origins.Items
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: CustomOriginConfig
+          - op: notEquals
+            path: OriginShield.Enabled
+            value: true
+    failMessage: A custom origin does not have Origin Shield enabled.
+    passMessage: All custom origins have Origin Shield enabled.
+    remediation:
+      summary: Enable Origin Shield on each custom origin and pick a shield region
+        close to the origin.
+      steps:
+        - Edit each custom origin on the distribution.
+        - Enable Origin Shield and select the region nearest the origin.
+      verifyCommand: aws cloudfront list-distributions --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html
+  - id: CR-AWS-CLOUDFRONT-015
+    version: 1.0.0
+    provider: aws
+    service: cloudfront
+    title: Distribution supports IPv6
+    description: The distribution has IsIPV6Enabled set to true so viewers can reach
+      it over IPv6.
+    rationale: Disabling IPv6 forces IPv6-only clients through translation layers
+      and can cause reachability gaps; enabling it keeps the endpoint reachable
+      as networks move to IPv6.
+    severity: informational
+    categories:
+      - network
+      - resilience
+    source:
+      engine: prowler
+      id: cloudfront_distributions_ipv6_enabled
+      license: Apache-2.0
+    collector: aws.cloudfront.get_distribution_config
+    resourceIdField: $resourceKey
+    passWhen:
+      op: equals
+      path: DistributionConfig.IsIPV6Enabled
+      value: true
+    onError:
+      - contains: NoSuchDistribution
+        status: not_applicable
+        message: Distribution no longer exists.
+      - contains: AccessDenied
+        status: error
+    failMessage: Distribution does not have IPv6 enabled.
+    passMessage: Distribution supports IPv6.
+    remediation:
+      summary: Enable IPv6 on the distribution.
+      steps:
+        - Edit the distribution's general settings.
+        - Turn on IPv6.
+      verifyCommand: aws cloudfront get-distribution-config --id <id> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html

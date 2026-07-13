@@ -1,0 +1,251 @@
+controls:
+  - id: CR-AWS-MSK-001
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster encrypts client-broker traffic with TLS only
+    description: The provisioned MSK cluster enforces TLS for all client-to-broker
+      communication (EncryptionInfo.EncryptionInTransit.ClientBroker = TLS).
+    rationale: TLS_PLAINTEXT or PLAINTEXT allows unencrypted producer/consumer
+      traffic to be intercepted on the network, exposing message payloads and
+      credentials.
+    severity: high
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: msk_cluster_encryption_in_transit_enabled
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: equals
+      path: Provisioned.EncryptionInfo.EncryptionInTransit.ClientBroker
+      value: TLS
+    failMessage: MSK cluster allows plaintext client-broker traffic (ClientBroker is
+      not TLS).
+    passMessage: MSK cluster enforces TLS-only client-broker encryption in transit.
+    remediation:
+      summary: Set client-broker encryption to TLS.
+      steps:
+        - Update the cluster's EncryptionInfo so
+          EncryptionInTransit.ClientBroker is TLS.
+        - Reconfigure producers and consumers to use the TLS bootstrap brokers.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/msk-encryption.html
+  - id: CR-AWS-MSK-002
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster encrypts data in transit between brokers
+    description: The provisioned MSK cluster encrypts inter-broker traffic
+      (EncryptionInfo.EncryptionInTransit.InCluster = true).
+    rationale: Unencrypted inter-broker replication traffic can be sniffed within
+      the VPC, exposing replicated message data between broker nodes.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: msk_cluster_encryption_in_transit_enabled
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: equals
+      path: Provisioned.EncryptionInfo.EncryptionInTransit.InCluster
+      value: true
+    failMessage: MSK cluster does not encrypt in-cluster (broker-to-broker) traffic.
+    passMessage: MSK cluster encrypts in-cluster broker-to-broker traffic.
+    remediation:
+      summary: Enable in-cluster encryption in transit.
+      steps:
+        - Update the cluster's EncryptionInfo so EncryptionInTransit.InCluster
+          is true.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/msk-encryption.html
+  - id: CR-AWS-MSK-003
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster encrypts data at rest with a KMS key
+    description: The provisioned MSK cluster has a KMS key configured for EBS
+      data-volume encryption at rest
+      (EncryptionInfo.EncryptionAtRest.DataVolumeKMSKeyId).
+    rationale: Without a configured KMS key, broker storage volumes may not be
+      protected, risking exposure of persisted topic data if the underlying
+      storage is accessed.
+    severity: medium
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: msk_cluster_encryption_at_rest_uses_cmk
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: exists
+      path: Provisioned.EncryptionInfo.EncryptionAtRest.DataVolumeKMSKeyId
+    failMessage: MSK cluster has no KMS key configured for data-at-rest encryption.
+    passMessage: MSK cluster encrypts data at rest with a KMS key.
+    remediation:
+      summary: Configure a KMS key for data-volume encryption at rest.
+      steps:
+        - Recreate or configure the cluster with
+          EncryptionInfo.EncryptionAtRest.DataVolumeKMSKeyId set to a
+          customer-managed KMS key.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/msk-encryption.html
+  - id: CR-AWS-MSK-004
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster does not allow public access
+    description: The provisioned MSK cluster keeps brokers private
+      (BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess.Type = DISABLED).
+    rationale: Public access exposes Kafka broker endpoints to the internet, greatly
+      enlarging the attack surface for brute forcing and exploitation.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: msk_cluster_is_public
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: equals
+      path: Provisioned.BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess.Type
+      value: DISABLED
+    failMessage: MSK cluster has public access enabled on its brokers.
+    passMessage: MSK cluster public access is disabled.
+    remediation:
+      summary: Disable public access on the cluster brokers.
+      steps:
+        - Set BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess.Type to DISABLED.
+        - Access brokers only from within the VPC or via private connectivity.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/public-access.html
+  - id: CR-AWS-MSK-005
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster disables unauthenticated client access
+    description: The provisioned MSK cluster does not permit unauthenticated clients
+      (ClientAuthentication.Unauthenticated.Enabled = false).
+    rationale: Unauthenticated access lets any network-reachable client produce to
+      or consume from topics without credentials, undermining access control.
+    severity: high
+    categories:
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: msk_cluster_unrestricted_access_disabled
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: notEquals
+      path: Provisioned.ClientAuthentication.Unauthenticated.Enabled
+      value: true
+    failMessage: MSK cluster allows unauthenticated client access.
+    passMessage: MSK cluster requires authenticated client access.
+    remediation:
+      summary: Disable unauthenticated client authentication.
+      steps:
+        - Set ClientAuthentication.Unauthenticated.Enabled to false.
+        - Require SASL/SCRAM, IAM, or TLS client authentication.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/kafka_apis_iam.html
+  - id: CR-AWS-MSK-006
+    version: 1.0.0
+    provider: aws
+    service: msk
+    title: MSK cluster has enhanced monitoring enabled
+    description: The provisioned MSK cluster reports broker-level or finer metrics
+      (EnhancedMonitoring is not DEFAULT).
+    rationale: Default monitoring provides only coarse cluster metrics, hindering
+      detection of per-broker performance issues, abuse, or partition-level
+      anomalies.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: msk_cluster_enhanced_monitoring_enabled
+      license: Apache-2.0
+    collector: aws.msk.list_clusters_v2
+    resourcesPath: ClusterInfoList
+    resourceIdField: ClusterArn
+    resourceNameField: ClusterName
+    applicableWhen:
+      op: equals
+      path: ClusterType
+      value: PROVISIONED
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: Provisioned.EnhancedMonitoring
+        - op: notEquals
+          path: Provisioned.EnhancedMonitoring
+          value: DEFAULT
+    failMessage: MSK cluster uses default (coarse) monitoring only.
+    passMessage: MSK cluster has enhanced monitoring enabled.
+    remediation:
+      summary: Enable enhanced monitoring at broker level or finer.
+      steps:
+        - Set EnhancedMonitoring to PER_BROKER, PER_TOPIC_PER_BROKER, or
+          PER_TOPIC_PER_PARTITION.
+      verifyCommand: aws kafka list-clusters-v2 --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/msk/latest/developerguide/monitoring.html

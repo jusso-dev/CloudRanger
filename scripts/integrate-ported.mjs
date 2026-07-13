@@ -20,7 +20,7 @@
  *
  * Usage: node scripts/integrate-ported.mjs <result.json> <provider> [--apply]
  */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -136,7 +136,11 @@ for (const entry of sliceResults) {
       controlsDoc = parseYaml(sanitizeYaml(gen.controlsYaml || ""));
     }
   } catch (e) {
-    sliceReports.push({ service, kept: 0, dropped: [`controlsYaml unparseable: ${String(e.message).split("\n")[0]}`] });
+    sliceReports.push({
+      service,
+      kept: 0,
+      dropped: [`controlsYaml unparseable: ${String(e.message).split("\n")[0]}`],
+    });
     continue;
   }
   try {
@@ -151,21 +155,30 @@ for (const entry of sliceResults) {
     continue;
   }
 
-  const controls = Array.isArray(controlsDoc?.controls) ? controlsDoc.controls.map(normalizeControl) : [];
+  const controls = Array.isArray(controlsDoc?.controls)
+    ? controlsDoc.controls.map(normalizeControl)
+    : [];
   const newCollectors = Array.isArray(collectorsDoc?.collectors) ? collectorsDoc.collectors : [];
-  const fixtureByControl = new Map((Array.isArray(fixtures) ? fixtures : []).map((f) => [f.controlId, f]));
+  const fixtureByControl = new Map(
+    (Array.isArray(fixtures) ? fixtures : []).map((f) => [f.controlId, f]),
+  );
 
   // Load the full slice once to surface schema/ref issues, mapped to control ids.
   const tmp = mkdtempSync(join(tmpdir(), `cr-int-${service}-`));
   mkdirSync(join(tmp, "controls"), { recursive: true });
   mkdirSync(join(tmp, "collectors"), { recursive: true });
-  if (newCollectors.length) writeFileSync(join(tmp, "collectors", "c.yaml"), stringifyYaml({ collectors: newCollectors }));
+  if (newCollectors.length)
+    writeFileSync(join(tmp, "collectors", "c.yaml"), stringifyYaml({ collectors: newCollectors }));
   writeFileSync(join(tmp, "controls", "c.yaml"), stringifyYaml({ controls }));
   let loaded;
   try {
     loaded = loadCatalog([bundled, tmp]);
   } catch (e) {
-    sliceReports.push({ service, kept: 0, dropped: [`slice load error: ${String(e.message).split("\n")[0]}`] });
+    sliceReports.push({
+      service,
+      kept: 0,
+      dropped: [`slice load error: ${String(e.message).split("\n")[0]}`],
+    });
     rmSync(tmp, { recursive: true, force: true });
     continue;
   }
@@ -179,11 +192,19 @@ for (const entry of sliceResults) {
     if (bundledControlIds.has(id)) bad.push("collides with bundled control");
     if (claimedIds.has(id)) bad.push("collides with another slice");
     // schema/ref issue mentioning this id
-    if (issueText.split("\n").some((line) => line.startsWith(`${id}:`) || line.includes(` ${id} `) || line.includes(`${id}:`))) {
+    if (
+      issueText
+        .split("\n")
+        .some(
+          (line) =>
+            line.startsWith(`${id}:`) || line.includes(` ${id} `) || line.includes(`${id}:`),
+        )
+    ) {
       bad.push("schema/reference issue");
     }
     // collector resolves in merged catalog
-    if (control.collector && !loaded.collectors.has(control.collector)) bad.push(`unknown collector ${control.collector}`);
+    if (control.collector && !loaded.collectors.has(control.collector))
+      bad.push(`unknown collector ${control.collector}`);
     // redefines a bundled collector?
     for (const nc of newCollectors) {
       if (bundledCollectorIds.has(nc.id)) bad.push(`redefines bundled collector ${nc.id}`);
@@ -220,10 +241,12 @@ for (const entry of sliceResults) {
     changed = false;
     for (const nc of newCollectors) {
       if (keepCollector.has(nc.id)) continue;
-      const referenced = keptControlCollectorIds.has(nc.id) || [...keepCollector].some((k) => {
-        const kc = newCollectors.find((x) => x.id === k);
-        return kc?.parent?.collector === nc.id;
-      });
+      const referenced =
+        keptControlCollectorIds.has(nc.id) ||
+        [...keepCollector].some((k) => {
+          const kc = newCollectors.find((x) => x.id === k);
+          return kc?.parent?.collector === nc.id;
+        });
       if (referenced) {
         keepCollector.add(nc.id);
         changed = true;
@@ -256,18 +279,56 @@ for (const entry of sliceResults) {
 }
 
 console.log(`\n=== INTEGRATION REPORT (${provider}) ===`);
-console.log(`controls kept: ${totalKept}, dropped: ${totalDropped}, fixtures kept: ${totalFixtures}\n`);
+console.log(
+  `controls kept: ${totalKept}, dropped: ${totalDropped}, fixtures kept: ${totalFixtures}\n`,
+);
 for (const s of sliceReports) {
-  console.log(`${s.service}: kept ${s.kept}${s.dropped.length ? `, dropped ${s.dropped.length}` : ""}`);
+  console.log(
+    `${s.service}: kept ${s.kept}${s.dropped.length ? `, dropped ${s.dropped.length}` : ""}`,
+  );
   for (const d of s.dropped.slice(0, 20)) console.log(`   drop ${d}`);
+}
+
+/**
+ * Merge new list-items into an existing gen file by id rather than clobbering
+ * it. Re-porting a service that already has an aws-gen-<svc> file must ADD its
+ * new controls, not replace the file with only this run's output (which would
+ * silently delete every control from prior waves). New ids win over stale ones
+ * with the same id (shouldn't happen — the gate rejects bundled collisions).
+ */
+function mergeYamlList(path, key, incoming) {
+  const existing = existsSync(path) ? (parseYaml(readFileSync(path, "utf8"))?.[key] ?? []) : [];
+  const incomingIds = new Set(incoming.map((x) => x.id));
+  const merged = [...existing.filter((x) => !incomingIds.has(x.id)), ...incoming];
+  writeFileSync(path, stringifyYaml({ [key]: merged }));
+}
+
+function mergeFixtures(path, incoming) {
+  const existing = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
+  const incomingIds = new Set(incoming.map((f) => f.controlId));
+  const merged = [...existing.filter((f) => !incomingIds.has(f.controlId)), ...incoming];
+  writeFileSync(path, JSON.stringify(merged, null, 2) + "\n");
 }
 
 if (apply) {
   // Final full-catalog validation happens after write via `catalog validate`.
   for (const s of appliedSlices) {
-    if (s.collectorsYaml) writeFileSync(join(realCollectorsDir, `${provider}-gen-${s.service}.yaml`), s.collectorsYaml);
-    writeFileSync(join(realControlsDir, `${provider}-gen-${s.service}.yaml`), s.controlsYaml);
-    writeFileSync(join(realFixturesDir, `${provider}-gen-${s.service}.json`), s.fixturesJson);
+    if (s.collectorsYaml) {
+      mergeYamlList(
+        join(realCollectorsDir, `${provider}-gen-${s.service}.yaml`),
+        "collectors",
+        parseYaml(s.collectorsYaml).collectors,
+      );
+    }
+    mergeYamlList(
+      join(realControlsDir, `${provider}-gen-${s.service}.yaml`),
+      "controls",
+      parseYaml(s.controlsYaml).controls,
+    );
+    mergeFixtures(
+      join(realFixturesDir, `${provider}-gen-${s.service}.json`),
+      JSON.parse(s.fixturesJson),
+    );
   }
   console.log(`\napplied ${appliedSlices.length} slices (${totalKept} controls) to the catalog.`);
 }

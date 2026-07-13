@@ -1,0 +1,512 @@
+[
+  {
+    "controlId": "CR-AWS-CODEBUILD-001",
+    "cases": [
+      {
+        "name": "privileged mode enabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "image": "aws/codebuild/standard:7.0",
+                    "computeType": "BUILD_GENERAL1_SMALL",
+                    "privilegedMode": true,
+                    "environmentVariables": []
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "privileged mode omitted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "image": "aws/codebuild/standard:7.0",
+                    "computeType": "BUILD_GENERAL1_SMALL",
+                    "environmentVariables": []
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-002",
+    "cases": [
+      {
+        "name": "plaintext secret-named variable fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "environmentVariables": [
+                      {
+                        "name": "REGION",
+                        "value": "us-east-1",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "GITHUB_TOKEN",
+                        "value": "ghp_xxxxxxxxxxxx",
+                        "type": "PLAINTEXT"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "secrets managed and only benign plaintext passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "environmentVariables": [
+                      {
+                        "name": "REGION",
+                        "value": "us-east-1",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "/prod/db/password",
+                        "type": "SECRETS_MANAGER"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-003",
+    "cases": [
+      {
+        "name": "artifacts encryption disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "artifacts": {
+                    "type": "S3",
+                    "location": "my-artifact-bucket",
+                    "encryptionDisabled": true
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "artifacts encrypted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "artifacts": {
+                    "type": "S3",
+                    "location": "my-artifact-bucket",
+                    "encryptionDisabled": false
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "no artifacts not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "noart-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "noart-build",
+                  "artifacts": {
+                    "type": "NO_ARTIFACTS"
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-004",
+    "cases": [
+      {
+        "name": "s3 logs enabled but encryption disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "logsConfig": {
+                    "cloudWatchLogs": {
+                      "status": "DISABLED"
+                    },
+                    "s3Logs": {
+                      "status": "ENABLED",
+                      "location": "my-log-bucket/logs",
+                      "encryptionDisabled": true
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "s3 logs enabled and encrypted passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "logsConfig": {
+                    "cloudWatchLogs": {
+                      "status": "ENABLED"
+                    },
+                    "s3Logs": {
+                      "status": "ENABLED",
+                      "location": "my-log-bucket/logs",
+                      "encryptionDisabled": false
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "s3 logs disabled not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "cw-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "cw-build",
+                  "logsConfig": {
+                    "cloudWatchLogs": {
+                      "status": "ENABLED"
+                    },
+                    "s3Logs": {
+                      "status": "DISABLED"
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-005",
+    "cases": [
+      {
+        "name": "embedded credentials in source url fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "source": {
+                    "type": "GITHUB",
+                    "location": "https://ci-user:ghp_secrettoken@github.com/org/repo.git"
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "clean source url passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "source": {
+                    "type": "GITHUB",
+                    "location": "https://github.com/org/repo.git",
+                    "auth": {
+                      "type": "OAUTH"
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "no source location not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "nosrc-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "nosrc-build",
+                  "source": {
+                    "type": "NO_SOURCE"
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-006",
+    "cases": [
+      {
+        "name": "all logging disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "logsConfig": {
+                    "cloudWatchLogs": {
+                      "status": "DISABLED"
+                    },
+                    "s3Logs": {
+                      "status": "DISABLED"
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "cloudwatch logging enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "logsConfig": {
+                    "cloudWatchLogs": {
+                      "status": "ENABLED",
+                      "groupName": "/codebuild/api"
+                    },
+                    "s3Logs": {
+                      "status": "DISABLED"
+                    }
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-CODEBUILD-007",
+    "cases": [
+      {
+        "name": "aws access key in plaintext value fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "web-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "web-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "environmentVariables": [
+                      {
+                        "name": "DEPLOY_CREDS",
+                        "value": "AKIAIOSFODNN7EXAMPLE",
+                        "type": "PLAINTEXT"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "no access-key-like plaintext values passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.codebuild.batch_get_projects",
+            "region": "us-east-1",
+            "resourceKey": "api-build",
+            "exitCode": 0,
+            "output": {
+              "projects": [
+                {
+                  "name": "api-build",
+                  "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "environmentVariables": [
+                      {
+                        "name": "STAGE",
+                        "value": "prod",
+                        "type": "PLAINTEXT"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "projectsNotFound": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

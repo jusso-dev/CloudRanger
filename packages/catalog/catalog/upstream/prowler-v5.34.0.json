@@ -735,8 +735,8 @@
       "title": "CloudFront distribution uses a custom SSL/TLS certificate",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CLOUDFRONT-013"]
     },
     {
       "provider": "aws",
@@ -755,8 +755,8 @@
       "title": "CloudFront distribution has Field Level Encryption enabled",
       "severity": "low",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CLOUDFRONT-010"]
     },
     {
       "provider": "aws",
@@ -805,8 +805,8 @@
       "title": "CloudFront distribution has origin failover configured with at least two origins",
       "severity": "low",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CLOUDFRONT-012"]
     },
     {
       "provider": "aws",
@@ -856,7 +856,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-CLOUDFRONT-003", "CR-AWS-CLOUDFRONT-005"]
+      "controlIds": ["CR-AWS-CLOUDFRONT-003", "CR-AWS-CLOUDFRONT-005", "CR-AWS-CLOUDFRONT-011"]
     },
     {
       "provider": "aws",
@@ -1255,8 +1255,8 @@
       "title": "CodeBuild project has CloudWatch Logs or S3 logging enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CODEBUILD-006"]
     },
     {
       "provider": "aws",
@@ -1265,8 +1265,8 @@
       "title": "CodeBuild project has no sensitive credentials in plaintext environment variables",
       "severity": "critical",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CODEBUILD-002", "CR-AWS-CODEBUILD-007"]
     },
     {
       "provider": "aws",
@@ -1295,8 +1295,8 @@
       "title": "CodeBuild project S3 logs are encrypted at rest",
       "severity": "low",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CODEBUILD-004"]
     },
     {
       "provider": "aws",
@@ -1305,8 +1305,8 @@
       "title": "CodeBuild project source repository URLs do not contain sensitive credentials",
       "severity": "critical",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-CODEBUILD-005"]
     },
     {
       "provider": "aws",
@@ -1376,7 +1376,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-COGNITO-002"]
+      "controlIds": ["CR-AWS-COGNITO-002", "CR-AWS-COGNITO-008"]
     },
     {
       "provider": "aws",
@@ -1425,8 +1425,8 @@
       "title": "Cognito user pool has deletion protection enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-COGNITO-009"]
     },
     {
       "provider": "aws",
@@ -1436,7 +1436,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-COGNITO-001"]
+      "controlIds": ["CR-AWS-COGNITO-001", "CR-AWS-COGNITO-006", "CR-AWS-COGNITO-007"]
     },
     {
       "provider": "aws",
@@ -1456,7 +1456,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-COGNITO-003"]
+      "controlIds": ["CR-AWS-COGNITO-003", "CR-AWS-COGNITO-004"]
     },
     {
       "provider": "aws",
@@ -1485,8 +1485,8 @@
       "title": "Cognito user pool password policy requires at least one uppercase letter",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-COGNITO-005"]
     },
     {
       "provider": "aws",
@@ -1855,8 +1855,8 @@
       "title": "DynamoDB table uses on-demand capacity or has auto scaling enabled for read and write capacity units",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-DYNAMODB-004"]
     },
     {
       "provider": "aws",
@@ -1865,8 +1865,8 @@
       "title": "DynamoDB table resource-based policy does not allow cross-account access",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-DYNAMODB-005"]
     },
     {
       "provider": "aws",
@@ -1875,8 +1875,8 @@
       "title": "DynamoDB table has deletion protection enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-DYNAMODB-003"]
     },
     {
       "provider": "aws",
@@ -1895,8 +1895,8 @@
       "title": "DynamoDB table is encrypted at rest with AWS KMS",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-DYNAMODB-002"]
     },
     {
       "provider": "aws",
@@ -2026,7 +2026,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-EC2-028"]
+      "controlIds": ["CR-AWS-EC2-028", "CR-AWS-EC2-151"]
     },
     {
       "provider": "aws",
@@ -2056,7 +2056,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-EC2-004", "CR-AWS-EC2-040", "CR-AWS-EC2-041"]
+      "controlIds": ["CR-AWS-EC2-004", "CR-AWS-EC2-040", "CR-AWS-EC2-041", "CR-AWS-EC2-154"]
     },
     {
       "provider": "aws",
@@ -2065,8 +2065,8 @@
       "title": "EC2 instance is not internet-facing with an instance profile attached",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EC2-152"]
     },
     {
       "provider": "aws",
@@ -2085,8 +2085,8 @@
       "title": "EC2 instance is not older than the configured maximum age or is not running",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EC2-153"]
     },
     {
       "provider": "aws",
@@ -2776,8 +2776,8 @@
       "title": "ECS task definition has no secrets in environment variables",
       "severity": "critical",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-ECS-007"]
     },
     {
       "provider": "aws",
@@ -2806,8 +2806,8 @@
       "title": "EFS file system has no access points allowing access to the root directory",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EFS-056"]
     },
     {
       "provider": "aws",
@@ -2816,8 +2816,8 @@
       "title": "EFS file system has all access points with a defined POSIX user",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EFS-055"]
     },
     {
       "provider": "aws",
@@ -2836,8 +2836,8 @@
       "title": "EFS file system has backup enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EFS-052"]
     },
     {
       "provider": "aws",
@@ -2866,8 +2866,8 @@
       "title": "EFS file system policy does not allow access to any client within the VPC",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-EFS-053", "CR-AWS-EFS-054"]
     },
     {
       "provider": "aws",
@@ -3397,7 +3397,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-GLUE-002"]
+      "controlIds": ["CR-AWS-GLUE-002", "CR-AWS-GLUE-007"]
     },
     {
       "provider": "aws",
@@ -3407,7 +3407,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-GLUE-001"]
+      "controlIds": ["CR-AWS-GLUE-001", "CR-AWS-GLUE-006"]
     },
     {
       "provider": "aws",
@@ -3467,7 +3467,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-GLUE-004"]
+      "controlIds": ["CR-AWS-GLUE-004", "CR-AWS-GLUE-008", "CR-AWS-GLUE-010"]
     },
     {
       "provider": "aws",
@@ -3487,7 +3487,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-GLUE-005"]
+      "controlIds": ["CR-AWS-GLUE-005", "CR-AWS-GLUE-011"]
     },
     {
       "provider": "aws",
@@ -4396,8 +4396,8 @@
       "title": "Neptune cluster has automated backups enabled with retention period equal to or greater than the configured minimum",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-NEPTUNE-004"]
     },
     {
       "provider": "aws",
@@ -4406,8 +4406,8 @@
       "title": "Neptune DB cluster is configured to copy tags to snapshots.",
       "severity": "low",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-NEPTUNE-007"]
     },
     {
       "provider": "aws",
@@ -4416,8 +4416,8 @@
       "title": "Neptune cluster has deletion protection enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-NEPTUNE-005"]
     },
     {
       "provider": "aws",
@@ -4746,8 +4746,8 @@
       "title": "RDS DB cluster has copy tags to snapshots enabled",
       "severity": "low",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-RDS-029"]
     },
     {
       "provider": "aws",
@@ -4786,8 +4786,8 @@
       "title": "RDS cluster has IAM authentication enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-RDS-026"]
     },
     {
       "provider": "aws",
@@ -4796,8 +4796,8 @@
       "title": "RDS cluster has CloudWatch Logs export enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-RDS-028"]
     },
     {
       "provider": "aws",
@@ -4846,8 +4846,8 @@
       "title": "RDS cluster storage is encrypted",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-RDS-025"]
     },
     {
       "provider": "aws",
@@ -4857,7 +4857,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-003"]
+      "controlIds": ["CR-AWS-RDS-003", "CR-AWS-RDS-022"]
     },
     {
       "provider": "aws",
@@ -4907,7 +4907,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-004"]
+      "controlIds": ["CR-AWS-RDS-004", "CR-AWS-RDS-023"]
     },
     {
       "provider": "aws",
@@ -4927,7 +4927,7 @@
       "severity": "low",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-015"]
+      "controlIds": ["CR-AWS-RDS-015", "CR-AWS-RDS-030"]
     },
     {
       "provider": "aws",
@@ -5007,7 +5007,7 @@
       "severity": "medium",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-006"]
+      "controlIds": ["CR-AWS-RDS-006", "CR-AWS-RDS-024"]
     },
     {
       "provider": "aws",
@@ -5017,7 +5017,7 @@
       "severity": "critical",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-001", "CR-AWS-RDS-017"]
+      "controlIds": ["CR-AWS-RDS-001", "CR-AWS-RDS-017", "CR-AWS-RDS-021", "CR-AWS-RDS-031"]
     },
     {
       "provider": "aws",
@@ -5047,7 +5047,7 @@
       "severity": "high",
       "deprecated": false,
       "status": "implemented",
-      "controlIds": ["CR-AWS-RDS-002"]
+      "controlIds": ["CR-AWS-RDS-002", "CR-AWS-RDS-020"]
     },
     {
       "provider": "aws",
@@ -5507,8 +5507,8 @@
       "title": "Amazon SageMaker model has network isolation enabled",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-010"]
     },
     {
       "provider": "aws",
@@ -5527,8 +5527,8 @@
       "title": "Amazon SageMaker model has VPC settings enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-011"]
     },
     {
       "provider": "aws",
@@ -5577,8 +5577,8 @@
       "title": "Amazon SageMaker training job has inter-container traffic encryption enabled",
       "severity": "medium",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-007"]
     },
     {
       "provider": "aws",
@@ -5587,8 +5587,8 @@
       "title": "Amazon SageMaker training job has network isolation enabled",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-006"]
     },
     {
       "provider": "aws",
@@ -5597,8 +5597,8 @@
       "title": "Amazon SageMaker training job volume has KMS encryption enabled",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-008"]
     },
     {
       "provider": "aws",
@@ -5607,8 +5607,8 @@
       "title": "Amazon SageMaker training job has VPC configuration enabled",
       "severity": "high",
       "deprecated": false,
-      "status": "unmapped",
-      "controlIds": []
+      "status": "implemented",
+      "controlIds": ["CR-AWS-SAGEMAKER-009"]
     },
     {
       "provider": "aws",

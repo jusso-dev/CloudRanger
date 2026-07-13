@@ -101,5 +101,250 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-003",
+    "cases": [
+      {
+        "name": "exports audit logs",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "StorageEncrypted": true,
+                  "BackupRetentionPeriod": 7,
+                  "DeletionProtection": true,
+                  "MultiAZ": true,
+                  "CopyTagsToSnapshot": true,
+                  "IAMDatabaseAuthenticationEnabled": true,
+                  "EnabledCloudwatchLogsExports": ["audit"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "no audit log export",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "StorageEncrypted": true,
+                  "BackupRetentionPeriod": 1,
+                  "DeletionProtection": false,
+                  "MultiAZ": false,
+                  "CopyTagsToSnapshot": false,
+                  "IAMDatabaseAuthenticationEnabled": false,
+                  "EnabledCloudwatchLogsExports": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-004",
+    "cases": [
+      {
+        "name": "retains 14 days",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "BackupRetentionPeriod": 14,
+                  "StorageEncrypted": true,
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "retains only 1 day",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "BackupRetentionPeriod": 1,
+                  "StorageEncrypted": true,
+                  "DeletionProtection": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-005",
+    "cases": [
+      {
+        "name": "deletion protection on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "DeletionProtection": true,
+                  "BackupRetentionPeriod": 7
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "deletion protection off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "DeletionProtection": false,
+                  "BackupRetentionPeriod": 1
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-006",
+    "cases": [
+      {
+        "name": "multi-az enabled",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "MultiAZ": true,
+                  "AvailabilityZones": ["us-east-1a", "us-east-1b"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "single-az",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "MultiAZ": false,
+                  "AvailabilityZones": ["us-east-1a"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-NEPTUNE-007",
+    "cases": [
+      {
+        "name": "copy tags on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-prod",
+                  "Engine": "neptune",
+                  "CopyTagsToSnapshot": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "copy tags off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.neptune.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "graph-dev",
+                  "Engine": "neptune",
+                  "CopyTagsToSnapshot": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

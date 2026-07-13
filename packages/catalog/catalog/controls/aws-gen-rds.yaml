@@ -409,3 +409,462 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.Enabling.html
+  - id: CR-AWS-RDS-020
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance storage is encrypted at rest
+    description: The DB instance has StorageEncrypted set to true so underlying
+      storage, automated backups, read replicas, and snapshots are encrypted.
+    rationale: Unencrypted RDS storage exposes all database data, automated backups,
+      and snapshots to anyone who gains access to the underlying storage media
+      or copied snapshots.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: rds_instance_storage_encrypted
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: StorageEncrypted
+      value: true
+    failMessage: DB instance storage is not encrypted at rest.
+    passMessage: DB instance storage is encrypted at rest.
+    remediation:
+      summary: Encrypt the DB instance storage.
+      steps:
+        - Encryption cannot be enabled in place; create an encrypted snapshot
+          copy of the instance with a KMS key.
+        - Restore a new encrypted DB instance from the encrypted snapshot and
+          cut clients over.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - 2.3.1
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html
+  - id: CR-AWS-RDS-021
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance is not publicly accessible
+    description: The DB instance has PubliclyAccessible set to false so it is not
+      assigned a public endpoint reachable from the internet.
+    rationale: A publicly accessible RDS instance can be reached from the internet
+      and, combined with weak credentials or open security groups, is a direct
+      data-exfiltration and brute-force target.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: rds_instance_no_public_access
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: PubliclyAccessible
+      value: false
+    failMessage: DB instance is publicly accessible (assigned a public endpoint).
+    passMessage: DB instance is not publicly accessible.
+    remediation:
+      summary: Disable public accessibility.
+      steps:
+        - Run modify-db-instance with --no-publicly-accessible and apply.
+        - Place the instance in private subnets and restrict inbound security
+          group rules.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html
+  - id: CR-AWS-RDS-022
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has automated backups enabled
+    description: The DB instance has a BackupRetentionPeriod greater than zero so
+      automated backups and point-in-time recovery are enabled.
+    rationale: A zero backup retention period disables automated backups and
+      point-in-time recovery, meaning accidental deletion, corruption, or
+      ransomware leaves no recovery path.
+    severity: high
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_backup_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: gt
+      path: BackupRetentionPeriod
+      value: 0
+    failMessage: DB instance has automated backups disabled (BackupRetentionPeriod is 0).
+    passMessage: DB instance has automated backups enabled.
+    remediation:
+      summary: Enable automated backups.
+      steps:
+        - Run modify-db-instance with --backup-retention-period set to at least
+          7 (days).
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance:
+      - framework: cis-aws-foundations
+        version: "3.0"
+        controls:
+          - 2.3.2
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html
+  - id: CR-AWS-RDS-023
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has deletion protection enabled
+    description: The DB instance has DeletionProtection set to true so it cannot be
+      deleted without first disabling protection.
+    rationale: Without deletion protection a single database instance can be
+      permanently destroyed by accident or by a compromised principal, causing
+      irreversible data loss.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_deletion_protection
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: DeletionProtection
+      value: true
+    failMessage: DB instance does not have deletion protection enabled.
+    passMessage: DB instance has deletion protection enabled.
+    remediation:
+      summary: Enable deletion protection on the instance.
+      steps:
+        - Run modify-db-instance with --deletion-protection.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_DeleteInstance.html
+  - id: CR-AWS-RDS-024
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance is deployed Multi-AZ
+    description: The DB instance has MultiAZ set to true so a synchronous standby is
+      maintained in a second Availability Zone.
+    rationale: A single-AZ database has no automatic failover; an AZ outage or host
+      failure causes extended downtime and risks data loss for in-flight
+      transactions.
+    severity: medium
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_multi_az
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: MultiAZ
+      value: true
+    failMessage: DB instance is not deployed Multi-AZ (no standby for automatic failover).
+    passMessage: DB instance is deployed Multi-AZ.
+    remediation:
+      summary: Convert the instance to a Multi-AZ deployment.
+      steps:
+        - Run modify-db-instance with --multi-az and apply.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html
+  - id: CR-AWS-RDS-025
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster storage is encrypted at rest
+    description: The Aurora/RDS DB cluster has StorageEncrypted set to true so the
+      shared cluster volume is encrypted.
+    rationale: An unencrypted cluster volume exposes all data, automated backups,
+      and snapshots if the underlying storage or a copied snapshot is accessed
+      by an unauthorized party.
+    severity: high
+    categories:
+      - encryption
+      - storage
+    source:
+      engine: prowler
+      id: rds_cluster_storage_encrypted
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: StorageEncrypted
+      value: true
+    failMessage: DB cluster storage is not encrypted at rest.
+    passMessage: DB cluster storage is encrypted at rest.
+    remediation:
+      summary: Encrypt the DB cluster storage.
+      steps:
+        - Encryption cannot be enabled in place; take an encrypted snapshot copy
+          with a KMS key.
+        - Restore a new encrypted cluster from the encrypted snapshot and
+          migrate clients.
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Overview.Encryption.html
+  - id: CR-AWS-RDS-026
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster has IAM database authentication enabled
+    description: The DB cluster has IAMDatabaseAuthenticationEnabled set to true so
+      IAM-based auth can be used instead of relying solely on static passwords.
+    rationale: IAM database authentication removes long-lived static credentials and
+      enables centralized, short-lived, auditable database access at the cluster
+      level.
+    severity: medium
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: rds_cluster_iam_authentication_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: IAMDatabaseAuthenticationEnabled
+      value: true
+    failMessage: DB cluster does not have IAM database authentication enabled.
+    passMessage: DB cluster has IAM database authentication enabled.
+    remediation:
+      summary: Enable IAM database authentication on the cluster.
+      steps:
+        - Run modify-db-cluster with --enable-iam-database-authentication and
+          apply.
+        - Grant rds-db:connect IAM permissions to the relevant principals.
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.IAMDBAuth.html
+  - id: CR-AWS-RDS-027
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster has automated backups enabled
+    description: The DB cluster has a BackupRetentionPeriod greater than zero so
+      automated backups and point-in-time recovery are enabled.
+    rationale: A zero backup retention period disables automated backups and
+      point-in-time recovery, leaving no recovery path after accidental
+      deletion, corruption, or ransomware.
+    severity: high
+    categories:
+      - resilience
+    source:
+      engine: prowler
+      id: rds_cluster_backup_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: gt
+      path: BackupRetentionPeriod
+      value: 0
+    failMessage: DB cluster has automated backups disabled (BackupRetentionPeriod is 0).
+    passMessage: DB cluster has automated backups enabled.
+    remediation:
+      summary: Enable automated backups on the cluster.
+      steps:
+        - Run modify-db-cluster with --backup-retention-period set to at least 7
+          (days).
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Managing.Backups.html
+  - id: CR-AWS-RDS-028
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster exports logs to CloudWatch Logs
+    description: The DB cluster has at least one log type enabled for export to
+      CloudWatch Logs (EnabledCloudwatchLogsExports is non-empty).
+    rationale: Without CloudWatch Logs exports, cluster engine, audit, and error
+      logs are not centrally retained for security investigation and monitoring.
+    severity: medium
+    categories:
+      - logging
+    source:
+      engine: prowler
+      id: rds_cluster_integration_cloudwatch_logs
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: and
+      exprs:
+        - op: exists
+          path: EnabledCloudwatchLogsExports
+        - op: not
+          expr:
+            op: isEmpty
+            path: EnabledCloudwatchLogsExports
+    failMessage: DB cluster does not export any logs to CloudWatch Logs.
+    passMessage: DB cluster exports logs to CloudWatch Logs.
+    remediation:
+      summary: Enable CloudWatch Logs exports on the cluster.
+      steps:
+        - Run modify-db-cluster with --cloudwatch-logs-export-configuration
+          enabling the log types supported by the engine (e.g. audit, error,
+          general, slowquery, postgresql).
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_LogAccess.html
+  - id: CR-AWS-RDS-029
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster copies tags to snapshots
+    description: The DB cluster has CopyTagsToSnapshot set to true so its tags
+      propagate to any snapshots it creates.
+    rationale: Without copy-tags-to-snapshot, cluster snapshots lose ownership,
+      cost-allocation, and access-control tags, weakening governance and
+      tag-based access policies.
+    severity: low
+    categories:
+      - governance
+      - resilience
+    source:
+      engine: prowler
+      id: rds_cluster_copy_tags_to_snapshots
+      license: Apache-2.0
+    collector: aws.rds.describe_db_clusters
+    resourcesPath: DBClusters
+    resourceIdField: DBClusterIdentifier
+    resourceNameField: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: CopyTagsToSnapshot
+      value: true
+    failMessage: DB cluster does not copy tags to snapshots.
+    passMessage: DB cluster copies tags to snapshots.
+    remediation:
+      summary: Enable copy tags to snapshot on the cluster.
+      steps:
+        - Run modify-db-cluster with --copy-tags-to-snapshot.
+      verifyCommand: aws rds describe-db-clusters --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_Tagging.html
+  - id: CR-AWS-RDS-030
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB instance has Performance Insights enabled
+    description: The DB instance has PerformanceInsightsEnabled set to true so
+      database load and query performance telemetry is captured.
+    rationale: Without Performance Insights, operators lack the query-level and
+      wait-event telemetry needed to detect performance anomalies and
+      investigate abusive or malicious query patterns.
+    severity: low
+    categories:
+      - logging
+      - resilience
+    source:
+      engine: prowler
+      id: rds_instance_enhanced_monitoring_enabled
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    passWhen:
+      op: equals
+      path: PerformanceInsightsEnabled
+      value: true
+    failMessage: DB instance does not have Performance Insights enabled.
+    passMessage: DB instance has Performance Insights enabled.
+    remediation:
+      summary: Enable Performance Insights.
+      steps:
+        - Run modify-db-instance with --enable-performance-insights and
+          optionally --performance-insights-kms-key-id.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PerfInsights.Enabling.html
+  - id: CR-AWS-RDS-031
+    version: 1.0.0
+    provider: aws
+    service: rds
+    title: RDS DB cluster is not publicly accessible via any member instance
+    description: No member DB instance of a cluster reports PubliclyAccessible true
+      (checked against instance records; cluster endpoints inherit member
+      reachability).
+    rationale: A cluster reachable from the internet via a publicly accessible
+      member instance is a direct exfiltration and brute-force target.
+    severity: critical
+    categories:
+      - public-exposure
+      - network
+    source:
+      engine: prowler
+      id: rds_instance_no_public_access
+      license: Apache-2.0
+    collector: aws.rds.describe_db_instances
+    resourcesPath: DBInstances
+    resourceIdField: DBInstanceIdentifier
+    resourceNameField: DBInstanceIdentifier
+    applicableWhen:
+      op: exists
+      path: DBClusterIdentifier
+    passWhen:
+      op: equals
+      path: PubliclyAccessible
+      value: false
+    failMessage: Cluster member DB instance is publicly accessible.
+    passMessage: Cluster member DB instance is not publicly accessible.
+    remediation:
+      summary: Disable public accessibility on the cluster member instances.
+      steps:
+        - Run modify-db-instance with --no-publicly-accessible for each affected
+          cluster member.
+        - Place instances in private subnets and tighten security group inbound
+          rules.
+      verifyCommand: aws rds describe-db-instances --region <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html

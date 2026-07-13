@@ -1,0 +1,45 @@
+collectors:
+  - id: aws.efs.describe_backup_policy
+    provider: aws
+    service: efs
+    description: Automatic backup policy for one EFS file system.
+    kind: per_resource
+    command: aws efs describe-backup-policy --file-system-id {resource} --output json
+    regional: false
+    parent:
+      collector: aws.efs.describe_file_systems
+      itemsPath: FileSystems
+      resourceField: FileSystemId
+    outputFormat: json
+    notes: >
+      Returns { "BackupPolicy": { "Status":
+      "ENABLED|ENABLING|DISABLED|DISABLING" } }. Raises PolicyNotFound when no
+      backup policy has ever been configured for the file system.
+  - id: aws.efs.describe_file_system_policy
+    provider: aws
+    service: efs
+    description: Resource-based (file system) policy for one EFS file system.
+    kind: per_resource
+    command: aws efs describe-file-system-policy --file-system-id {resource}
+      --output json
+    regional: false
+    parent:
+      collector: aws.efs.describe_file_systems
+      itemsPath: FileSystems
+      resourceField: FileSystemId
+    outputFormat: json
+    notes: >
+      Returns { "FileSystemId": "fs-...", "Policy": "<JSON-encoded IAM policy
+      string>" }. Raises PolicyNotFound when no file system policy is attached.
+  - id: aws.efs.describe_access_points
+    provider: aws
+    service: efs
+    description: EFS access points in one region.
+    kind: single
+    command: aws efs describe-access-points --region {region} --output json
+    regional: true
+    outputFormat: json
+    notes: >
+      With no filter returns all access points in the region under the
+      AccessPoints array. Each item has RootDirectory.Path and an optional
+      PosixUser object.

@@ -523,5 +523,548 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-020",
+    "cases": [
+      {
+        "name": "encrypted storage passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-enc",
+                  "Engine": "postgres",
+                  "StorageEncrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted storage fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-plain",
+                  "Engine": "mysql",
+                  "StorageEncrypted": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-021",
+    "cases": [
+      {
+        "name": "private instance passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-priv",
+                  "PubliclyAccessible": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "public instance fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-pub",
+                  "PubliclyAccessible": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-022",
+    "cases": [
+      {
+        "name": "backups enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-bak",
+                  "BackupRetentionPeriod": 7
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "backups disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-nobak",
+                  "BackupRetentionPeriod": 0
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-023",
+    "cases": [
+      {
+        "name": "deletion protection on passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-prot",
+                  "DeletionProtection": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "deletion protection off fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-unprot",
+                  "DeletionProtection": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-024",
+    "cases": [
+      {
+        "name": "multi-az passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-maz",
+                  "MultiAZ": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "single-az fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-saz",
+                  "MultiAZ": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-025",
+    "cases": [
+      {
+        "name": "encrypted cluster passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-enc",
+                  "Engine": "aurora-postgresql",
+                  "StorageEncrypted": true,
+                  "KmsKeyId": "arn:aws:kms:us-east-1:111122223333:key/abcd"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "unencrypted cluster fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-plain",
+                  "Engine": "aurora-mysql",
+                  "StorageEncrypted": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-026",
+    "cases": [
+      {
+        "name": "cluster iam auth on passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-iam",
+                  "IAMDatabaseAuthenticationEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cluster iam auth off fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-noiam",
+                  "IAMDatabaseAuthenticationEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-027",
+    "cases": [
+      {
+        "name": "cluster backups enabled passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-bak",
+                  "BackupRetentionPeriod": 14
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cluster backups disabled fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-nobak",
+                  "BackupRetentionPeriod": 0
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-028",
+    "cases": [
+      {
+        "name": "cluster exports logs passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-logs",
+                  "EnabledCloudwatchLogsExports": ["audit", "error", "slowquery"]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cluster no log exports fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-nolog",
+                  "EnabledCloudwatchLogsExports": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-029",
+    "cases": [
+      {
+        "name": "cluster copy tags passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-tags",
+                  "CopyTagsToSnapshot": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cluster copy tags off fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_clusters",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBClusters": [
+                {
+                  "DBClusterIdentifier": "aur-notags",
+                  "CopyTagsToSnapshot": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-030",
+    "cases": [
+      {
+        "name": "performance insights on passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-pi",
+                  "PerformanceInsightsEnabled": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "performance insights off fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-nopi",
+                  "PerformanceInsightsEnabled": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-RDS-031",
+    "cases": [
+      {
+        "name": "cluster member private passes",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "aur-member-1",
+                  "DBClusterIdentifier": "aur-cluster",
+                  "PubliclyAccessible": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "cluster member public fails",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "aur-member-2",
+                  "DBClusterIdentifier": "aur-cluster",
+                  "PubliclyAccessible": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "standalone instance not applicable",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.rds.describe_db_instances",
+            "region": "us-east-1",
+            "exitCode": 0,
+            "output": {
+              "DBInstances": [
+                {
+                  "DBInstanceIdentifier": "db-standalone",
+                  "PubliclyAccessible": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

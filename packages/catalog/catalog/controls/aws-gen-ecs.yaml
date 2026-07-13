@@ -205,3 +205,318 @@ controls:
     compliance: []
     references:
       - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html
+  - id: CR-AWS-ECS-007
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition has no plaintext secrets in container environment
+    description: No container in the task definition exposes a secret-like value
+      (password, token, key, secret) as a plaintext environment variable;
+      secrets must be injected via the secrets block instead.
+    rationale: Environment variables in a task definition are stored in plaintext
+      and are visible to anyone with ecs:DescribeTaskDefinition, so hardcoded
+      passwords or API keys become a durable credential-exposure vector.
+    severity: high
+    categories:
+      - identity
+      - encryption
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_environment_secrets
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: anyItem
+        path: environment
+        condition:
+          op: or
+          exprs:
+            - op: matches
+              path: name
+              pattern: (PASS|pass|Pass|PWD|pwd|SECRET|secret|Secret|TOKEN|token|Token|KEY|key|Key|CRED|cred|Cred)
+            - op: matches
+              path: value
+              pattern: (AKIA[0-9A-Z]{16}|-----BEGIN|password=)
+    failMessage: A container exposes a secret-like value as a plaintext environment
+      variable.
+    passMessage: No plaintext secrets are present in container environment variables.
+    remediation:
+      summary: Move secrets out of environment into the secrets block.
+      steps:
+        - Remove secret-like entries from each container's environment array.
+        - Reference the value through the secrets array using an SSM Parameter
+          Store or Secrets Manager valueFrom ARN.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html
+  - id: CR-AWS-ECS-008
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition does not mount the host Docker socket
+    description: No container in the task definition bind-mounts the host Docker
+      socket (/var/run/docker.sock) via a host-path volume referenced by a mount
+      point.
+    rationale: Mounting the host Docker socket gives a container full control of the
+      Docker daemon, which is equivalent to root on the host and enables trivial
+      container escape and lateral movement.
+    severity: critical
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_docker_socket_mount
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.volumes
+      condition:
+        op: contains
+        path: host.sourcePath
+        value: docker.sock
+    failMessage: A task volume bind-mounts the host Docker socket.
+    passMessage: No task volume mounts the host Docker socket.
+    remediation:
+      summary: Remove host Docker socket bind mounts.
+      steps:
+        - Delete any volume whose host.sourcePath points at /var/run/docker.sock.
+        - Redesign the workload to use the ECS/AWS APIs instead of the host
+          Docker daemon.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Volume.html
+  - id: CR-AWS-ECS-009
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition mounts no host-path volumes
+    description: The task definition defines no volume that binds a host filesystem
+      path into containers.
+    rationale: Host-path bind mounts break the container/host isolation boundary and
+      can expose or tamper with sensitive host files (device nodes, credentials,
+      configuration), widening the blast radius of a container compromise.
+    severity: medium
+    categories:
+      - identity
+      - resilience
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_host_path_volumes
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.volumes
+      condition:
+        op: exists
+        path: host.sourcePath
+    failMessage: The task definition mounts at least one host-path volume.
+    passMessage: The task definition mounts no host-path volumes.
+    remediation:
+      summary: Replace host-path volumes with managed volumes.
+      steps:
+        - Remove volumes that set host.sourcePath.
+        - Use EFS, Docker, or task scratch volumes for persistence instead of
+          host paths.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/bind-mounts.html
+  - id: CR-AWS-ECS-010
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition grants no extra Linux capabilities
+    description: No container adds Linux kernel capabilities through
+      linuxParameters.capabilities.add.
+    rationale: Adding capabilities such as SYS_ADMIN or NET_ADMIN escalates a
+      container's privileges toward those of the host and is a common
+      container-escape enabler.
+    severity: high
+    categories:
+      - identity
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_added_capabilities
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: linuxParameters.capabilities.add
+          - op: not
+            expr:
+              op: isEmpty
+              path: linuxParameters.capabilities.add
+    failMessage: A container adds extra Linux capabilities via
+      linuxParameters.capabilities.add.
+    passMessage: No container adds extra Linux capabilities.
+    remediation:
+      summary: Remove added Linux capabilities.
+      steps:
+        - Clear the linuxParameters.capabilities.add list on every container.
+        - Drop unneeded capabilities via linuxParameters.capabilities.drop
+          instead.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_KernelCapabilities.html
+  - id: CR-AWS-ECS-011
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition exposes no host devices to containers
+    description: No container passes host devices into the container through
+      linuxParameters.devices.
+    rationale: Exposing host devices (for example /dev/mem or block devices) to a
+      container can leak host memory or storage and provides a path to escape
+      container isolation.
+    severity: high
+    categories:
+      - identity
+      - public-exposure
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_host_devices
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: noneItem
+      path: taskDefinition.containerDefinitions
+      condition:
+        op: and
+        exprs:
+          - op: exists
+            path: linuxParameters.devices
+          - op: not
+            expr:
+              op: isEmpty
+              path: linuxParameters.devices
+    failMessage: A container exposes host devices via linuxParameters.devices.
+    passMessage: No container exposes host devices.
+    remediation:
+      summary: Remove host device mappings.
+      steps:
+        - Clear the linuxParameters.devices list on every container.
+        - Redesign the workload so it does not require direct host device access.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Device.html
+  - id: CR-AWS-ECS-012
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition does not share the host PID namespace
+    description: The task definition pidMode is not set to host.
+    rationale: Sharing the host PID namespace lets containers see and signal every
+      process on the host, exposing sensitive process arguments and enabling
+      interference with host and neighbouring workloads.
+    severity: high
+    categories:
+      - identity
+      - network
+    source:
+      engine: prowler
+      id: ecs_task_definitions_no_host_pid_ipc_mode
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    passWhen:
+      op: notEquals
+      path: taskDefinition.pidMode
+      value: host
+    failMessage: Task definition shares the host PID namespace (pidMode host).
+    passMessage: Task definition does not share the host PID namespace.
+    remediation:
+      summary: Do not use host pidMode.
+      steps:
+        - Remove pidMode host (use task or omit it).
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  - id: CR-AWS-ECS-013
+    version: 1.0.0
+    provider: aws
+    service: ecs
+    title: ECS task definition EFS volumes require in-transit encryption
+    description: Every EFS volume in the task definition sets transitEncryption to ENABLED.
+    rationale: Without in-transit encryption, NFS traffic between the task and the
+      EFS mount target is unencrypted on the network and can be intercepted,
+      exposing file data.
+    severity: medium
+    categories:
+      - encryption
+      - network
+    source:
+      engine: prowler
+      id: ecs_task_definitions_efs_volumes_encryption_in_transit
+      license: Apache-2.0
+    collector: aws.ecs.describe_task_definition
+    resourceIdField: $resourceKey
+    resourceNameField: taskDefinition.family
+    applicableWhen:
+      op: anyItem
+      path: taskDefinition.volumes
+      condition:
+        op: exists
+        path: efsVolumeConfiguration.fileSystemId
+    passWhen:
+      op: allItems
+      path: taskDefinition.volumes
+      condition:
+        op: or
+        exprs:
+          - op: notExists
+            path: efsVolumeConfiguration.fileSystemId
+          - op: equals
+            path: efsVolumeConfiguration.transitEncryption
+            value: ENABLED
+    failMessage: An EFS volume does not enable in-transit encryption.
+    passMessage: All EFS volumes enable in-transit encryption.
+    remediation:
+      summary: Enable transit encryption on EFS volumes.
+      steps:
+        - Set efsVolumeConfiguration.transitEncryption to ENABLED on each EFS
+          volume.
+        - Register a new revision and update the service.
+      verifyCommand: aws ecs describe-task-definition --task-definition <arn> --region
+        <region> --output json
+    compliance: []
+    references:
+      - https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_EFSVolumeConfiguration.html

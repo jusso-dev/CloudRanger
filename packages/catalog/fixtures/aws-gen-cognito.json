@@ -199,5 +199,407 @@
         ]
       }
     ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-004",
+    "cases": [
+      {
+        "name": "pass minimum length 14",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "Policies": {
+                  "PasswordPolicy": {
+                    "MinimumLength": 14,
+                    "RequireUppercase": true,
+                    "RequireLowercase": true,
+                    "RequireNumbers": true,
+                    "RequireSymbols": true,
+                    "TemporaryPasswordValidityDays": 7
+                  }
+                },
+                "MfaConfiguration": "ON",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail minimum length 8",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Weak00001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Weak00001",
+                "Name": "weak-pool",
+                "Policies": {
+                  "PasswordPolicy": {
+                    "MinimumLength": 8,
+                    "RequireUppercase": true,
+                    "RequireLowercase": true,
+                    "RequireNumbers": true,
+                    "RequireSymbols": false,
+                    "TemporaryPasswordValidityDays": 7
+                  }
+                },
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "not applicable pool deleted",
+        "expected": "not_applicable",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Gone00001",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (ResourceNotFoundException) when calling the DescribeUserPool operation: User pool us-east-1_Gone00001 does not exist."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-005",
+    "cases": [
+      {
+        "name": "pass all classes required",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "Policies": {
+                  "PasswordPolicy": {
+                    "MinimumLength": 14,
+                    "RequireUppercase": true,
+                    "RequireLowercase": true,
+                    "RequireNumbers": true,
+                    "RequireSymbols": true
+                  }
+                },
+                "MfaConfiguration": "ON",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail symbols not required",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Weak00001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Weak00001",
+                "Name": "weak-pool",
+                "Policies": {
+                  "PasswordPolicy": {
+                    "MinimumLength": 14,
+                    "RequireUppercase": true,
+                    "RequireLowercase": true,
+                    "RequireNumbers": true,
+                    "RequireSymbols": false
+                  }
+                },
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-006",
+    "cases": [
+      {
+        "name": "pass mfa on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "MfaConfiguration": "ON",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail mfa optional",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Opt000001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Opt000001",
+                "Name": "optional-pool",
+                "MfaConfiguration": "OPTIONAL",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail mfa off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Off000001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Off000001",
+                "Name": "off-pool",
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-007",
+    "cases": [
+      {
+        "name": "pass mfa optional",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Opt000001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Opt000001",
+                "Name": "optional-pool",
+                "MfaConfiguration": "OPTIONAL",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pass mfa on",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "MfaConfiguration": "ON",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail mfa off",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Off000001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Off000001",
+                "Name": "off-pool",
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-008",
+    "cases": [
+      {
+        "name": "pass advanced security enforced",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "MfaConfiguration": "ON",
+                "UserPoolAddOns": {
+                  "AdvancedSecurityMode": "ENFORCED"
+                },
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail advanced security audit only",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Audit00001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Audit00001",
+                "Name": "audit-pool",
+                "MfaConfiguration": "ON",
+                "UserPoolAddOns": {
+                  "AdvancedSecurityMode": "AUDIT"
+                },
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail advanced security unconfigured",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_NoAddon001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_NoAddon001",
+                "Name": "no-addon-pool",
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "controlId": "CR-AWS-COGNITO-009",
+    "cases": [
+      {
+        "name": "pass deletion protection active",
+        "expected": "pass",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_AbCdEf123",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_AbCdEf123",
+                "Name": "prod-pool",
+                "MfaConfiguration": "ON",
+                "DeletionProtection": "ACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "fail deletion protection inactive",
+        "expected": "fail",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Weak00001",
+            "exitCode": 0,
+            "output": {
+              "UserPool": {
+                "Id": "us-east-1_Weak00001",
+                "Name": "weak-pool",
+                "MfaConfiguration": "OFF",
+                "DeletionProtection": "INACTIVE"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "error access denied",
+        "expected": "error",
+        "records": [
+          {
+            "collectorId": "aws.cognito.describe_user_pool",
+            "region": "us-east-1",
+            "resourceKey": "us-east-1_Denied0001",
+            "exitCode": 254,
+            "output": null,
+            "errorText": "An error occurred (AccessDeniedException) when calling the DescribeUserPool operation: User is not authorized to perform: cognito-idp:DescribeUserPool"
+          }
+        ]
+      }
+    ]
   }
 ]
