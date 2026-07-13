@@ -85,8 +85,12 @@ catalog directory with override semantics, and a Prowler metadata importer
     token, loopback-default bind with explicit non-loopback opt-in,
     DNS-rebinding protection, 4 MB body cap; threat model T6 +
     docs/operations.md.
-16. Signed catalog releases; third-party control pack loading with the same
-    safety validation.
+16. ~~Signed catalog releases; third-party control pack loading with the
+    same safety validation.~~ **Done** — Ed25519 manifest signing
+    (scripts/catalog-sign.mjs, CI signing on tagged releases when the key
+    secret is configured), `cloudranger catalog verify`, and
+    `cloudranger packs add` with pinned publisher keys, explicit
+    --trust-unsigned, and mandatory safety + fixture validation.
 
 ## Phase 5 — Ecosystem
 

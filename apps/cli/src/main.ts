@@ -32,9 +32,11 @@ import { findingsToCsv, findingsToJsonl, findingsToSarif } from "./export.js";
 import {
   controlTemplate,
   fixtureFileSchema,
+  loadCatalog,
   runFixtureFile,
   validateCatalogDocument,
   validateParameterOverrides,
+  verifyCatalogDirectory,
 } from "@cloudranger/engine";
 
 const dbPath = () =>
@@ -72,6 +74,10 @@ Usage:
                                         Print a custom-control YAML template
   cloudranger controls add <file.yaml>  Validate + install a custom control
   cloudranger controls dir              Print the custom catalog directory
+  cloudranger packs add <dir> [--pub <key.pem>] [--trust-unsigned]
+                                        Verify + safety-validate + install a third-party pack
+  cloudranger catalog verify <dir> --pub <key.pem>[,more]
+                                        Verify a signed catalog directory
   cloudranger fixtures capture --control <id> --expected pass|fail|not_applicable|error
                                [--name <case>] [--resource <id>] [--region <r>]
                                [--resource-key <k>] [--scope <id>] [--output <file.json>]
@@ -85,8 +91,8 @@ Environment:
   CLOUDRANGER_DATABASE_URL   PostgreSQL URL for shared deployments (takes precedence)
 `;
 
-async function main(): Promise<number> {
-  const [command, subcommand, ...rest] = process.argv.slice(2);
+export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
+  const [command, subcommand, ...rest] = argv;
 
   if (!command || command === "help" || command === "--help") {
     console.log(HELP);
@@ -109,6 +115,121 @@ async function main(): Promise<number> {
       return 1;
     }
     console.log("OK — no validation issues");
+    return 0;
+  }
+
+  if (command === "catalog" && subcommand === "verify") {
+    const { positionals, values } = parseArgs({
+      args: rest,
+      options: { pub: { type: "string" } },
+      allowPositionals: true,
+    });
+    const dir = positionals[0];
+    if (!dir || !values.pub) {
+      console.error("usage: cloudranger catalog verify <dir> --pub <public.pem>[,more]");
+      return 1;
+    }
+    const keys = values.pub.split(",").map((path) => readFileSync(path, "utf8"));
+    const result = verifyCatalogDirectory(dir, keys);
+    if (!result.ok) {
+      console.error(`verification FAILED: ${result.reason}`);
+      return 1;
+    }
+    console.log(`verification OK (trusted key #${result.keyIndex})`);
+    return 0;
+  }
+
+  if (command === "packs" && subcommand === "add") {
+    const { positionals, values } = parseArgs({
+      args: rest,
+      options: {
+        pub: { type: "string" },
+        "trust-unsigned": { type: "boolean" },
+      },
+      allowPositionals: true,
+    });
+    const dir = positionals[0];
+    if (!dir || !existsSync(dir)) {
+      console.error("packs add requires an existing pack directory");
+      return 1;
+    }
+
+    // 1) Provenance: signature against pinned publisher keys, unless the
+    //    operator explicitly accepts an unsigned pack.
+    const trustedKeysDir = join(homedir(), ".cloudranger", "trusted-keys");
+    const keyFiles = [
+      ...(values.pub ? values.pub.split(",") : []),
+      ...(existsSync(trustedKeysDir)
+        ? readdirSync(trustedKeysDir)
+            .filter((f) => f.endsWith(".pem"))
+            .map((f) => join(trustedKeysDir, f))
+        : []),
+    ];
+    const keys = keyFiles.map((path) => readFileSync(path, "utf8"));
+    const verification = keys.length > 0 ? verifyCatalogDirectory(dir, keys) : undefined;
+    if (!verification?.ok && !values["trust-unsigned"]) {
+      console.error(
+        verification
+          ? `signature verification failed: ${verification.reason}`
+          : "no trusted publisher keys found (put .pem keys in ~/.cloudranger/trusted-keys or pass --pub)",
+      );
+      console.error(
+        "refusing to install an unverified pack; pass --trust-unsigned to accept it anyway",
+      );
+      return 1;
+    }
+
+    // 2) Safety: signature or not, the pack must pass full catalog
+    //    validation — schema, read-only collector commands, parameter
+    //    coherence, referential integrity against the merged catalog.
+    const packCatalog = loadCatalog([catalogDir(), dir]);
+    const packIssues = packCatalog.issues;
+    if (packIssues.length > 0) {
+      for (const issue of packIssues) console.error(`${issue.file}: ${issue.message}`);
+      console.error("pack failed safety validation; nothing installed");
+      return 1;
+    }
+
+    // 3) Fixtures in the pack must agree with the engine before install.
+    const packFixturesDir = join(dir, "fixtures");
+    if (existsSync(packFixturesDir)) {
+      for (const file of readdirSync(packFixturesDir).filter((f) => f.endsWith(".json"))) {
+        const fixtures = JSON.parse(readFileSync(join(packFixturesDir, file), "utf8")) as unknown[];
+        for (const raw of fixtures) {
+          const fixture = fixtureFileSchema.parse(raw);
+          for (const result of runFixtureFile(
+            fixture,
+            packCatalog.controls,
+            packCatalog.collectors,
+          )) {
+            if (!result.ok) {
+              console.error(
+                `fixture ${result.controlId}/${result.caseName}: expected ${result.expected}, engine says ${result.actual}; nothing installed`,
+              );
+              return 1;
+            }
+          }
+        }
+      }
+    }
+
+    // 4) Install: copy into the custom catalog, prefixed by pack name.
+    const packName = basename(resolve(dir)).replace(/[^a-z0-9-]/gi, "-");
+    let installed = 0;
+    for (const sub of ["controls", "collectors", "fixtures"]) {
+      const from = join(dir, sub);
+      if (!existsSync(from)) continue;
+      const to = join(customCatalogDir(), sub);
+      mkdirSync(to, { recursive: true });
+      for (const file of readdirSync(from)) {
+        copyFileSync(join(from, file), join(to, `${packName}-${file}`));
+        installed += 1;
+      }
+    }
+    console.log(
+      `installed ${installed} file(s) from pack "${packName}" (${verification?.ok ? `signature verified with trusted key #${verification.keyIndex}` : "UNSIGNED — accepted via --trust-unsigned"})`,
+    );
+    console.log("run: cloudranger catalog validate && cloudranger catalog test");
     return 0;
   }
 
@@ -794,11 +915,14 @@ async function main(): Promise<number> {
   return 1;
 }
 
-main()
-  .then((code) => {
-    process.exitCode = code;
-  })
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  });
+// Only auto-run when invoked as the CLI entry point (not when imported).
+if (process.argv[1] && /main\.(js|ts)$/.test(process.argv[1])) {
+  main()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    });
+}
