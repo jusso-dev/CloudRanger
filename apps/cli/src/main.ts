@@ -1,5 +1,15 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname } from "node:path";
+import Database from "better-sqlite3";
 import { homedir } from "node:os";
 import { basename } from "node:path";
 import { join } from "node:path";
@@ -17,7 +27,8 @@ import {
   loadFrameworkRegistry,
   type ControlEvaluationCounts,
 } from "@cloudranger/catalog";
-import { createRepository } from "@cloudranger/db";
+import { CloudRangerStore, createRepository, type FindingRow } from "@cloudranger/db";
+import { findingsToCsv, findingsToJsonl, findingsToSarif } from "./export.js";
 import {
   controlTemplate,
   fixtureFileSchema,
@@ -36,6 +47,10 @@ Usage:
   cloudranger catalog test              Run all control fixture tests
   cloudranger catalog list [--provider aws|azure|gcp]
   cloudranger findings [--state open,reopened] [--severity critical,high] [--owner team] [--overdue] [--json]
+  cloudranger db backup --output <file.db>       Consistent online SQLite backup (0600)
+  cloudranger db restore <file.db> [--force]     Restore backup to the DB path
+  cloudranger findings export --format csv|jsonl|sarif [--state a,b] [--severity a,b]
+                               [--provider p] [--scope id] [--output <file>]
   cloudranger retention list            Show evidence retention policies
   cloudranger retention set --provider aws|azure|gcp --scope <id> [--keep-days N] [--keep-scans N]
   cloudranger retention prune --provider aws|azure|gcp --scope <id> [--execute --confirm]
@@ -254,6 +269,130 @@ async function main(): Promise<number> {
     }
     await store.close();
     return 0;
+  }
+
+  if (command === "db" && (subcommand === "backup" || subcommand === "restore")) {
+    if (process.env.CLOUDRANGER_DATABASE_URL) {
+      console.error(
+        "PostgreSQL deployments: use pg_dump/pg_restore against CLOUDRANGER_DATABASE_URL (see docs/operations.md).",
+      );
+      return 1;
+    }
+    if (subcommand === "backup") {
+      const { values } = parseArgs({
+        args: rest,
+        options: { output: { type: "string" } },
+      });
+      if (!values.output) {
+        console.error("db backup requires --output <file.db>");
+        return 1;
+      }
+      const store = new CloudRangerStore(dbPath());
+      try {
+        await store.backupTo(values.output);
+      } finally {
+        store.close();
+      }
+      chmodSync(values.output, 0o600);
+      console.log(`backup written to ${values.output} (mode 0600)`);
+      console.log(
+        "The backup contains raw evidence and findings — protect it like the live database.",
+      );
+      return 0;
+    }
+    // restore
+    const { positionals, values } = parseArgs({
+      args: rest,
+      options: { force: { type: "boolean" } },
+      allowPositionals: true,
+    });
+    const source = positionals[0];
+    if (!source || !existsSync(source)) {
+      console.error("db restore requires an existing backup file argument");
+      return 1;
+    }
+    // Integrity-check the backup before touching anything.
+    try {
+      const check = new Database(source, { readonly: true });
+      const result = check.pragma("quick_check", { simple: true });
+      check.close();
+      if (result !== "ok") throw new Error(String(result));
+    } catch (error) {
+      console.error(`backup failed integrity check: ${(error as Error).message}`);
+      return 1;
+    }
+    const target = dbPath();
+    if (existsSync(target) && !values.force) {
+      console.error(`refusing to overwrite existing database at ${target}; pass --force`);
+      return 1;
+    }
+    mkdirSync(dirname(target), { recursive: true });
+    copyFileSync(source, target);
+    chmodSync(target, 0o600);
+    console.log(`restored ${source} -> ${target}`);
+    return 0;
+  }
+
+  if (command === "findings" && subcommand === "export") {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        format: { type: "string" },
+        state: { type: "string" },
+        severity: { type: "string" },
+        provider: { type: "string" },
+        scope: { type: "string" },
+        output: { type: "string" },
+      },
+    });
+    if (!values.format || !["csv", "jsonl", "sarif"].includes(values.format)) {
+      console.error("findings export requires --format csv|jsonl|sarif");
+      return 1;
+    }
+    const store = createRepository({ sqlitePath: dbPath() });
+    try {
+      const filters = {
+        state: values.state?.split(",") as any,
+        severity: values.severity?.split(","),
+        provider: values.provider as any,
+        scopeId: values.scope,
+      };
+      const all: FindingRow[] = [];
+      for (let offset = 0; ; offset += 200) {
+        const { total, findings } = await store.searchFindings({
+          ...filters,
+          limit: 200,
+          offset,
+        });
+        all.push(...findings);
+        if (all.length >= total || findings.length === 0) break;
+      }
+      let text: string;
+      if (values.format === "csv") text = findingsToCsv(all);
+      else if (values.format === "jsonl") text = findingsToJsonl(all);
+      else {
+        const catalog = loadDefaultCatalog();
+        text = findingsToSarif(
+          all,
+          new Map(
+            catalog.controls.map((c) => [
+              c.id,
+              { title: c.title, description: c.description, references: c.references },
+            ]),
+          ),
+        );
+      }
+      if (values.output) {
+        mkdirSync(dirname(resolve(values.output)), { recursive: true });
+        writeFileSync(values.output, text);
+        console.log(`exported ${all.length} finding(s) to ${values.output}`);
+      } else {
+        process.stdout.write(text);
+      }
+      return 0;
+    } finally {
+      await store.close();
+    }
   }
 
   if (command === "retention") {

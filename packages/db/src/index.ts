@@ -346,6 +346,18 @@ export class CloudRangerStore {
     return this.getScan(id)!;
   }
 
+  // ---- backup ----
+
+  /**
+   * Consistent online backup via SQLite's backup API — safe while the DB is
+   * in use. The backup contains evidence and findings: treat the file with
+   * the same sensitivity as the live database.
+   */
+  async backupTo(path: string): Promise<void> {
+    mkdirSync(dirname(path), { recursive: true });
+    await this.db.backup(path);
+  }
+
   // ---- retention ----
 
   setRetentionPolicy(
