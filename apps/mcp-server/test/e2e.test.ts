@@ -802,3 +802,62 @@ describe("multi-scope report_data", () => {
     expect(missing.scopes).toHaveLength(0);
   });
 });
+
+describe("imported provider-native signals", () => {
+  it("imports, sanitises, correlates by resource, and never touches findings stats", async () => {
+    // Scope 555566667777 has an open CR-AWS-IAM-003 finding on resource
+    // "555566667777" (account-level) from the compliance test.
+    const before = await call("findings_search", { scopeId: "555566667777" });
+    const result = await call("signals_import", {
+      provider: "aws",
+      scopeId: "555566667777",
+      source: "securityhub",
+      signals: [
+        {
+          externalId: "arn:aws:securityhub:ap-southeast-2::finding/1",
+          title: "IAM password policy weak 控制", // control char stripped
+          severity: "HIGH",
+          resourceId: "555566667777",
+          description: "Native scanner corroboration",
+        },
+        {
+          externalId: "arn:aws:securityhub:ap-southeast-2::finding/2",
+          title: "Unrelated resource",
+          severity: "LOW",
+          resourceId: "some-other-resource",
+        },
+      ],
+    });
+    expect(result.imported).toBe(2);
+    expect(result.correlated).toBe(1);
+    expect(result.note).toMatch(/never count/);
+
+    const listed = await call("signals_list", { provider: "aws", scopeId: "555566667777" });
+    expect(listed.total).toBe(2);
+    const correlated = listed.signals.find((s: any) => s.resourceId === "555566667777");
+    expect(correlated.correlatedFingerprints.length).toBeGreaterThan(0);
+    expect(correlated.severity).toBe("high");
+    expect(correlated.title).not.toContain("");
+
+    // Re-import upserts rather than duplicating.
+    await call("signals_import", {
+      provider: "aws",
+      scopeId: "555566667777",
+      source: "securityhub",
+      signals: [
+        {
+          externalId: "arn:aws:securityhub:ap-southeast-2::finding/1",
+          title: "IAM password policy weak (updated)",
+          severity: "MEDIUM",
+          resourceId: "555566667777",
+        },
+      ],
+    });
+    const after = await call("signals_list", { provider: "aws", scopeId: "555566667777" });
+    expect(after.total).toBe(2);
+
+    // Findings stats unchanged by imports.
+    const findingsAfter = await call("findings_search", { scopeId: "555566667777" });
+    expect(findingsAfter.total).toBe(before.total);
+  });
+});

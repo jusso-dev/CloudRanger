@@ -35,6 +35,37 @@ export interface CloudRangerRepository {
     controlIds: string[];
     parameters?: Record<string, Record<string, unknown>>;
   }): Promise<ScanRow>;
+  importSignals(input: {
+    provider: Provider;
+    scopeId: string;
+    source: "securityhub" | "defender" | "scc";
+    signals: Array<{
+      externalId: string;
+      title: string;
+      severity: string;
+      resourceId: string;
+      description?: string;
+    }>;
+  }): Promise<{ imported: number; correlated: number }>;
+  listImportedSignals(filters: {
+    provider?: Provider;
+    scopeId?: string;
+    source?: string;
+    limit?: number;
+  }): Promise<
+    Array<{
+      provider: Provider;
+      scopeId: string;
+      source: string;
+      externalId: string;
+      title: string;
+      severity: string;
+      resourceId: string;
+      description?: string;
+      correlatedFingerprints: string[];
+      importedAt: string;
+    }>
+  >;
   setRetentionPolicy(
     provider: Provider,
     scopeId: string,

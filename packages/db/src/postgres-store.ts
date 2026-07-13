@@ -287,6 +287,110 @@ export class PostgresCloudRangerStore implements CloudRangerRepository {
     return (await this.getScan(id))!;
   }
 
+  async importSignals(input: {
+    provider: Provider;
+    scopeId: string;
+    source: "securityhub" | "defender" | "scc";
+    signals: Array<{
+      externalId: string;
+      title: string;
+      severity: string;
+      resourceId: string;
+      description?: string;
+    }>;
+  }): Promise<{ imported: number; correlated: number }> {
+    const clean = (text: string, max: number) =>
+      // eslint-disable-next-line no-control-regex
+      text.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "").slice(0, max);
+    const now = new Date().toISOString();
+    let correlated = 0;
+    for (const signal of input.signals) {
+      const fingerprints = (
+        await this.pool.query(
+          `SELECT fingerprint FROM findings
+           WHERE provider=$1 AND scope_id=$2 AND resource_id=$3 AND state IN ('open','reopened')`,
+          [input.provider, input.scopeId, signal.resourceId],
+        )
+      ).rows.map((row) => row.fingerprint as string);
+      if (fingerprints.length > 0) correlated += 1;
+      await this.pool.query(
+        `INSERT INTO imported_signals (provider, scope_id, source, external_id, title, severity, resource_id, description, correlated_fingerprints, imported_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT (provider, scope_id, source, external_id)
+         DO UPDATE SET title = EXCLUDED.title, severity = EXCLUDED.severity,
+           resource_id = EXCLUDED.resource_id, description = EXCLUDED.description,
+           correlated_fingerprints = EXCLUDED.correlated_fingerprints,
+           imported_at = EXCLUDED.imported_at`,
+        [
+          input.provider,
+          input.scopeId,
+          input.source,
+          clean(signal.externalId, 512),
+          clean(signal.title, 500),
+          clean(signal.severity, 32).toLowerCase(),
+          clean(signal.resourceId, 512),
+          signal.description ? clean(signal.description, 2000) : null,
+          JSON.stringify(fingerprints),
+          now,
+        ],
+      );
+    }
+    return { imported: input.signals.length, correlated };
+  }
+
+  async listImportedSignals(filters: {
+    provider?: Provider;
+    scopeId?: string;
+    source?: string;
+    limit?: number;
+  }): Promise<
+    Array<{
+      provider: Provider;
+      scopeId: string;
+      source: string;
+      externalId: string;
+      title: string;
+      severity: string;
+      resourceId: string;
+      description?: string;
+      correlatedFingerprints: string[];
+      importedAt: string;
+    }>
+  > {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (filters.provider) {
+      params.push(filters.provider);
+      where.push(`provider=$${params.length}`);
+    }
+    if (filters.scopeId) {
+      params.push(filters.scopeId);
+      where.push(`scope_id=$${params.length}`);
+    }
+    if (filters.source) {
+      params.push(filters.source);
+      where.push(`source=$${params.length}`);
+    }
+    params.push(Math.min(filters.limit ?? 100, 500));
+    const result = await this.pool.query(
+      `SELECT * FROM imported_signals ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+       ORDER BY imported_at DESC, id DESC LIMIT $${params.length}`,
+      params,
+    );
+    return result.rows.map((row) => ({
+      provider: row.provider,
+      scopeId: row.scope_id,
+      source: row.source,
+      externalId: row.external_id,
+      title: row.title,
+      severity: row.severity,
+      resourceId: row.resource_id,
+      description: row.description ?? undefined,
+      correlatedFingerprints: row.correlated_fingerprints ?? [],
+      importedAt: iso(row.imported_at)!,
+    }));
+  }
+
   async setRetentionPolicy(
     provider: Provider,
     scopeId: string,

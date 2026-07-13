@@ -486,6 +486,86 @@ export function createServer(deps: ServerDeps): McpServer {
     ),
   );
 
+  // ---------- imported provider-native signals ----------
+
+  server.registerTool(
+    "signals_import",
+    {
+      title: "Import provider-native findings as correlated signals",
+      description:
+        "Store findings from cloud-native scanners (AWS Security Hub, Microsoft Defender for Cloud, GCP Security Command Center) as a distinct, clearly-imported signal class. Fetch them with the READ-ONLY commands: aws securityhub get-findings --region <r> --output json | az security assessment list --output json | gcloud scc findings list organizations/<org> --format json. Imported signals are never counted in CloudRanger pass/fail statistics; each is correlated (by resource) to open CloudRanger findings as corroboration. Free text is sanitised and length-capped on ingest.",
+      inputSchema: {
+        provider: providerParam,
+        scopeId: z.string(),
+        source: z.enum(["securityhub", "defender", "scc"]),
+        signals: z
+          .array(
+            z
+              .object({
+                externalId: z.string().min(1).max(512),
+                title: z.string().min(1).max(1000),
+                severity: z.string().min(1).max(32),
+                resourceId: z.string().min(1).max(512),
+                description: z.string().max(4000).optional(),
+              })
+              .strict(),
+          )
+          .min(1)
+          .max(500),
+      },
+      annotations: { ...readOnly, readOnlyHint: false },
+    },
+    audited(
+      "signals_import",
+      async (args: {
+        provider: Provider;
+        scopeId: string;
+        source: "securityhub" | "defender" | "scc";
+        signals: Array<{
+          externalId: string;
+          title: string;
+          severity: string;
+          resourceId: string;
+          description?: string;
+        }>;
+      }) => {
+        if (!validateParamValue(args.scopeId)) throw new Error("invalid scopeId");
+        const result = await store.importSignals(args);
+        return {
+          ...result,
+          note: "Imported signals are corroborating context only — they never count toward CloudRanger pass/fail or finding statistics.",
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    "signals_list",
+    {
+      title: "List imported provider-native signals",
+      description:
+        "Imported Security Hub / Defender / SCC signals with their CloudRanger finding correlations. Clearly a separate signal class from CloudRanger findings.",
+      inputSchema: {
+        provider: providerParam.optional(),
+        scopeId: z.string().optional(),
+        source: z.enum(["securityhub", "defender", "scc"]).optional(),
+        limit: z.number().int().min(1).max(500).optional(),
+      },
+      annotations: readOnly,
+    },
+    audited(
+      "signals_list",
+      async (args: { provider?: Provider; scopeId?: string; source?: string; limit?: number }) => {
+        const signals = await store.listImportedSignals(args);
+        return {
+          total: signals.length,
+          signals,
+          note: "Imported, not CloudRanger-evaluated. correlatedFingerprints link to CloudRanger findings on the same resource.",
+        };
+      },
+    ),
+  );
+
   // ---------- retention ----------
 
   server.registerTool(
