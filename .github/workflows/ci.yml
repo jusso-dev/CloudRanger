@@ -53,3 +53,7 @@ jobs:
         run: pnpm --filter @cloudranger/db db:migrate
         env:
           CLOUDRANGER_DATABASE_URL: postgresql://cloudranger:cloudranger@localhost:5432/cloudranger
+      - name: Run PostgreSQL repository integration tests
+        run: pnpm --filter @cloudranger/db test:postgres
+        env:
+          CLOUDRANGER_TEST_DATABASE_URL: postgresql://cloudranger:cloudranger@localhost:5432/cloudranger

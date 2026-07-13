@@ -13,7 +13,7 @@ import {
   fixturesDir,
   loadDefaultCatalog,
 } from "@cloudranger/catalog";
-import { CloudRangerStore } from "@cloudranger/db";
+import { createRepository } from "@cloudranger/db";
 import {
   controlTemplate,
   fixtureFileSchema,
@@ -47,10 +47,11 @@ Usage:
   cloudranger db-path                   Print the database location
 
 Environment:
-  CLOUDRANGER_DB     Database file (default ~/.cloudranger/cloudranger.db)
+  CLOUDRANGER_DB             SQLite file (default ~/.cloudranger/cloudranger.db)
+  CLOUDRANGER_DATABASE_URL   PostgreSQL URL for shared deployments (takes precedence)
 `;
 
-function main(): number {
+async function main(): Promise<number> {
   const [command, subcommand, ...rest] = process.argv.slice(2);
 
   if (!command || command === "help" || command === "--help") {
@@ -59,7 +60,9 @@ function main(): number {
   }
 
   if (command === "db-path") {
-    console.log(dbPath());
+    console.log(
+      process.env.CLOUDRANGER_DATABASE_URL ? "postgresql (CLOUDRANGER_DATABASE_URL)" : dbPath(),
+    );
     return 0;
   }
 
@@ -170,8 +173,8 @@ function main(): number {
         json: { type: "boolean" },
       },
     });
-    const store = new CloudRangerStore(dbPath());
-    const { total, findings } = store.searchFindings({
+    const store = createRepository({ sqlitePath: dbPath() });
+    const { total, findings } = await store.searchFindings({
       state: values.state?.split(",") as any,
       severity: values.severity?.split(","),
       provider: values.provider as any,
@@ -189,7 +192,7 @@ function main(): number {
       }
       console.log(`\n${total} finding(s)`);
     }
-    store.close();
+    await store.close();
     return 0;
   }
 
@@ -204,11 +207,11 @@ function main(): number {
         output: { type: "string" },
       },
     });
-    const store = new CloudRangerStore(dbPath());
-    const report = store.reportData({
+    const store = createRepository({ sqlitePath: dbPath() });
+    const report = (await store.reportData({
       sinceDays: values["since-days"] ? Number(values["since-days"]) : undefined,
       provider: values.provider as any,
-    }) as any;
+    })) as any;
     const controlsById = new Map(
       loadDefaultCatalog().controls.map((control) => [control.id, control]),
     );
@@ -227,7 +230,7 @@ function main(): number {
       if (subcommand === "pdf") writePdfReport(htmlPath, output);
       console.log(output);
     } else console.log(JSON.stringify(report, null, 2));
-    store.close();
+    await store.close();
     return 0;
   }
 
@@ -267,31 +270,31 @@ function main(): number {
   }
 
   if (command === "scans") {
-    const store = new CloudRangerStore(dbPath());
+    const store = createRepository({ sqlitePath: dbPath() });
     if (subcommand === "compare") {
       const [baselineScanId, currentScanId] = rest;
       if (!baselineScanId || !currentScanId) {
         console.error("usage: cloudranger scans compare <baselineScanId> <currentScanId>");
-        store.close();
+        await store.close();
         return 1;
       }
-      console.log(JSON.stringify(store.compareScans(baselineScanId, currentScanId), null, 2));
-      store.close();
+      console.log(JSON.stringify(await store.compareScans(baselineScanId, currentScanId), null, 2));
+      await store.close();
       return 0;
     }
-    for (const scan of store.listScans(20)) {
+    for (const scan of await store.listScans(20)) {
       console.log(
         `${scan.createdAt}  ${scan.provider.padEnd(6)} ${scan.scopeId.padEnd(20)} ${scan.status.padEnd(10)} ${scan.summary ? `fail=${scan.summary.fail} pass=${scan.summary.pass} coverage=${Math.round(scan.summary.coverageRatio * 100)}%` : ""}`,
       );
     }
-    store.close();
+    await store.close();
     return 0;
   }
 
   if (command === "audit" && subcommand === "verify") {
-    const store = new CloudRangerStore(dbPath());
-    const broken = store.verifyAuditChain();
-    store.close();
+    const store = createRepository({ sqlitePath: dbPath() });
+    const broken = await store.verifyAuditChain();
+    await store.close();
     if (broken === null) {
       console.log("audit chain intact");
       return 0;
@@ -305,13 +308,15 @@ function main(): number {
       args: [subcommand, ...rest].filter((a): a is string => a !== undefined),
       options: { limit: { type: "string" } },
     });
-    const store = new CloudRangerStore(dbPath());
-    for (const entry of store.searchAudit(values.limit ? Number(values.limit) : 50) as any[]) {
+    const store = createRepository({ sqlitePath: dbPath() });
+    for (const entry of (await store.searchAudit(
+      values.limit ? Number(values.limit) : 50,
+    )) as any[]) {
       console.log(
         `${entry.createdAt}  ${entry.success ? "ok " : "ERR"}  ${entry.actor.padEnd(20)} ${entry.tool}`,
       );
     }
-    store.close();
+    await store.close();
     return 0;
   }
 
@@ -345,4 +350,11 @@ function main(): number {
   return 1;
 }
 
-process.exit(main());
+main()
+  .then((code) => {
+    process.exitCode = code;
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });

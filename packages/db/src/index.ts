@@ -18,6 +18,9 @@ import { MIGRATIONS } from "./schema.sql.js";
 
 export { createPostgresDatabase } from "./postgres.js";
 export type { PostgresDatabase } from "./postgres.js";
+export { createRepository, type RepositoryConfig } from "./factory.js";
+export { PostgresCloudRangerStore } from "./postgres-store.js";
+export type { CloudRangerRepository } from "./repository.js";
 
 export interface ScanRow {
   id: string;

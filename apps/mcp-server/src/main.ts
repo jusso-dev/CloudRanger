@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { loadDefaultCatalog } from "@cloudranger/catalog";
-import { CloudRangerStore } from "@cloudranger/db";
+import { createRepository } from "@cloudranger/db";
 import { createServer } from "./server.js";
 
 async function main(): Promise<void> {
@@ -14,12 +14,12 @@ async function main(): Promise<void> {
       console.error(`[cloudranger] catalog issue in ${issue.file}: ${issue.message}`);
     }
   }
-  const store = new CloudRangerStore(dbPath);
+  const store = createRepository({ sqlitePath: dbPath });
   const server = createServer({ store, catalog, actor: process.env.CLOUDRANGER_ACTOR });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(
-    `[cloudranger] MCP server ready (db: ${dbPath}, controls: ${catalog.controls.length})`,
+    `[cloudranger] MCP server ready (db: ${process.env.CLOUDRANGER_DATABASE_URL ? "postgresql" : dbPath}, controls: ${catalog.controls.length})`,
   );
 }
 

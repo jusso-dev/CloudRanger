@@ -12,7 +12,7 @@ import {
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PACKS, customCatalogDir, resolvePack } from "@cloudranger/catalog";
-import { CloudRangerStore } from "@cloudranger/db";
+import type { CloudRangerRepository, ScanRow } from "@cloudranger/db";
 import { SAFETY_RESOURCE, SERVER_INSTRUCTIONS, WORKFLOW_RESOURCE } from "./instructions.js";
 import { registerPrompts } from "./prompts.js";
 import { createNotificationSender } from "./notifications.js";
@@ -24,7 +24,7 @@ const providerParam = z.enum(["aws", "azure", "gcp"]);
 const severityParam = z.enum(["informational", "low", "medium", "high", "critical"]);
 
 export interface ServerDeps {
-  store: CloudRangerStore;
+  store: CloudRangerRepository;
   catalog: LoadedCatalog;
   actor?: string;
 }
@@ -41,7 +41,7 @@ export function createServer(deps: ServerDeps): McpServer {
     return deps.actor ?? (client ? `mcp:${client.name}` : "mcp:unknown");
   };
 
-  const expectedCollectorsForScan = (scan: ReturnType<CloudRangerStore["getScan"]>) => {
+  const expectedCollectorsForScan = (scan: ScanRow | undefined) => {
     if (!scan) return [];
     const controls = catalog.controls.filter((control) => scan.controlIds.includes(control.id));
     return [
@@ -69,11 +69,11 @@ export function createServer(deps: ServerDeps): McpServer {
     return async (args: A) => {
       try {
         const result = await handler(args);
-        store.audit({ actor: actor(), tool, args, success: true });
+        await store.audit({ actor: actor(), tool, args, success: true });
         return json(result);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        store.audit({ actor: actor(), tool, args, success: false, detail: message });
+        await store.audit({ actor: actor(), tool, args, success: false, detail: message });
         return fail(message);
       }
     };
@@ -266,7 +266,7 @@ export function createServer(deps: ServerDeps): McpServer {
     },
     audited(
       "scan_start",
-      (args: {
+      async (args: {
         provider: Provider;
         scopeId: string;
         regions?: string[];
@@ -292,7 +292,7 @@ export function createServer(deps: ServerDeps): McpServer {
           regions,
           scopeId: args.scopeId,
         });
-        const scan = store.createScan({
+        const scan = await store.createScan({
           provider: args.provider,
           scopeId: args.scopeId,
           regions,
@@ -312,8 +312,8 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { scanId: z.string() },
       annotations: readOnly,
     },
-    audited("scan_get_plan", (args: { scanId: string }) => {
-      const scan = store.getScan(args.scanId);
+    audited("scan_get_plan", async (args: { scanId: string }) => {
+      const scan = await store.getScan(args.scanId);
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
       const controls = catalog.controls.filter((c) => scan.controlIds.includes(c.id));
       const plan = buildPlan(controls, catalog.collectors, {
@@ -356,16 +356,16 @@ export function createServer(deps: ServerDeps): McpServer {
     },
     audited(
       "evidence_submit",
-      (args: {
+      async (args: {
         scanId: string;
-        records: {
+        records: Array<{
           collectorId: string;
           region?: string;
           resourceKey?: string;
           output?: unknown;
           errorText?: string;
           exitCode: number;
-        }[];
+        }>;
       }) => {
         for (const record of args.records) {
           if (!catalog.collectors.has(record.collectorId)) {
@@ -383,11 +383,11 @@ export function createServer(deps: ServerDeps): McpServer {
             throw new Error(`failed record for ${record.collectorId} must include errorText`);
           }
         }
-        const accepted = store.addEvidence(
+        const accepted = await store.addEvidence(
           args.scanId,
           args.records.map((r) => ({ ...r, output: r.output ?? null })),
         );
-        return { accepted, stats: store.evidenceStats(args.scanId) };
+        return { accepted, stats: await store.evidenceStats(args.scanId) };
       },
     ),
   );
@@ -402,7 +402,7 @@ export function createServer(deps: ServerDeps): McpServer {
       annotations: { ...readOnly, readOnlyHint: false, idempotentHint: true },
     },
     audited("scan_evaluate", async (args: { scanId: string }) => {
-      const scan = store.getScan(args.scanId);
+      const scan = await store.getScan(args.scanId);
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
       if (scan.status === "evaluated") {
         return {
@@ -410,32 +410,30 @@ export function createServer(deps: ServerDeps): McpServer {
           alreadyEvaluated: true,
           summary: scan.summary,
           coverage: scan.coverage,
-          health: store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
+          health: await store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
         };
       }
       if (scan.status === "cancelled") throw new Error("scan is cancelled");
-      const evidence = store.getEvidence(args.scanId);
+      const evidence = await store.getEvidence(args.scanId);
       const { results, coverage } = evaluateControls(
         catalog.controls,
         catalog.collectors,
         { provider: scan.provider, scopeId: scan.scopeId, records: evidence },
         { controlIds: scan.controlIds },
       );
-      const summary = store.finalizeScan(args.scanId, results, coverage);
+      const summary = await store.finalizeScan(args.scanId, results, coverage);
       const gaps = coverage.filter((c) => c.status !== "evaluated");
-      const previous = store
-        .listScans(100)
-        .find(
-          (candidate) =>
-            candidate.id !== scan.id &&
-            candidate.status === "evaluated" &&
-            candidate.provider === scan.provider &&
-            candidate.scopeId === scan.scopeId,
-        );
+      const previous = (await store.listScans(100)).find(
+        (candidate) =>
+          candidate.id !== scan.id &&
+          candidate.status === "evaluated" &&
+          candidate.provider === scan.provider &&
+          candidate.scopeId === scan.scopeId,
+      );
       const notifications = previous
-        ? await createNotificationSender()(store.compareScans(previous.id, scan.id))
+        ? await createNotificationSender()(await store.compareScans(previous.id, scan.id))
         : { enabled: [], sent: [], errors: [] };
-      const health = store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan));
+      const health = await store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan));
       return {
         scanId: scan.id,
         summary,
@@ -462,13 +460,13 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { scanId: z.string() },
       annotations: readOnly,
     },
-    audited("scan_status", (args: { scanId: string }) => {
-      const scan = store.getScan(args.scanId);
+    audited("scan_status", async (args: { scanId: string }) => {
+      const scan = await store.getScan(args.scanId);
       if (!scan) throw new Error(`unknown scan: ${args.scanId}`);
       return {
         scan,
-        health: store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
-        evidenceStats: store.evidenceStats(args.scanId),
+        health: await store.scanHealth(scan.id, 60, expectedCollectorsForScan(scan)),
+        evidenceStats: await store.evidenceStats(args.scanId),
       };
     }),
   );
@@ -485,13 +483,10 @@ export function createServer(deps: ServerDeps): McpServer {
       },
       annotations: readOnly,
     },
-    audited("scan_health", (args: { scanId: string; staleAfterMinutes?: number }) =>
-      store.scanHealth(
-        args.scanId,
-        args.staleAfterMinutes,
-        expectedCollectorsForScan(store.getScan(args.scanId)),
-      ),
-    ),
+    audited("scan_health", async (args: { scanId: string; staleAfterMinutes?: number }) => {
+      const scan = await store.getScan(args.scanId);
+      return store.scanHealth(args.scanId, args.staleAfterMinutes, expectedCollectorsForScan(scan));
+    }),
   );
 
   server.registerTool(
@@ -502,8 +497,8 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { limit: z.number().int().min(1).max(100).optional() },
       annotations: readOnly,
     },
-    audited("scan_list", (args: { limit?: number }) => ({
-      scans: store.listScans(args.limit ?? 20),
+    audited("scan_list", async (args: { limit?: number }) => ({
+      scans: await store.listScans(args.limit ?? 20),
     })),
   );
 
@@ -532,9 +527,9 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { scanId: z.string() },
       annotations: { ...readOnly, readOnlyHint: false },
     },
-    audited("scan_cancel", (args: { scanId: string }) => {
-      store.cancelScan(args.scanId);
-      return { scanId: args.scanId, status: store.getScan(args.scanId)?.status };
+    audited("scan_cancel", async (args: { scanId: string }) => {
+      await store.cancelScan(args.scanId);
+      return { scanId: args.scanId, status: (await store.getScan(args.scanId))?.status };
     }),
   );
 
@@ -585,13 +580,13 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { fingerprint: z.string() },
       annotations: readOnly,
     },
-    audited("findings_get", (args: { fingerprint: string }) => {
-      const finding = store.getFinding(args.fingerprint);
+    audited("findings_get", async (args: { fingerprint: string }) => {
+      const finding = await store.getFinding(args.fingerprint);
       if (!finding) throw new Error(`unknown finding: ${args.fingerprint}`);
       const control = catalog.controls.find((c) => c.id === finding.controlId);
       return {
         finding,
-        history: store.getFindingEvents(args.fingerprint),
+        history: await store.getFindingEvents(args.fingerprint),
         control: control
           ? {
               id: control.id,
@@ -670,7 +665,9 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: {},
       annotations: { ...readOnly, readOnlyHint: false },
     },
-    audited("findings_expire_workflows", () => ({ expired: store.expireWorkflowStates() })),
+    audited("findings_expire_workflows", async () => ({
+      expired: await store.expireWorkflowStates(),
+    })),
   );
 
   server.registerTool(
@@ -681,8 +678,8 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { fingerprint: z.string(), comment: z.string().max(5000) },
       annotations: { ...readOnly, readOnlyHint: false },
     },
-    audited("findings_comment", (args: { fingerprint: string; comment: string }) => {
-      store.addFindingComment(args.fingerprint, args.comment, actor());
+    audited("findings_comment", async (args: { fingerprint: string; comment: string }) => {
+      await store.addFindingComment(args.fingerprint, args.comment, actor());
       return { ok: true };
     }),
   );
@@ -715,9 +712,9 @@ export function createServer(deps: ServerDeps): McpServer {
       inputSchema: { limit: z.number().int().min(1).max(500).optional() },
       annotations: readOnly,
     },
-    audited("audit_search", (args: { limit?: number }) => ({
-      entries: store.searchAudit(args.limit ?? 50),
-      chainIntact: store.verifyAuditChain() === null,
+    audited("audit_search", async (args: { limit?: number }) => ({
+      entries: await store.searchAudit(args.limit ?? 50),
+      chainIntact: (await store.verifyAuditChain()) === null,
     })),
   );
 

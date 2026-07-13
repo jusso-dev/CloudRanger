@@ -123,14 +123,13 @@ cloudranger db-path
 
 ### Database backends
 
-CloudRanger uses SQLite by default for a zero-configuration local deployment (`CLOUDRANGER_DB`, defaulting to `~/.cloudranger/cloudranger.db`). For shared deployments, the database package includes a Drizzle PostgreSQL schema and pooled connection factory. Set `CLOUDRANGER_DATABASE_URL` to a PostgreSQL connection string and run the Drizzle migration workflow:
+CloudRanger uses SQLite by default for a zero-configuration local deployment (`CLOUDRANGER_DB`, defaulting to `~/.cloudranger/cloudranger.db`). For shared deployments, set `CLOUDRANGER_DATABASE_URL`; both the CLI and MCP server will use the pooled PostgreSQL repository automatically. Apply the versioned Drizzle migrations before starting CloudRanger:
 
 ```sh
-CLOUDRANGER_DATABASE_URL=postgresql://user:password@host:5432/cloudranger pnpm --filter @cloudranger/db db:generate
 CLOUDRANGER_DATABASE_URL=postgresql://user:password@host:5432/cloudranger pnpm --filter @cloudranger/db db:migrate
 ```
 
-The PostgreSQL repository adapter is being introduced behind this schema so existing synchronous SQLite callers remain compatible during migration. Applications embedding CloudRanger can use `createPostgresDatabase()` from `@cloudranger/db` to build Drizzle queries and tooling against the shared schema.
+SQLite and PostgreSQL expose the same async repository contract. PostgreSQL persists scans, raw evidence, evaluations, finding lifecycle and workflow history, report data, and the hash-chained audit trail. Applications embedding CloudRanger can use `createRepository()` for backend selection or `createPostgresDatabase()` for additional typed Drizzle queries against the shared schema.
 
 ```bash
 pnpm build      # build all packages
