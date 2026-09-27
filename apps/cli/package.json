@@ -17,7 +17,7 @@
     "@cloudranger/catalog": "workspace:*",
     "@cloudranger/db": "workspace:*",
     "@cloudranger/engine": "workspace:*",
-    "yaml": "^2.9.0",
+    "yaml": "^2.9.1",
     "better-sqlite3": "^12.2.0"
   },
   "devDependencies": {
