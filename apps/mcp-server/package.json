@@ -25,7 +25,7 @@
     "@cloudranger/catalog": "workspace:*",
     "@cloudranger/db": "workspace:*",
     "@cloudranger/engine": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "nodemailer": "^9.0.3",
     "zod": "^3.25.0"
   },
