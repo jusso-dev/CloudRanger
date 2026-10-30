@@ -178,7 +178,7 @@ describe("MCP scan loop", () => {
       fingerprint,
       workflowState: "risk_accepted",
       reason: "Bucket intentionally public pending CDN migration",
-      expiresAt: "2026-09-30T00:00:00Z",
+      expiresAt: "2099-12-31T00:00:00Z",
     });
     expect(updated.workflowState).toBe("risk_accepted");
   });
