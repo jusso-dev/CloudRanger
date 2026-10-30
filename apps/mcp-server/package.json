@@ -27,7 +27,7 @@
     "@cloudranger/engine": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.31.0",
     "nodemailer": "^10.0.9",
-    "zod": "^3.25.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.1",
